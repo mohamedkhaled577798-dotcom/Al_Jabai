@@ -1,0 +1,213 @@
+@model DashboardStatistics
+@{
+    ViewData["Title"] = "لوحة التحكم";
+}
+
+<div class="row g-4 mb-4">
+    <!-- Statistics Cards -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">المساجد والجوامع</h6>
+                        <h2 class="mb-0">@Model.TotalMosques</h2>
+                    </div>
+                    <i class="fas fa-mosque fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="@Url.Action("Index", "Mosques")" class="text-white text-decoration-none small">
+                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">العقارات الوقفية</h6>
+                        <h2 class="mb-0">@Model.TotalProperties</h2>
+                    </div>
+                    <i class="fas fa-building fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="@Url.Action("Index", "Properties")" class="text-white text-decoration-none small">
+                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-dark-50">الدوائر الوقفية</h6>
+                        <h2 class="mb-0">@Model.TotalOffices</h2>
+                    </div>
+                    <i class="fas fa-landmark fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="@Url.Action("Index", "Offices")" class="text-dark text-decoration-none small">
+                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50">المحافظات</h6>
+                        <h2 class="mb-0">@Model.TotalProvinces</h2>
+                    </div>
+                    <i class="fas fa-map fa-3x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="@Url.Action("Index", "Map")" class="text-white text-decoration-none small">
+                    عرض الخريطة <i class="fas fa-arrow-left me-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions & Mini Map -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2 text-primary"></i>خريطة سريعة</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="miniMap" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>إجراءات سريعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="@Url.Action("Create", "Mosques")" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>إضافة مسجد جديد
+                    </a>
+                    <a href="@Url.Action("Create", "Properties")" class="btn btn-outline-success">
+                        <i class="fas fa-plus me-2"></i>إضافة عقار جديد
+                    </a>
+                    <a href="@Url.Action("Index", "Map")" class="btn btn-outline-info">
+                        <i class="fas fa-map me-2"></i>فتح الخريطة التفاعلية
+                    </a>
+                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-alt me-2"></i>إنشاء تقرير
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>المساجد حسب النوع</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="mosqueTypeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>المساجد حسب المحافظة</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="mosqueProvinceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Mini Map
+        var miniMap = L.map('miniMap').setView([33.3, 44.4], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(miniMap);
+
+        // Load markers
+        fetch('/api/geodata/mosques')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(mosque => {
+                    L.marker([mosque.latitude, mosque.longitude])
+                        .addTo(miniMap)
+                        .bindPopup('<strong>' + mosque.nameAr + '</strong><br>' + mosque.type);
+                });
+            })
+            .catch(err => console.log('No data yet'));
+
+        // Mosque Type Chart
+        var mosqueTypeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByType));
+        if (mosqueTypeData.length > 0) {
+            new Chart(document.getElementById('mosqueTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: mosqueTypeData.map(x => x.name),
+                    datasets: [{
+                        data: mosqueTypeData.map(x => x.count),
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Mosque Province Chart
+        var mosqueProvinceData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByProvince));
+        if (mosqueProvinceData.length > 0) {
+            new Chart(document.getElementById('mosqueProvinceChart'), {
+                type: 'bar',
+                data: {
+                    labels: mosqueProvinceData.map(x => x.name),
+                    datasets: [{
+                        label: 'عدد المساجد',
+                        data: mosqueProvinceData.map(x => x.count),
+                        backgroundColor: '#0d6efd'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    </script>
+}

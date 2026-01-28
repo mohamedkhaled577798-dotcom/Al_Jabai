@@ -1,0 +1,159 @@
+@model IEnumerable<Mosque>
+@{
+    ViewData["Title"] = "المساجد والجوامع";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-mosque text-primary me-2"></i>المساجد والجوامع</h4>
+        <small class="text-muted">إدارة بيانات المساجد والجوامع</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>إضافة مسجد جديد
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">البحث</label>
+                <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم أو الكود..." 
+                       value="@ViewBag.CurrentSearch">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المحافظة</label>
+                <select name="provinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                    <option value="">جميع المحافظات</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">نوع المسجد</label>
+                <select name="typeId" class="form-select" asp-items="@ViewBag.MosqueTypes">
+                    <option value="">جميع الأنواع</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>بحث
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo me-1"></i>إعادة تعيين
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>الكود</th>
+                        <th>الاسم</th>
+                        <th>النوع</th>
+                        <th>المحافظة</th>
+                        <th>الدائرة الوقفية</th>
+                        <th>الحالة</th>
+                        <th style="width: 150px;">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-0">لا توجد مساجد مسجلة</p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        var count = 0;
+                        foreach (var mosque in Model)
+                        {
+                            count++;
+                            <tr>
+                                <td>@count</td>
+                                <td><code>@mosque.Code</code></td>
+                                <td>
+                                    <strong>@mosque.NameAr</strong>
+                                    @if (!string.IsNullOrEmpty(mosque.NameEn))
+                                    {
+                                        <br><small class="text-muted">@mosque.NameEn</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">@mosque.MosqueType?.NameAr</span>
+                                </td>
+                                <td>@mosque.Province?.NameAr</td>
+                                <td>@mosque.WaqfOffice?.NameAr</td>
+                                <td>
+                                    <span class="badge" style="background-color: @(mosque.MosqueStatus?.ColorCode ?? "#6c757d")">
+                                        @(mosque.MosqueStatus?.NameAr ?? "غير محدد")
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@mosque.Id" class="btn btn-outline-info" title="عرض">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@mosque.Id" class="btn btn-outline-primary" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" title="حذف"
+                                                onclick="confirmDelete(@mosque.Id, '@mosque.NameAr')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light">
+        <small class="text-muted">إجمالي المساجد: <strong>@Model.Count()</strong></small>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>تأكيد الحذف</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف المسجد: <strong id="deleteMosqueName"></strong>؟</p>
+                <p class="text-muted small">هذا الإجراء لا يمكن التراجع عنه.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">نعم، احذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(id, name) {
+            document.getElementById('deleteMosqueName').textContent = name;
+            document.getElementById('deleteForm').action = '/Mosques/Delete/' + id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}

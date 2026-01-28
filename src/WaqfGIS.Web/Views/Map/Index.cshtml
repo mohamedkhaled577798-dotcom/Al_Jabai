@@ -1,0 +1,273 @@
+@{
+    ViewData["Title"] = "الخريطة التفاعلية";
+}
+
+<div class="row g-0" style="height: calc(100vh - 140px);">
+    <!-- Filters Sidebar -->
+    <div class="col-md-3 col-lg-2 bg-light border-end p-3" style="overflow-y: auto;">
+        <h6 class="fw-bold mb-3"><i class="fas fa-filter me-2"></i>تصفية النتائج</h6>
+        
+        <div class="mb-3">
+            <label class="form-label fw-semibold">النوع</label>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="showMosques" checked onchange="toggleLayer('mosques')">
+                <label class="form-check-label" for="showMosques">
+                    <i class="fas fa-mosque text-primary me-1"></i> المساجد والجوامع
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="showProperties" checked onchange="toggleLayer('properties')">
+                <label class="form-check-label" for="showProperties">
+                    <i class="fas fa-building text-success me-1"></i> العقارات الوقفية
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="showOffices" checked onchange="toggleLayer('offices')">
+                <label class="form-check-label" for="showOffices">
+                    <i class="fas fa-landmark text-warning me-1"></i> الدوائر الوقفية
+                </label>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="mb-3">
+            <label class="form-label fw-semibold">المحافظة</label>
+            <select class="form-select form-select-sm" id="filterProvince" onchange="filterByProvince()">
+                <option value="">جميع المحافظات</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label fw-semibold">نوع المسجد</label>
+            <select class="form-select form-select-sm" id="filterMosqueType" onchange="filterMosques()">
+                <option value="">جميع الأنواع</option>
+            </select>
+        </div>
+        
+        <hr>
+        
+        <div class="mb-3">
+            <label class="form-label fw-semibold">البحث</label>
+            <input type="text" class="form-control form-control-sm" id="searchInput" 
+                   placeholder="ابحث بالاسم..." onkeyup="searchItems()">
+        </div>
+        
+        <hr>
+        
+        <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="resetFilters()">
+                <i class="fas fa-redo me-1"></i>إعادة تعيين
+            </button>
+            <button class="btn btn-outline-success btn-sm" onclick="exportData()">
+                <i class="fas fa-download me-1"></i>تصدير البيانات
+            </button>
+        </div>
+        
+        <hr>
+        
+        <!-- Legend -->
+        <h6 class="fw-bold mb-2"><i class="fas fa-info-circle me-2"></i>دليل الألوان</h6>
+        <div class="small">
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-primary me-2">&nbsp;</span> جوامع
+            </div>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-info me-2">&nbsp;</span> مساجد
+            </div>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-success me-2">&nbsp;</span> عقارات
+            </div>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-warning me-2">&nbsp;</span> دوائر
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <hr>
+        <h6 class="fw-bold mb-2"><i class="fas fa-chart-bar me-2"></i>إحصائيات</h6>
+        <div class="small" id="mapStats">
+            <div>المساجد: <span id="statMosques">0</span></div>
+            <div>العقارات: <span id="statProperties">0</span></div>
+            <div>الدوائر: <span id="statOffices">0</span></div>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div class="col-md-9 col-lg-10 position-relative">
+        <div id="map" style="height: 100%;"></div>
+        
+        <!-- Map Controls -->
+        <div class="position-absolute top-0 end-0 m-3 bg-white rounded shadow-sm p-2" style="z-index: 1000;">
+            <div class="btn-group-vertical btn-group-sm">
+                <button class="btn btn-light" onclick="map.setView([33.3, 44.4], 6)" title="عرض العراق">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="btn btn-light" onclick="map.zoomIn()" title="تكبير">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="btn btn-light" onclick="map.zoomOut()" title="تصغير">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-light" onclick="getCurrentLocation()" title="موقعي">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Base Layer Selector -->
+        <div class="position-absolute bottom-0 start-0 m-3 bg-white rounded shadow-sm p-2" style="z-index: 1000;">
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-primary active" onclick="setBaseLayer('streets')">خريطة</button>
+                <button class="btn btn-outline-primary" onclick="setBaseLayer('satellite')">قمر صناعي</button>
+                <button class="btn btn-outline-primary" onclick="setBaseLayer('hybrid')">هجين</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        #map { z-index: 1; }
+        .leaflet-popup-content { direction: rtl; text-align: right; }
+        .marker-cluster { background-color: rgba(13, 110, 253, 0.6); }
+        .marker-cluster div { background-color: rgba(13, 110, 253, 0.8); }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([33.3152, 44.3661], 6);
+        
+        // Base layers
+        var streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri'
+        });
+        
+        var hybrid = L.layerGroup([satellite, L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { opacity: 0.4 })]);
+        
+        // Layer groups
+        var mosquesLayer = L.layerGroup().addTo(map);
+        var propertiesLayer = L.layerGroup().addTo(map);
+        var officesLayer = L.layerGroup().addTo(map);
+        
+        // Data storage
+        var allMosques = [];
+        var allProperties = [];
+        
+        // Icons
+        var mosqueIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<i class="fas fa-mosque fa-2x text-primary"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+        });
+        
+        var propertyIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<i class="fas fa-building fa-2x text-success"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+        });
+
+        // Load data
+        function loadMapData() {
+            fetch('/api/geodata/all')
+                .then(response => response.json())
+                .then(data => {
+                    // Mosques
+                    if (data.mosques) {
+                        allMosques = data.mosques;
+                        data.mosques.forEach(m => {
+                            var marker = L.marker([m.latitude, m.longitude], { icon: mosqueIcon })
+                                .bindPopup(`
+                                    <h6>${m.nameAr}</h6>
+                                    <p class="mb-1"><strong>النوع:</strong> ${m.type}</p>
+                                    <p class="mb-1"><strong>الحالة:</strong> <span style="color:${m.statusColor}">${m.status}</span></p>
+                                    <p class="mb-1"><strong>العنوان:</strong> ${m.address || 'غير محدد'}</p>
+                                    <p class="mb-0"><strong>السعة:</strong> ${m.capacity || 'غير محدد'}</p>
+                                    <hr class="my-2">
+                                    <a href="/Mosques/Details/${m.id}" class="btn btn-sm btn-primary">عرض التفاصيل</a>
+                                `);
+                            mosquesLayer.addLayer(marker);
+                        });
+                        document.getElementById('statMosques').textContent = data.mosques.length;
+                    }
+                    
+                    // Properties
+                    if (data.properties) {
+                        allProperties = data.properties;
+                        data.properties.forEach(p => {
+                            var marker = L.marker([p.latitude, p.longitude], { icon: propertyIcon })
+                                .bindPopup(`
+                                    <h6>${p.nameAr}</h6>
+                                    <p class="mb-1"><strong>النوع:</strong> ${p.type}</p>
+                                    <p class="mb-1"><strong>الاستخدام:</strong> ${p.usage}</p>
+                                    <p class="mb-0"><strong>المساحة:</strong> ${p.areaSqm || 'غير محدد'} م²</p>
+                                    <hr class="my-2">
+                                    <a href="/Properties/Details/${p.id}" class="btn btn-sm btn-success">عرض التفاصيل</a>
+                                `);
+                            propertiesLayer.addLayer(marker);
+                        });
+                        document.getElementById('statProperties').textContent = data.properties.length;
+                    }
+                })
+                .catch(err => console.log('Error loading data:', err));
+        }
+        
+        loadMapData();
+
+        // Toggle layer visibility
+        function toggleLayer(layer) {
+            switch(layer) {
+                case 'mosques':
+                    if (map.hasLayer(mosquesLayer)) map.removeLayer(mosquesLayer);
+                    else map.addLayer(mosquesLayer);
+                    break;
+                case 'properties':
+                    if (map.hasLayer(propertiesLayer)) map.removeLayer(propertiesLayer);
+                    else map.addLayer(propertiesLayer);
+                    break;
+                case 'offices':
+                    if (map.hasLayer(officesLayer)) map.removeLayer(officesLayer);
+                    else map.addLayer(officesLayer);
+                    break;
+            }
+        }
+        
+        // Set base layer
+        function setBaseLayer(type) {
+            map.removeLayer(streets);
+            map.removeLayer(satellite);
+            switch(type) {
+                case 'streets': streets.addTo(map); break;
+                case 'satellite': satellite.addTo(map); break;
+                case 'hybrid': satellite.addTo(map); streets.addTo(map); streets.setOpacity(0.4); break;
+            }
+        }
+        
+        // Get current location
+        function getCurrentLocation() {
+            map.locate({setView: true, maxZoom: 16});
+        }
+        
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('filterProvince').value = '';
+            document.getElementById('filterMosqueType').value = '';
+            document.getElementById('searchInput').value = '';
+            loadMapData();
+        }
+        
+        // Filter functions
+        function filterByProvince() { /* implement filter */ }
+        function filterMosques() { /* implement filter */ }
+        function searchItems() { /* implement search */ }
+        function exportData() { alert('سيتم تصدير البيانات...'); }
+    </script>
+}
