@@ -75,30 +75,53 @@ public class MosquesController : Controller
 
         var mosque = new Mosque
         {
+            Code = model.Code,
+
             NameAr = model.NameAr,
             NameEn = model.NameEn,
+
             WaqfOfficeId = model.WaqfOfficeId,
             MosqueTypeId = model.MosqueTypeId,
             MosqueStatusId = model.MosqueStatusId,
+
             ProvinceId = model.ProvinceId,
             DistrictId = model.DistrictId,
+            SubDistrictId = model.SubDistrictId,
+
             Location = new Point(model.Longitude, model.Latitude) { SRID = 4326 },
+
             Address = model.Address,
             Neighborhood = model.Neighborhood,
             NearestLandmark = model.NearestLandmark,
+
             Capacity = model.Capacity,
             AreaSqm = model.AreaSqm,
+            FloorsCount = model.FloorsCount,
+
             HasFridayPrayer = model.HasFridayPrayer,
             HasMinaret = model.HasMinaret,
             HasDome = model.HasDome,
             HasParking = model.HasParking,
             HasWomenSection = model.HasWomenSection,
+            HasLibrary = model.HasLibrary,
+            HasAblutionFacility = model.HasAblutionFacility,
+
             ImamName = model.ImamName,
             ImamPhone = model.ImamPhone,
+            MuezzinName = model.MuezzinName,
+
             EstablishedYear = model.EstablishedYear,
+            LastRenovationYear = model.LastRenovationYear,
+
+            DeedNumber = model.DeedNumber,
+            RegistrationNumber = model.RegistrationNumber,
+            RegistrationDate = model.RegistrationDate,
+
             Notes = model.Notes,
+
             CreatedBy = User.Identity?.Name
         };
+
 
         await _mosqueService.CreateAsync(mosque);
         TempData["Success"] = "تم إضافة المسجد بنجاح";
@@ -136,7 +159,17 @@ public class MosquesController : Controller
             ImamName = mosque.ImamName,
             ImamPhone = mosque.ImamPhone,
             EstablishedYear = mosque.EstablishedYear,
-            Notes = mosque.Notes
+            Notes = mosque.Notes,
+            Code = mosque.Code,
+            FloorsCount = mosque.FloorsCount,
+            HasLibrary = mosque.HasLibrary,
+            HasAblutionFacility = mosque.HasAblutionFacility,
+            MuezzinName = mosque.MuezzinName,
+            LastRenovationYear = mosque.LastRenovationYear,
+            DeedNumber = mosque.DeedNumber,
+            RegistrationNumber = mosque.RegistrationNumber,
+            RegistrationDate = mosque.RegistrationDate
+
         };
 
         await LoadViewDataAsync();

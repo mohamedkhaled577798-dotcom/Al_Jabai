@@ -85,7 +85,7 @@ public static class DbSeeder
             context.MosqueTypes.AddRange(
                 new MosqueType { NameAr = "جامع", NameEn = "Grand Mosque", IconName = "mosque-grand" },
                 new MosqueType { NameAr = "مسجد", NameEn = "Mosque", IconName = "mosque" },
-                new MosqueType { NameAr = "مصلى", NameEn = "Prayer Room", IconName = "prayer-room" },
+                new MosqueType { NameAr = "مصلى", NameEn = "Prayer Room", IconName = "prayer-room" }
             );
             await context.SaveChangesAsync();
         }

@@ -9,7 +9,7 @@ public class ApplicationUser : IdentityUser
 {
     public int? WaqfOfficeId { get; set; }
     public string FullNameAr { get; set; } = string.Empty;
-    public string? FullNameEn { get; set; }
+    public string? FullNameEn { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }
     public bool IsActive { get; set; } = true;

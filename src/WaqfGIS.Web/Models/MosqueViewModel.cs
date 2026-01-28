@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
 namespace WaqfGIS.Web.Models;
@@ -90,4 +91,50 @@ public class MosqueViewModel
 
     [Display(Name = "ملاحظات")]
     public string? Notes { get; set; }
+    // ================== تعريف وتسجيل ==================
+    [Display(Name = "كود المسجد")]
+    [MaxLength(50)]
+    public string Code { get; set; } = string.Empty;
+
+    [Display(Name = "رقم السند")]
+    [MaxLength(100)]
+    public string? DeedNumber { get; set; }
+
+    [Display(Name = "رقم التسجيل")]
+    [MaxLength(100)]
+    public string? RegistrationNumber { get; set; }
+
+    [Display(Name = "تاريخ التسجيل")]
+    public DateTime? RegistrationDate { get; set; }
+
+    // ================== مواصفات البناية ==================
+    [Display(Name = "عدد الطوابق")]
+    [Range(0, 50)]
+    public int FloorsCount { get; set; } = 1;
+
+    [Display(Name = "سنة آخر ترميم")]
+    public int? LastRenovationYear { get; set; }
+
+    [Display(Name = "مكتبة")]
+    public bool HasLibrary { get; set; }
+
+    [Display(Name = "مرافق وضوء")]
+    public bool HasAblutionFacility { get; set; }
+
+    // ================== بيانات إدارية ==================
+    [Display(Name = "اسم المؤذن")]
+    [MaxLength(100)]
+    public string? MuezzinName { get; set; }
+
+    // ================== تقسيم إداري ==================
+    [Display(Name = "الناحية")]
+    public int? SubDistrictId { get; set; }
+
+    // ================== القوائم ==================
+    public IEnumerable<SelectListItem> MosqueTypes { get; set; } = Enumerable.Empty<SelectListItem>();
+    public IEnumerable<SelectListItem> MosqueStatuses { get; set; } = Enumerable.Empty<SelectListItem>();
+    public IEnumerable<SelectListItem> WaqfOffices { get; set; } = Enumerable.Empty<SelectListItem>();
+    public IEnumerable<SelectListItem> Provinces { get; set; } = Enumerable.Empty<SelectListItem>();
+    public IEnumerable<SelectListItem> Districts { get; set; } = Enumerable.Empty<SelectListItem>();
+
 }

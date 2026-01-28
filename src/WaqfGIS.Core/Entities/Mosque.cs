@@ -37,6 +37,8 @@ public class Mosque : BaseEntity
     public bool HasWomenSection { get; set; } = false;
     public bool HasLibrary { get; set; } = false;
     public bool HasAblutionFacility { get; set; } = true;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
 
     // بيانات إدارية
     public string? ImamName { get; set; }
@@ -66,4 +68,5 @@ public class Mosque : BaseEntity
     public virtual SubDistrict? SubDistrict { get; set; }
     public virtual ICollection<MosqueDocument> Documents { get; set; } = new List<MosqueDocument>();
     public virtual ICollection<MosqueImage> Images { get; set; } = new List<MosqueImage>();
+
 }

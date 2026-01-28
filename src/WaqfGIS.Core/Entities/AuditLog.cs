@@ -3,7 +3,7 @@ namespace WaqfGIS.Core.Entities;
 /// <summary>
 /// سجل التدقيق
 /// </summary>
-public class AuditLog
+public class AuditLog : BaseEntity
 {
     public long Id { get; set; }
     public string? UserId { get; set; }
