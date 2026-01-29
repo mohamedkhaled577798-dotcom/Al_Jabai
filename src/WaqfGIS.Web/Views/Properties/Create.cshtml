@@ -11,7 +11,7 @@
     <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-2"></i>العودة</a>
 </div>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" enctype="multipart/form-data">
     <div class="row">
         <div class="col-lg-8">
             <!-- البيانات الأساسية -->
@@ -165,7 +165,16 @@
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6></div>
                 <div class="card-body">
-                    <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- صور العقار -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور العقار</h6></div>
+                <div class="card-body">
+                    <input type="file" name="images" class="form-control" multiple accept="image/*" />
+                    <small class="text-muted">يمكنك اختيار عدة صور (الحد الأقصى 10MB لكل صورة)</small>
                 </div>
             </div>
 

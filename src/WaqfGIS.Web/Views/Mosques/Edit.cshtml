@@ -13,104 +13,43 @@
     </a>
 </div>
 
-<form asp-action="Edit" method="post">
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
     <div class="row">
-        <!-- Main Form -->
         <div class="col-lg-8">
-            <!-- Basic Info Card -->
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6>
-                </div>
+                <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6></div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="NameAr" class="form-label"></label>
-                            <input asp-for="NameAr" class="form-control" />
-                            <span asp-validation-for="NameAr" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="NameEn" class="form-label"></label>
-                            <input asp-for="NameEn" class="form-control" />
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="MosqueTypeId" class="form-label"></label>
-                            <select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes">
-                                <option value="">-- اختر نوع المسجد --</option>
-                            </select>
-                            <span asp-validation-for="MosqueTypeId" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="MosqueStatusId" class="form-label"></label>
-                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses">
-                                <option value="">-- اختر الحالة --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="WaqfOfficeId" class="form-label"></label>
-                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
-                                <option value="">-- اختر الدائرة الوقفية --</option>
-                            </select>
-                            <span asp-validation-for="WaqfOfficeId" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="ProvinceId" class="form-label"></label>
-                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
-                                <option value="">-- اختر المحافظة --</option>
-                            </select>
-                            <span asp-validation-for="ProvinceId" class="text-danger small"></span>
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="Address" class="form-label"></label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
-                        </div>
+                        <div class="col-md-6"><label asp-for="NameAr" class="form-label"></label><input asp-for="NameAr" class="form-control" /><span asp-validation-for="NameAr" class="text-danger small"></span></div>
+                        <div class="col-md-6"><label asp-for="NameEn" class="form-label"></label><input asp-for="NameEn" class="form-control" /></div>
+                        <div class="col-md-6"><label asp-for="MosqueTypeId" class="form-label"></label><select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="MosqueStatusId" class="form-label"></label><select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="WaqfOfficeId" class="form-label"></label><select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="ProvinceId" class="form-label"></label><select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces"><option value="">--</option></select></div>
+                        <div class="col-12"><label asp-for="Address" class="form-label"></label><textarea asp-for="Address" class="form-control" rows="2"></textarea></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Location Card -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6>
-                </div>
+                <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع</h6></div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div id="locationMap" style="height: 300px; border-radius: 8px;"></div>
-                        <small class="text-muted">انقر على الخريطة لتغيير موقع المسجد</small>
-                    </div>
+                    <div id="locationMap" style="height:300px;" class="mb-3"></div>
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="Latitude" class="form-label"></label>
-                            <input asp-for="Latitude" class="form-control" id="latitude" readonly />
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="Longitude" class="form-label"></label>
-                            <input asp-for="Longitude" class="form-control" id="longitude" readonly />
-                        </div>
+                        <div class="col-md-6"><label asp-for="Latitude" class="form-label"></label><input asp-for="Latitude" id="latitude" class="form-control" readonly /></div>
+                        <div class="col-md-6"><label asp-for="Longitude" class="form-label"></label><input asp-for="Longitude" id="longitude" class="form-control" readonly /></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Specifications -->
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات</h6>
-                </div>
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات</h6></div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-4">
-                            <label asp-for="Capacity" class="form-label"></label>
-                            <input asp-for="Capacity" class="form-control" type="number" />
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="AreaSqm" class="form-label"></label>
-                            <input asp-for="AreaSqm" class="form-control" type="number" step="0.01" />
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="EstablishedYear" class="form-label"></label>
-                            <input asp-for="EstablishedYear" class="form-control" type="number" />
-                        </div>
+                        <div class="col-md-4"><label asp-for="Capacity" class="form-label"></label><input asp-for="Capacity" class="form-control" type="number" /></div>
+                        <div class="col-md-4"><label asp-for="AreaSqm" class="form-label"></label><input asp-for="AreaSqm" class="form-control" type="number" step="0.01" /></div>
+                        <div class="col-md-4"><label asp-for="EstablishedYear" class="form-label"></label><input asp-for="EstablishedYear" class="form-control" type="number" /></div>
                     </div>
                     <hr>
                     <div class="row">
@@ -124,7 +63,6 @@
             </div>
         </div>
 
-        <!-- Side Panel -->
         <div class="col-lg-4">
             <div class="card mb-4">
                 <div class="card-header bg-warning"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات الإمام</h6></div>
@@ -133,38 +71,69 @@
                     <div class="mb-3"><label asp-for="ImamPhone" class="form-label"></label><input asp-for="ImamPhone" class="form-control" /></div>
                 </div>
             </div>
+
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6></div>
-                <div class="card-body"><textarea asp-for="Notes" class="form-control" rows="4"></textarea></div>
+                <div class="card-body"><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
             </div>
+
+            <!-- صور المسجد -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد</h6></div>
+                <div class="card-body">
+                    @if (ViewBag.Images != null)
+                    {
+                        var images = (IEnumerable<MosqueImage>)ViewBag.Images;
+                        if (images.Any())
+                        {
+                            <div class="row g-2 mb-3">
+                                @foreach (var img in images)
+                                {
+                                    <div class="col-6">
+                                        <div class="position-relative">
+                                            <img src="@img.FilePath" class="img-fluid rounded @(img.IsMain ? "border border-3 border-primary" : "")" />
+                                            @if (img.IsMain)
+                                            {<span class="badge bg-primary position-absolute top-0 start-0 m-1">رئيسية</span>}
+                                            <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 p-1 text-center">
+                                                <form asp-action="SetMainImage" method="post" class="d-inline">
+                                                    <input type="hidden" name="imageId" value="@img.Id" />
+                                                    <input type="hidden" name="mosqueId" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-light"><i class="fas fa-star"></i></button>
+                                                </form>
+                                                <form asp-action="DeleteImage" method="post" class="d-inline" onsubmit="return confirm('حذف؟')">
+                                                    <input type="hidden" name="imageId" value="@img.Id" />
+                                                    <input type="hidden" name="mosqueId" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    <label class="form-label">إضافة صور جديدة</label>
+                    <input type="file" name="images" class="form-control" multiple accept="image/*" />
+                    <small class="text-muted">يمكنك اختيار عدة صور</small>
+                </div>
+            </div>
+
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>حفظ التعديلات</button>
-                <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">إلغاء</a>
             </div>
         </div>
     </div>
 </form>
 
 @section Scripts {
-    <script>
-        var initLat = @Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var initLng = @Model.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        
-        var map = L.map('locationMap').setView([initLat, initLng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
-        var marker = L.marker([initLat, initLng], { draggable: true }).addTo(map);
-        marker.on('dragend', updateCoordinates);
-        
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-            updateCoordinates();
-        });
-        
-        function updateCoordinates() {
-            var latlng = marker.getLatLng();
-            document.getElementById('latitude').value = latlng.lat.toFixed(6);
-            document.getElementById('longitude').value = latlng.lng.toFixed(6);
-        }
-    </script>
+<script>
+    var lat = @Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    var lng = @Model.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    var map = L.map('locationMap').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var marker = L.marker([lat, lng], {draggable:true}).addTo(map);
+    marker.on('dragend', function(){ var ll = marker.getLatLng(); document.getElementById('latitude').value = ll.lat.toFixed(6); document.getElementById('longitude').value = ll.lng.toFixed(6); });
+    map.on('click', function(e){ marker.setLatLng(e.latlng); document.getElementById('latitude').value = e.latlng.lat.toFixed(6); document.getElementById('longitude').value = e.latlng.lng.toFixed(6); });
+</script>
 }

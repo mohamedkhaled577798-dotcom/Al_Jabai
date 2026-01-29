@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Core.Entities;
+using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Web.Models;
@@ -16,47 +17,88 @@ public class PropertiesController : Controller
     private readonly PropertyService _propertyService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ExcelExportService _excelExportService;
+    private readonly AuditLogService _auditLogService;
+    private readonly ImageUploadService _imageUploadService;
+    private readonly PermissionService _permissionService;
 
-    public PropertiesController(PropertyService propertyService, IUnitOfWork unitOfWork, ExcelExportService excelExportService)
+    public PropertiesController(
+        PropertyService propertyService, 
+        IUnitOfWork unitOfWork,
+        ExcelExportService excelExportService,
+        AuditLogService auditLogService,
+        ImageUploadService imageUploadService,
+        PermissionService permissionService)
     {
         _propertyService = propertyService;
         _unitOfWork = unitOfWork;
         _excelExportService = excelExportService;
+        _auditLogService = auditLogService;
+        _imageUploadService = imageUploadService;
+        _permissionService = permissionService;
     }
 
     public async Task<IActionResult> Index(int? provinceId, int? typeId, string? search)
     {
-        var properties = await _propertyService.GetAllAsync();
+        var query = await _permissionService.GetAuthorizedPropertiesAsync(User);
+        
+        var properties = await query
+            .Include(p => p.PropertyType)
+            .Include(p => p.UsageType)
+            .Include(p => p.Province)
+            .Include(p => p.WaqfOffice)
+            .ToListAsync();
 
         if (provinceId.HasValue)
-            properties = properties.Where(p => p.ProvinceId == provinceId.Value);
+            properties = properties.Where(p => p.ProvinceId == provinceId.Value).ToList();
         if (typeId.HasValue)
-            properties = properties.Where(p => p.PropertyTypeId == typeId.Value);
+            properties = properties.Where(p => p.PropertyTypeId == typeId.Value).ToList();
         if (!string.IsNullOrEmpty(search))
-            properties = properties.Where(p => p.NameAr.Contains(search) || p.Code.Contains(search));
+            properties = properties.Where(p => p.NameAr.Contains(search) || p.Code.Contains(search)).ToList();
 
         await LoadViewDataAsync();
         ViewBag.CurrentSearch = search;
-        return View(properties.ToList());
+        ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
+        ViewBag.CanDelete = await _permissionService.CanDeleteAsync(User);
+
+        return View(properties);
     }
 
     public async Task<IActionResult> Details(int id)
     {
         var property = await _propertyService.GetByIdAsync(id);
         if (property == null) return NotFound();
+
+        if (!await _permissionService.CanAccessPropertyAsync(User, property))
+            return Forbid();
+        
+        ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
+        ViewBag.AuditLogs = await _auditLogService.GetLogsAsync("Property", id);
+        ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
         return View(property);
     }
 
     public async Task<IActionResult> Create()
     {
+        if (!await _permissionService.CanCreateAsync(User))
+            return Forbid();
+
         await LoadViewDataAsync();
         return View(new PropertyViewModel());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(PropertyViewModel model)
+    public async Task<IActionResult> Create(PropertyViewModel model, IFormFileCollection images)
     {
+        if (!await _permissionService.CanCreateAsync(User))
+            return Forbid();
+
+        var user = await _permissionService.GetCurrentUserAsync(User);
+        if (user != null && user.PermissionLevel == PermissionLevel.ProvinceLevel && user.ProvinceId != model.ProvinceId)
+            ModelState.AddModelError("ProvinceId", "لا يمكنك إضافة عقار في محافظة أخرى");
+        if (user != null && user.PermissionLevel == PermissionLevel.OfficeLevel && user.WaqfOfficeId != model.WaqfOfficeId)
+            ModelState.AddModelError("WaqfOfficeId", "لا يمكنك إضافة عقار في دائرة أخرى");
+
         if (!ModelState.IsValid)
         {
             await LoadViewDataAsync();
@@ -92,14 +134,28 @@ public class PropertiesController : Controller
         };
 
         await _propertyService.CreateAsync(property);
+
+        await _auditLogService.LogCreateAsync("Property", property.Id, property.NameAr,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            User.Identity?.Name, HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        if (images != null && images.Count > 0)
+            await _imageUploadService.UploadPropertyImagesAsync(property.Id, images, User.Identity?.Name);
+
         TempData["Success"] = "تم إضافة العقار بنجاح";
         return RedirectToAction(nameof(Index));
     }
 
     public async Task<IActionResult> Edit(int id)
     {
+        if (!await _permissionService.CanEditAsync(User))
+            return Forbid();
+
         var property = await _propertyService.GetByIdAsync(id);
         if (property == null) return NotFound();
+
+        if (!await _permissionService.CanAccessPropertyAsync(User, property))
+            return Forbid();
 
         var model = new PropertyViewModel
         {
@@ -130,24 +186,34 @@ public class PropertiesController : Controller
             Notes = property.Notes
         };
 
+        ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
         await LoadViewDataAsync();
         return View(model);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, PropertyViewModel model)
+    public async Task<IActionResult> Edit(int id, PropertyViewModel model, IFormFileCollection images)
     {
         if (id != model.Id) return NotFound();
 
+        if (!await _permissionService.CanEditAsync(User))
+            return Forbid();
+
+        var property = await _propertyService.GetByIdAsync(id);
+        if (property == null) return NotFound();
+
+        if (!await _permissionService.CanAccessPropertyAsync(User, property))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
+            ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
             await LoadViewDataAsync();
             return View(model);
         }
 
-        var property = await _propertyService.GetByIdAsync(id);
-        if (property == null) return NotFound();
+        var oldValues = $"الاسم: {property.NameAr}, القيمة: {property.EstimatedValue}";
 
         property.NameAr = model.NameAr;
         property.NameEn = model.NameEn;
@@ -167,6 +233,15 @@ public class PropertiesController : Controller
         property.UpdatedBy = User.Identity?.Name;
 
         await _propertyService.UpdateAsync(property);
+
+        var newValues = $"الاسم: {property.NameAr}, القيمة: {property.EstimatedValue}";
+        await _auditLogService.LogUpdateAsync("Property", property.Id, property.NameAr,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            User.Identity?.Name, oldValues, newValues, HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        if (images != null && images.Count > 0)
+            await _imageUploadService.UploadPropertyImagesAsync(property.Id, images, User.Identity?.Name);
+
         TempData["Success"] = "تم تحديث بيانات العقار بنجاح";
         return RedirectToAction(nameof(Index));
     }
@@ -175,25 +250,32 @@ public class PropertiesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        await _propertyService.DeleteAsync(id);
+        if (!await _permissionService.CanDeleteAsync(User))
+        {
+            TempData["Error"] = "ليس لديك صلاحية الحذف";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var property = await _propertyService.GetByIdAsync(id);
+        if (property != null)
+        {
+            if (!await _permissionService.CanAccessPropertyAsync(User, property))
+                return Forbid();
+
+            await _propertyService.DeleteAsync(id);
+            await _auditLogService.LogDeleteAsync("Property", id, property.NameAr,
+                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                User.Identity?.Name, HttpContext.Connection.RemoteIpAddress?.ToString());
+        }
         TempData["Success"] = "تم حذف العقار بنجاح";
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task LoadViewDataAsync()
-    {
-        ViewBag.Provinces = new SelectList(await _unitOfWork.Provinces.GetAllAsync(), "Id", "NameAr");
-        ViewBag.PropertyTypes = new SelectList(await _unitOfWork.PropertyTypes.GetAllAsync(), "Id", "NameAr");
-        ViewBag.UsageTypes = new SelectList(await _unitOfWork.UsageTypes.GetAllAsync(), "Id", "NameAr");
-        ViewBag.WaqfOffices = new SelectList(await _unitOfWork.WaqfOffices.GetAllAsync(), "Id", "NameAr");
-        ViewBag.Districts = new SelectList(await _unitOfWork.Districts.GetAllAsync(), "Id", "NameAr");
-    }
-
-    // ========== تصدير Excel ==========
     [HttpGet]
     public async Task<IActionResult> Export(int? provinceId, int? typeId)
     {
-        var properties = await _unitOfWork.WaqfProperties.Query()
+        var query = await _permissionService.GetAuthorizedPropertiesAsync(User);
+        var properties = await query
             .Include(p => p.PropertyType).Include(p => p.UsageType)
             .Include(p => p.Province).Include(p => p.WaqfOffice)
             .ToListAsync();
@@ -203,9 +285,47 @@ public class PropertiesController : Controller
         if (typeId.HasValue)
             properties = properties.Where(p => p.PropertyTypeId == typeId.Value).ToList();
 
-        var fileContent = _excelExportService.ExportProperties(properties);
+        var fileContent = _excelExportService.ExportPropertiesToExcel(properties);
         var fileName = $"العقارات_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadImages(int propertyId, IFormFileCollection images)
+    {
+        if (!await _permissionService.CanEditAsync(User))
+            return Forbid();
+
+        if (images != null && images.Count > 0)
+        {
+            await _imageUploadService.UploadPropertyImagesAsync(propertyId, images, User.Identity?.Name);
+            TempData["Success"] = $"تم رفع {images.Count} صورة بنجاح";
+        }
+        return RedirectToAction(nameof(Edit), new { id = propertyId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteImage(int imageId, int propertyId)
+    {
+        if (!await _permissionService.CanEditAsync(User))
+            return Forbid();
+
+        await _imageUploadService.DeletePropertyImageAsync(imageId);
+        TempData["Success"] = "تم حذف الصورة بنجاح";
+        return RedirectToAction(nameof(Edit), new { id = propertyId });
+    }
+
+    private async Task LoadViewDataAsync()
+    {
+        var provinces = await _permissionService.GetAuthorizedProvincesAsync(User);
+        ViewBag.Provinces = new SelectList(provinces, "Id", "NameAr");
+
+        var offices = await _permissionService.GetAuthorizedOfficesAsync(User);
+        ViewBag.WaqfOffices = new SelectList(await offices.ToListAsync(), "Id", "NameAr");
+
+        ViewBag.PropertyTypes = new SelectList(await _unitOfWork.PropertyTypes.GetAllAsync(), "Id", "NameAr");
+        ViewBag.UsageTypes = new SelectList(await _unitOfWork.UsageTypes.GetAllAsync(), "Id", "NameAr");
+        ViewBag.Districts = new SelectList(await _unitOfWork.Districts.GetAllAsync(), "Id", "NameAr");
     }
 }

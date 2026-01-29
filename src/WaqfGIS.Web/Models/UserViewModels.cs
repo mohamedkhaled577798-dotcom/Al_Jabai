@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using WaqfGIS.Core.Enums;
 
 namespace WaqfGIS.Web.Models;
 
@@ -10,6 +11,9 @@ public class UserListViewModel
     public string FullNameAr { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? OfficeName { get; set; }
+    public string? ProvinceName { get; set; }
+    public PermissionLevel PermissionLevel { get; set; }
+    public string PermissionLevelText { get; set; } = string.Empty;
     public string Roles { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime? LastLogin { get; set; }
@@ -55,6 +59,13 @@ public class CreateUserViewModel
     [Display(Name = "الدائرة الوقفية")]
     public int? WaqfOfficeId { get; set; }
 
+    [Display(Name = "المحافظة")]
+    public int? ProvinceId { get; set; }
+
+    [Required(ErrorMessage = "مستوى الصلاحية مطلوب")]
+    [Display(Name = "مستوى الصلاحية")]
+    public PermissionLevel PermissionLevel { get; set; }
+
     [Required(ErrorMessage = "الدور مطلوب")]
     [Display(Name = "الدور")]
     public string Role { get; set; } = string.Empty;
@@ -88,6 +99,12 @@ public class EditUserViewModel
 
     [Display(Name = "الدائرة الوقفية")]
     public int? WaqfOfficeId { get; set; }
+
+    [Display(Name = "المحافظة")]
+    public int? ProvinceId { get; set; }
+
+    [Display(Name = "مستوى الصلاحية")]
+    public PermissionLevel PermissionLevel { get; set; }
 
     [Display(Name = "الدور")]
     public string? Role { get; set; }

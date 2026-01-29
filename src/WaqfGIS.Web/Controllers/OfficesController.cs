@@ -187,7 +187,7 @@ public class OfficesController : Controller
         if (typeId.HasValue)
             offices = offices.Where(o => o.OfficeTypeId == typeId.Value).ToList();
 
-        var fileContent = _excelExportService.ExportOffices(offices);
+        var fileContent = _excelExportService.ExportOfficesToExcel(offices);
         var fileName = $"الدوائر_الوقفية_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);

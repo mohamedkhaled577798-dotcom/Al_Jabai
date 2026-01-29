@@ -14,10 +14,12 @@ public class ReportsController : Controller
     private readonly ReportService _reportService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ExcelExportService _excelExportService;
+    private readonly AuditLogService _auditLogService;
 
-    public ReportsController(ReportService reportService, IUnitOfWork unitOfWork, ExcelExportService excelExportService)
+    public ReportsController(ReportService reportService, IUnitOfWork unitOfWork, ExcelExportService excelExportService, AuditLogService auditLogService)
     {
         _reportService = reportService;
+        _auditLogService = auditLogService;
         _unitOfWork = unitOfWork;
         _excelExportService = excelExportService;
     }
@@ -138,7 +140,7 @@ public class ReportsController : Controller
             .Include(m => m.Province).Include(m => m.WaqfOffice)
             .ToListAsync();
 
-        var fileContent = _excelExportService.ExportMosques(mosques);
+        var fileContent = _excelExportService.ExportMosquesToExcel(mosques);
         var fileName = $"المساجد_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -152,7 +154,7 @@ public class ReportsController : Controller
             .Include(p => p.Province).Include(p => p.WaqfOffice)
             .ToListAsync();
 
-        var fileContent = _excelExportService.ExportProperties(properties);
+        var fileContent = _excelExportService.ExportPropertiesToExcel(properties);
         var fileName = $"العقارات_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -165,7 +167,7 @@ public class ReportsController : Controller
             .Include(o => o.OfficeType).Include(o => o.Province).Include(o => o.ParentOffice)
             .ToListAsync();
 
-        var fileContent = _excelExportService.ExportOffices(offices);
+        var fileContent = _excelExportService.ExportOfficesToExcel(offices);
         var fileName = $"الدوائر_الوقفية_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
@@ -182,9 +184,25 @@ public class ReportsController : Controller
             .Include(m => m.Province).Include(m => m.WaqfOffice)
             .Where(m => m.ProvinceId == provinceId).ToListAsync();
 
-        var fileContent = _excelExportService.ExportMosques(mosques, $"مساجد {province.NameAr}");
+        var fileContent = _excelExportService.ExportMosquesToExcel(mosques);
         var fileName = $"تقرير_{province.NameAr}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    // ========== سجل التدقيق ==========
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<IActionResult> AuditLog(string? entityType, string? action, string? userName)
+    {
+        var logs = await _auditLogService.GetRecentLogsAsync(500);
+
+        if (!string.IsNullOrEmpty(entityType))
+            logs = logs.Where(l => l.EntityType == entityType);
+        if (!string.IsNullOrEmpty(action))
+            logs = logs.Where(l => l.Action == action);
+        if (!string.IsNullOrEmpty(userName))
+            logs = logs.Where(l => l.UserName != null && l.UserName.Contains(userName));
+
+        return View(logs.ToList());
     }
 }

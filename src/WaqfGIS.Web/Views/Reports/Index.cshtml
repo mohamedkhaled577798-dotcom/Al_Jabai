@@ -52,30 +52,41 @@
 
 <!-- روابط التقارير -->
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title"><i class="fas fa-mosque text-primary me-2"></i>تقرير المساجد</h5>
-                <p class="card-text text-muted">تقرير شامل عن جميع المساجد والجوامع مع التصنيفات والإحصائيات</p>
-                <a asp-action="MosquesReport" class="btn btn-outline-primary">عرض التقرير</a>
+                <p class="card-text text-muted small">تقرير شامل عن المساجد والجوامع</p>
+                <a asp-action="MosquesReport" class="btn btn-outline-primary btn-sm">عرض</a>
+                <a asp-action="ExportMosques" class="btn btn-success btn-sm"><i class="fas fa-download"></i></a>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title"><i class="fas fa-building text-success me-2"></i>تقرير العقارات</h5>
-                <p class="card-text text-muted">تقرير تفصيلي عن العقارات الوقفية والإيرادات</p>
-                <a asp-action="PropertiesReport" class="btn btn-outline-success">عرض التقرير</a>
+                <p class="card-text text-muted small">تقرير العقارات والإيرادات</p>
+                <a asp-action="PropertiesReport" class="btn btn-outline-success btn-sm">عرض</a>
+                <a asp-action="ExportProperties" class="btn btn-success btn-sm"><i class="fas fa-download"></i></a>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title"><i class="fas fa-map-marked-alt text-info me-2"></i>تقرير حسب المحافظة</h5>
-                <p class="card-text text-muted">تقرير مفصل لكل محافظة على حدة</p>
-                <a asp-action="ProvinceReport" class="btn btn-outline-info">عرض التقرير</a>
+                <h5 class="card-title"><i class="fas fa-map-marked-alt text-info me-2"></i>تقرير المحافظة</h5>
+                <p class="card-text text-muted small">تقرير مفصل لكل محافظة</p>
+                <a asp-action="ProvinceReport" class="btn btn-outline-info btn-sm">عرض</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-history text-secondary me-2"></i>سجل التدقيق</h5>
+                <p class="card-text text-muted small">سجل جميع العمليات</p>
+                <a asp-action="AuditLog" class="btn btn-outline-secondary btn-sm">عرض</a>
             </div>
         </div>
     </div>

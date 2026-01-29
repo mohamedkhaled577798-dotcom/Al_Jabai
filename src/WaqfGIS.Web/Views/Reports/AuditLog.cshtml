@@ -1,0 +1,112 @@
+@model IEnumerable<AuditLog>
+@{
+    ViewData["Title"] = "سجل التدقيق";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-history text-secondary me-2"></i>سجل التدقيق</h4>
+        <small class="text-muted">سجل جميع العمليات والتغييرات في النظام</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">نوع الكيان</label>
+                <select name="entityType" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="Mosque">المساجد</option>
+                    <option value="Property">العقارات</option>
+                    <option value="Office">الدوائر</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">العملية</label>
+                <select name="action" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="إنشاء">إنشاء</option>
+                    <option value="تعديل">تعديل</option>
+                    <option value="حذف">حذف</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المستخدم</label>
+                <input type="text" name="userName" class="form-control" placeholder="اسم المستخدم..." />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1"></i>بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Audit Log Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>التاريخ والوقت</th>
+                        <th>المستخدم</th>
+                        <th>العملية</th>
+                        <th>الكيان</th>
+                        <th>الاسم</th>
+                        <th>IP</th>
+                        <th>التفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7" class="text-center py-4"><i class="fas fa-inbox fa-3x text-muted"></i><p class="mt-2 text-muted">لا توجد سجلات</p></td></tr>
+                    }
+                    else
+                    {
+                        foreach (var log in Model)
+                        {
+                            var actionClass = log.Action switch
+                            {
+                                "إنشاء" => "bg-success",
+                                "تعديل" => "bg-warning text-dark",
+                                "حذف" => "bg-danger",
+                                _ => "bg-secondary"
+                            };
+                            <tr>
+                                <td><small>@log.Timestamp.ToString("yyyy/MM/dd HH:mm:ss")</small></td>
+                                <td><strong>@log.UserName</strong></td>
+                                <td><span class="badge @actionClass">@log.Action</span></td>
+                                <td>
+                                    @switch(log.EntityType)
+                                    {
+                                        case "Mosque": <span class="text-primary"><i class="fas fa-mosque me-1"></i>مسجد</span> break;
+                                        case "Property": <span class="text-success"><i class="fas fa-building me-1"></i>عقار</span> break;
+                                        case "Office": <span class="text-warning"><i class="fas fa-landmark me-1"></i>دائرة</span> break;
+                                        default: <span>@log.EntityType</span> break;
+                                    }
+                                </td>
+                                <td>@log.EntityName</td>
+                                <td><small class="text-muted">@log.IpAddress</small></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                    {
+                                        <button class="btn btn-sm btn-outline-info" onclick="showDetails('@log.Id')">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light">
+        <small>إجمالي السجلات: <strong>@Model.Count()</strong></small>
+    </div>
+</div>

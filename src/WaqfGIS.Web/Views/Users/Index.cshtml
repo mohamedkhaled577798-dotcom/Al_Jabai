@@ -11,7 +11,6 @@
     <a asp-action="Create" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>إضافة مستخدم</a>
 </div>
 
-<!-- بحث -->
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3 align-items-end">
@@ -26,7 +25,6 @@
     </div>
 </div>
 
-<!-- جدول المستخدمين -->
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -35,9 +33,9 @@
                     <tr>
                         <th>اسم المستخدم</th>
                         <th>الاسم الكامل</th>
-                        <th>البريد الإلكتروني</th>
-                        <th>الدائرة</th>
-                        <th>الدور</th>
+                        <th>البريد</th>
+                        <th>مستوى الصلاحية</th>
+                        <th>النطاق</th>
                         <th>الحالة</th>
                         <th>آخر دخول</th>
                         <th>الإجراءات</th>
@@ -52,29 +50,42 @@
                     {
                         foreach (var user in Model)
                         {
+                            var levelClass = user.PermissionLevel switch
+                            {
+                                WaqfGIS.Core.Enums.PermissionLevel.SuperAdmin => "bg-danger",
+                                WaqfGIS.Core.Enums.PermissionLevel.Admin => "bg-warning text-dark",
+                                WaqfGIS.Core.Enums.PermissionLevel.ProvinceLevel => "bg-info",
+                                WaqfGIS.Core.Enums.PermissionLevel.OfficeLevel => "bg-primary",
+                                _ => "bg-secondary"
+                            };
                             <tr>
                                 <td><strong>@user.UserName</strong></td>
                                 <td>@user.FullNameAr</td>
-                                <td><a href="mailto:@user.Email">@user.Email</a></td>
-                                <td>@(user.OfficeName ?? "-")</td>
-                                <td><span class="badge bg-primary">@user.Roles</span></td>
+                                <td><small>@user.Email</small></td>
+                                <td><span class="badge @levelClass">@user.PermissionLevelText</span></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(user.ProvinceName))
+                                    {<small class="text-info"><i class="fas fa-map me-1"></i>@user.ProvinceName</small>}
+                                    else if (!string.IsNullOrEmpty(user.OfficeName))
+                                    {<small class="text-primary"><i class="fas fa-landmark me-1"></i>@user.OfficeName</small>}
+                                    else
+                                    {<small class="text-muted">-</small>}
+                                </td>
                                 <td>
                                     @if (user.IsActive)
                                     {<span class="badge bg-success">نشط</span>}
                                     else
                                     {<span class="badge bg-danger">معطل</span>}
                                 </td>
-                                <td>@(user.LastLogin?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
+                                <td><small>@(user.LastLogin?.ToString("yyyy/MM/dd") ?? "-")</small></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-primary" title="تعديل"><i class="fas fa-edit"></i></a>
+                                        <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-primary"><i class="fas fa-edit"></i></a>
                                         <form asp-action="ToggleStatus" asp-route-id="@user.Id" method="post" style="display:inline;">
-                                            <button class="btn btn-outline-warning" title="@(user.IsActive ? "تعطيل" : "تفعيل")">
-                                                <i class="fas @(user.IsActive ? "fa-ban" : "fa-check")"></i>
-                                            </button>
+                                            <button class="btn btn-outline-warning"><i class="fas @(user.IsActive ? "fa-ban" : "fa-check")"></i></button>
                                         </form>
                                         <form asp-action="ResetPassword" asp-route-id="@user.Id" method="post" style="display:inline;">
-                                            <button class="btn btn-outline-info" title="إعادة تعيين كلمة المرور"><i class="fas fa-key"></i></button>
+                                            <button class="btn btn-outline-info"><i class="fas fa-key"></i></button>
                                         </form>
                                         <button class="btn btn-outline-danger" onclick="confirmDelete('@user.Id', '@user.FullNameAr')"><i class="fas fa-trash"></i></button>
                                     </div>
@@ -89,7 +100,6 @@
     <div class="card-footer bg-light"><small>إجمالي المستخدمين: <strong>@Model.Count()</strong></small></div>
 </div>
 
-<!-- Modal حذف -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header bg-danger text-white"><h5 class="modal-title">تأكيد الحذف</h5></div>

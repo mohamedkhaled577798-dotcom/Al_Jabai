@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WaqfGIS.Core.Entities;
+using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
+using WaqfGIS.Services;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -15,20 +17,26 @@ public class UsersController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly PermissionService _permissionService;
 
     public UsersController(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        PermissionService permissionService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _unitOfWork = unitOfWork;
+        _permissionService = permissionService;
     }
 
     public async Task<IActionResult> Index(string? search)
     {
-        var users = await _userManager.Users.Include(u => u.WaqfOffice).ToListAsync();
+        var users = await _userManager.Users
+            .Include(u => u.WaqfOffice)
+            .Include(u => u.Province)
+            .ToListAsync();
         
         if (!string.IsNullOrEmpty(search))
             users = users.Where(u => u.FullNameAr.Contains(search) || 
@@ -46,6 +54,9 @@ public class UsersController : Controller
                 FullNameAr = user.FullNameAr,
                 Email = user.Email!,
                 OfficeName = user.WaqfOffice?.NameAr,
+                ProvinceName = user.Province?.NameAr,
+                PermissionLevel = user.PermissionLevel,
+                PermissionLevelText = PermissionService.GetPermissionLevelDescription(user.PermissionLevel),
                 Roles = string.Join(", ", roles),
                 IsActive = user.IsActive,
                 LastLogin = user.LastLogin
@@ -81,6 +92,8 @@ public class UsersController : Controller
             Phone = model.Phone,
             JobTitle = model.JobTitle,
             WaqfOfficeId = model.WaqfOfficeId,
+            ProvinceId = model.ProvinceId,
+            PermissionLevel = model.PermissionLevel,
             IsActive = true,
             MustChangePassword = true,
             EmailConfirmed = true,
@@ -106,7 +119,10 @@ public class UsersController : Controller
 
     public async Task<IActionResult> Edit(string id)
     {
-        var user = await _userManager.Users.Include(u => u.WaqfOffice).FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _userManager.Users
+            .Include(u => u.WaqfOffice)
+            .Include(u => u.Province)
+            .FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return NotFound();
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -121,6 +137,8 @@ public class UsersController : Controller
             Phone = user.Phone,
             JobTitle = user.JobTitle,
             WaqfOfficeId = user.WaqfOfficeId,
+            ProvinceId = user.ProvinceId,
+            PermissionLevel = user.PermissionLevel,
             Role = roles.FirstOrDefault(),
             IsActive = user.IsActive
         };
@@ -150,13 +168,14 @@ public class UsersController : Controller
         user.Phone = model.Phone;
         user.JobTitle = model.JobTitle;
         user.WaqfOfficeId = model.WaqfOfficeId;
+        user.ProvinceId = model.ProvinceId;
+        user.PermissionLevel = model.PermissionLevel;
         user.IsActive = model.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
 
         var result = await _userManager.UpdateAsync(user);
         if (result.Succeeded)
         {
-            // تحديث الدور
             var currentRoles = await _userManager.GetRolesAsync(user);
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
             if (!string.IsNullOrEmpty(model.Role))
@@ -204,9 +223,7 @@ public class UsersController : Controller
             TempData["Success"] = "تم إعادة تعيين كلمة المرور إلى: NewPass@123";
         }
         else
-        {
             TempData["Error"] = "فشل في إعادة تعيين كلمة المرور";
-        }
 
         return RedirectToAction(nameof(Index));
     }
@@ -218,7 +235,6 @@ public class UsersController : Controller
         var user = await _userManager.FindByIdAsync(id);
         if (user == null) return NotFound();
 
-        // لا تحذف المستخدم الحالي
         if (user.UserName == User.Identity?.Name)
         {
             TempData["Error"] = "لا يمكنك حذف حسابك الخاص";
@@ -233,6 +249,15 @@ public class UsersController : Controller
     private async Task LoadViewDataAsync()
     {
         ViewBag.WaqfOffices = new SelectList(await _unitOfWork.WaqfOffices.GetAllAsync(), "Id", "NameAr");
+        ViewBag.Provinces = new SelectList(await _unitOfWork.Provinces.GetAllAsync(), "Id", "NameAr");
         ViewBag.Roles = new SelectList(await _roleManager.Roles.ToListAsync(), "Name", "Name");
+        
+        // مستويات الصلاحيات
+        ViewBag.PermissionLevels = Enum.GetValues<PermissionLevel>()
+            .Select(p => new SelectListItem 
+            { 
+                Value = ((int)p).ToString(), 
+                Text = PermissionService.GetPermissionLevelDescription(p) 
+            }).ToList();
     }
 }
