@@ -1,0 +1,120 @@
+@model DashboardStatistics
+@{
+    ViewData["Title"] = "التقارير والإحصائيات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-chart-bar text-info me-2"></i>التقارير والإحصائيات</h4>
+        <small class="text-muted">عرض وتصدير التقارير المختلفة</small>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-mosque fa-3x mb-3 opacity-75"></i>
+                <h2 class="mb-0">@Model.TotalMosques</h2>
+                <small>مسجد وجامع</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-building fa-3x mb-3 opacity-75"></i>
+                <h2 class="mb-0">@Model.TotalProperties</h2>
+                <small>عقار وقفي</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-landmark fa-3x mb-3 opacity-75"></i>
+                <h2 class="mb-0">@Model.TotalOffices</h2>
+                <small>دائرة وقفية</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-map fa-3x mb-3 opacity-75"></i>
+                <h2 class="mb-0">@Model.TotalProvinces</h2>
+                <small>محافظة</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- روابط التقارير -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-mosque text-primary me-2"></i>تقرير المساجد</h5>
+                <p class="card-text text-muted">تقرير شامل عن جميع المساجد والجوامع مع التصنيفات والإحصائيات</p>
+                <a asp-action="MosquesReport" class="btn btn-outline-primary">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-building text-success me-2"></i>تقرير العقارات</h5>
+                <p class="card-text text-muted">تقرير تفصيلي عن العقارات الوقفية والإيرادات</p>
+                <a asp-action="PropertiesReport" class="btn btn-outline-success">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-map-marked-alt text-info me-2"></i>تقرير حسب المحافظة</h5>
+                <p class="card-text text-muted">تقرير مفصل لكل محافظة على حدة</p>
+                <a asp-action="ProvinceReport" class="btn btn-outline-info">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- رسوم بيانية -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white"><h6 class="mb-0">المساجد حسب النوع</h6></div>
+            <div class="card-body"><canvas id="typeChart" height="200"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white"><h6 class="mb-0">التوزيع حسب المحافظة</h6></div>
+            <div class="card-body"><canvas id="provinceChart" height="200"></canvas></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var typeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByType));
+    var provData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByProvince));
+    
+    if(typeData.length) {
+        new Chart(document.getElementById('typeChart'), {
+            type: 'doughnut',
+            data: { labels: typeData.map(x=>x.name), datasets: [{data: typeData.map(x=>x.count), backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545']}] }
+        });
+    }
+    if(provData.length) {
+        new Chart(document.getElementById('provinceChart'), {
+            type: 'bar',
+            data: { labels: provData.map(x=>x.name), datasets: [{label:'العدد', data: provData.map(x=>x.count), backgroundColor: '#0d6efd'}] },
+            options: { indexAxis: 'y' }
+        });
+    }
+</script>
+}

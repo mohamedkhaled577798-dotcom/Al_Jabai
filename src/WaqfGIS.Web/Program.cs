@@ -44,6 +44,11 @@ builder.Services.AddScoped<MosqueService>();
 builder.Services.AddScoped<PropertyService>();
 builder.Services.AddScoped<OfficeService>();
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<ExcelExportService>();
+builder.Services.AddScoped<AuditLogService>();
+builder.Services.AddScoped<ImageUploadService>(sp => 
+    new ImageUploadService(sp.GetRequiredService<IUnitOfWork>(), 
+        sp.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 
 // Add MVC
 builder.Services.AddControllersWithViews();

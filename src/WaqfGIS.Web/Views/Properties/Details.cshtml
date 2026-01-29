@@ -1,0 +1,87 @@
+@model WaqfProperty
+@{
+    ViewData["Title"] = $"تفاصيل - {Model.NameAr}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4><i class="fas fa-building text-success me-2"></i>@Model.NameAr</h4>
+        <small class="text-muted">@Model.Code</small>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit me-1"></i>تعديل</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white"><h6 class="mb-0">البيانات الأساسية</h6></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3"><label class="text-muted small">الاسم</label><p class="fw-bold">@Model.NameAr</p></div>
+                    <div class="col-md-6 mb-3"><label class="text-muted small">النوع</label><p><span class="badge bg-success">@Model.PropertyType?.NameAr</span></p></div>
+                    <div class="col-md-6 mb-3"><label class="text-muted small">الاستخدام</label><p>@(Model.UsageType?.NameAr ?? "-")</p></div>
+                    <div class="col-md-6 mb-3"><label class="text-muted small">المحافظة</label><p>@Model.Province?.NameAr</p></div>
+                    <div class="col-md-6 mb-3"><label class="text-muted small">الدائرة الوقفية</label><p>@Model.WaqfOffice?.NameAr</p></div>
+                    <div class="col-12"><label class="text-muted small">العنوان</label><p>@(Model.Address ?? "-")</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white"><h6 class="mb-0">الموقع</h6></div>
+            <div class="card-body p-0"><div id="map" style="height:300px;"></div></div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-warning"><h6 class="mb-0">المواصفات والقيمة</h6></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3"><label class="text-muted small">المساحة</label><p>@(Model.AreaSqm?.ToString("N0") ?? "-") م²</p></div>
+                    <div class="col-md-4 mb-3"><label class="text-muted small">عدد الطوابق</label><p>@(Model.FloorsCount ?? 0)</p></div>
+                    <div class="col-md-4 mb-3"><label class="text-muted small">القيمة التقديرية</label><p>@(Model.EstimatedValue?.ToString("N0") ?? "-") د.ع</p></div>
+                    <div class="col-md-4 mb-3"><label class="text-muted small">رقم الصك</label><p>@(Model.DeedNumber ?? "-")</p></div>
+                    <div class="col-md-4 mb-3"><label class="text-muted small">حالة العقار</label><p>@(Model.ConditionStatus ?? "-")</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white"><h6 class="mb-0">بيانات الإيجار</h6></div>
+            <div class="card-body">
+                <p><strong>حالة الإيجار:</strong> @(Model.RentalStatus ?? "-")</p>
+                <p><strong>الإيجار الشهري:</strong> @(Model.MonthlyRent?.ToString("N0") ?? "-") د.ع</p>
+                <p><strong>المستأجر:</strong> @(Model.TenantName ?? "-")</p>
+                <p><strong>هاتف المستأجر:</strong> @(Model.TenantPhone ?? "-")</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white"><h6 class="mb-0">الإحداثيات</h6></div>
+            <div class="card-body">
+                <p><strong>خط العرض:</strong> @Model.Location?.Y.ToString("F6")</p>
+                <p><strong>خط الطول:</strong> @Model.Location?.X.ToString("F6")</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-light"><h6 class="mb-0">التدقيق</h6></div>
+            <div class="card-body small">
+                <p><strong>تاريخ الإنشاء:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd")</p>
+                <p><strong>أنشئ بواسطة:</strong> @(Model.CreatedBy ?? "-")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var map = L.map('map').setView([@Model.Location?.Y, @Model.Location?.X], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([@Model.Location?.Y, @Model.Location?.X]).addTo(map).bindPopup('@Model.NameAr').openPopup();
+</script>
+}

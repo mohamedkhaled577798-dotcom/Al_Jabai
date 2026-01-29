@@ -1,0 +1,112 @@
+@model IEnumerable<UserListViewModel>
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-users-cog text-secondary me-2"></i>إدارة المستخدمين</h4>
+        <small class="text-muted">إدارة حسابات المستخدمين والصلاحيات</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>إضافة مستخدم</a>
+</div>
+
+<!-- بحث -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم أو البريد..." value="@ViewBag.CurrentSearch">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1"></i>بحث</button>
+                <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-redo me-1"></i>إعادة</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- جدول المستخدمين -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>الاسم الكامل</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>الدائرة</th>
+                        <th>الدور</th>
+                        <th>الحالة</th>
+                        <th>آخر دخول</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="8" class="text-center py-4"><i class="fas fa-users fa-3x text-muted"></i><p class="mt-2 text-muted">لا يوجد مستخدمين</p></td></tr>
+                    }
+                    else
+                    {
+                        foreach (var user in Model)
+                        {
+                            <tr>
+                                <td><strong>@user.UserName</strong></td>
+                                <td>@user.FullNameAr</td>
+                                <td><a href="mailto:@user.Email">@user.Email</a></td>
+                                <td>@(user.OfficeName ?? "-")</td>
+                                <td><span class="badge bg-primary">@user.Roles</span></td>
+                                <td>
+                                    @if (user.IsActive)
+                                    {<span class="badge bg-success">نشط</span>}
+                                    else
+                                    {<span class="badge bg-danger">معطل</span>}
+                                </td>
+                                <td>@(user.LastLogin?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-primary" title="تعديل"><i class="fas fa-edit"></i></a>
+                                        <form asp-action="ToggleStatus" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                            <button class="btn btn-outline-warning" title="@(user.IsActive ? "تعطيل" : "تفعيل")">
+                                                <i class="fas @(user.IsActive ? "fa-ban" : "fa-check")"></i>
+                                            </button>
+                                        </form>
+                                        <form asp-action="ResetPassword" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                            <button class="btn btn-outline-info" title="إعادة تعيين كلمة المرور"><i class="fas fa-key"></i></button>
+                                        </form>
+                                        <button class="btn btn-outline-danger" onclick="confirmDelete('@user.Id', '@user.FullNameAr')"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light"><small>إجمالي المستخدمين: <strong>@Model.Count()</strong></small></div>
+</div>
+
+<!-- Modal حذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header bg-danger text-white"><h5 class="modal-title">تأكيد الحذف</h5></div>
+        <div class="modal-body"><p>هل أنت متأكد من حذف المستخدم: <strong id="deleteUserName"></strong>؟</p></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <form id="deleteForm" method="post"><button class="btn btn-danger">حذف</button></form>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+function confirmDelete(id, name) {
+    document.getElementById('deleteUserName').textContent = name;
+    document.getElementById('deleteForm').action = '/Users/Delete/' + id;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+}

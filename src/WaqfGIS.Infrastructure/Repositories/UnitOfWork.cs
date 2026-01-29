@@ -32,6 +32,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<UsageType>? _usageTypes;
     private IRepository<WaqfProperty>? _waqfProperties;
     private IRepository<PropertyDocument>? _propertyDocuments;
+    private IRepository<PropertyImage>? _propertyImages;
+    private IRepository<OfficeImage>? _officeImages;
     private IRepository<AuditLog>? _auditLogs;
 
     public IRepository<Province> Provinces => _provinces ??= new Repository<Province>(_context);
@@ -48,6 +50,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<UsageType> UsageTypes => _usageTypes ??= new Repository<UsageType>(_context);
     public IRepository<WaqfProperty> WaqfProperties => _waqfProperties ??= new Repository<WaqfProperty>(_context);
     public IRepository<PropertyDocument> PropertyDocuments => _propertyDocuments ??= new Repository<PropertyDocument>(_context);
+    public IRepository<PropertyImage> PropertyImages => _propertyImages ??= new Repository<PropertyImage>(_context);
+    public IRepository<OfficeImage> OfficeImages => _officeImages ??= new Repository<OfficeImage>(_context);
     public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
 
     public async Task<int> SaveChangesAsync()

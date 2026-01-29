@@ -1,0 +1,67 @@
+@model PropertiesReportViewModel
+@{
+    ViewData["Title"] = "تقرير العقارات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-building text-success me-2"></i>تقرير العقارات الوقفية</h4>
+    <div>
+        <a asp-action="ExportProperties" class="btn btn-outline-success"><i class="fas fa-file-excel me-1"></i>تصدير</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
+    </div>
+</div>
+
+<!-- ملخص -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card bg-success text-white"><div class="card-body text-center"><h4>@Model.TotalProperties</h4><small>إجمالي العقارات</small></div></div></div>
+    <div class="col-md-2"><div class="card bg-primary text-white"><div class="card-body text-center"><h4>@Model.TotalArea.ToString("N0")</h4><small>م² إجمالي المساحة</small></div></div></div>
+    <div class="col-md-3"><div class="card bg-warning"><div class="card-body text-center"><h4>@Model.TotalValue.ToString("N0")</h4><small>د.ع القيمة التقديرية</small></div></div></div>
+    <div class="col-md-2"><div class="card bg-info text-white"><div class="card-body text-center"><h4>@Model.TotalRentedCount</h4><small>مؤجر</small></div></div></div>
+    <div class="col-md-3"><div class="card bg-dark text-white"><div class="card-body text-center"><h4>@Model.TotalMonthlyRent.ToString("N0")</h4><small>د.ع إيجار شهري</small></div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">حسب النوع</div><div class="card-body">
+            <ul class="list-group list-group-flush">
+                @foreach(var item in Model.ByType){<li class="list-group-item d-flex justify-content-between">@item.Name<span class="badge bg-success">@item.Count</span></li>}
+            </ul>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">حسب الاستخدام</div><div class="card-body">
+            <ul class="list-group list-group-flush">
+                @foreach(var item in Model.ByUsage){<li class="list-group-item d-flex justify-content-between">@item.Name<span class="badge bg-info">@item.Count</span></li>}
+            </ul>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-header">حسب المحافظة</div><div class="card-body">
+            <ul class="list-group list-group-flush">
+                @foreach(var item in Model.ByProvince.Take(10)){<li class="list-group-item d-flex justify-content-between">@item.Name<span class="badge bg-warning text-dark">@item.Count</span></li>}
+            </ul>
+        </div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white"><h6>قائمة العقارات (@Model.Properties.Count)</h6></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light"><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>الاستخدام</th><th>المحافظة</th><th>المساحة</th><th>القيمة</th><th>الإيجار</th></tr></thead>
+                <tbody>
+                    @foreach(var p in Model.Properties)
+                    {<tr>
+                        <td><code>@p.Code</code></td><td>@p.NameAr</td>
+                        <td><span class="badge bg-success">@p.PropertyType?.NameAr</span></td>
+                        <td>@(p.UsageType?.NameAr ?? "-")</td><td>@p.Province?.NameAr</td>
+                        <td>@(p.AreaSqm?.ToString("N0") ?? "-")</td>
+                        <td>@(p.EstimatedValue?.ToString("N0") ?? "-")</td>
+                        <td>@(p.MonthlyRent?.ToString("N0") ?? "-")</td>
+                    </tr>}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

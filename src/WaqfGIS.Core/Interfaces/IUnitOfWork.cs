@@ -21,6 +21,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<UsageType> UsageTypes { get; }
     IRepository<WaqfProperty> WaqfProperties { get; }
     IRepository<PropertyDocument> PropertyDocuments { get; }
+    IRepository<PropertyImage> PropertyImages { get; }
+    IRepository<OfficeImage> OfficeImages { get; }
     IRepository<AuditLog> AuditLogs { get; }
 
     Task<int> SaveChangesAsync();

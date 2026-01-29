@@ -1,0 +1,107 @@
+@model OfficeViewModel
+@{
+    ViewData["Title"] = "إضافة دائرة وقفية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-plus text-warning me-2"></i>إضافة دائرة وقفية</h4>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-2"></i>العودة</a>
+</div>
+
+<form asp-action="Create" method="post">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-warning"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="NameAr" class="form-label"></label>
+                            <input asp-for="NameAr" class="form-control" />
+                            <span asp-validation-for="NameAr" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="NameEn" class="form-label"></label>
+                            <input asp-for="NameEn" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="OfficeTypeId" class="form-label"></label>
+                            <select asp-for="OfficeTypeId" class="form-select" asp-items="@ViewBag.OfficeTypes">
+                                <option value="">-- اختر النوع --</option>
+                            </select>
+                            <span asp-validation-for="OfficeTypeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ParentOfficeId" class="form-label"></label>
+                            <select asp-for="ParentOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
+                                <option value="">-- لا يوجد --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ProvinceId" class="form-label"></label>
+                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                                <option value="">-- اختر المحافظة --</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع</h6></div>
+                <div class="card-body">
+                    <div id="locationMap" style="height: 250px;" class="mb-3"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Latitude" class="form-label"></label>
+                            <input asp-for="Latitude" class="form-control" id="latitude" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Longitude" class="form-label"></label>
+                            <input asp-for="Longitude" class="form-control" id="longitude" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-phone me-2"></i>بيانات التواصل</h6></div>
+                <div class="card-body">
+                    <div class="mb-3"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" /></div>
+                    <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" type="email" /></div>
+                    <div class="mb-3"><label asp-for="ManagerName" class="form-label"></label><input asp-for="ManagerName" class="form-control" /></div>
+                    <div class="mb-3"><label asp-for="ManagerPhone" class="form-label"></label><input asp-for="ManagerPhone" class="form-control" /></div>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6></div>
+                <div class="card-body"><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning btn-lg"><i class="fas fa-save me-2"></i>حفظ</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    var map = L.map('locationMap').setView([33.3, 44.4], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var marker = null;
+    map.on('click', function(e) {
+        if (marker) marker.setLatLng(e.latlng); else marker = L.marker(e.latlng, {draggable:true}).addTo(map);
+        document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+    });
+</script>
+}

@@ -8,9 +8,14 @@
         <h4 class="mb-0"><i class="fas fa-mosque text-primary me-2"></i>المساجد والجوامع</h4>
         <small class="text-muted">إدارة بيانات المساجد والجوامع</small>
     </div>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>إضافة مسجد جديد
-    </a>
+    <div>
+        <a asp-action="Export" asp-route-provinceId="@ViewBag.CurrentProvinceId" asp-route-typeId="@ViewBag.CurrentTypeId" class="btn btn-success me-2">
+            <i class="fas fa-file-excel me-1"></i>تصدير Excel
+        </a>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>إضافة مسجد جديد
+        </a>
+    </div>
 </div>
 
 <!-- Filters -->

@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.102.2" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WaqfGIS.Core\WaqfGIS.Core.csproj" />
     <ProjectReference Include="..\WaqfGIS.Infrastructure\WaqfGIS.Infrastructure.csproj" />
   </ItemGroup>

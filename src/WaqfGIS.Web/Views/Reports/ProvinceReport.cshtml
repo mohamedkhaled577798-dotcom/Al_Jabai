@@ -1,0 +1,83 @@
+@model ProvinceReportViewModel
+@{
+    ViewData["Title"] = "تقرير المحافظة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-map-marked-alt text-info me-2"></i>تقرير حسب المحافظة</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
+</div>
+
+<!-- اختيار المحافظة -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">اختر المحافظة</label>
+                <select name="provinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                    <option value="">-- اختر المحافظة --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-info"><i class="fas fa-search me-1"></i>عرض التقرير</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ProvinceName))
+{
+    <h5 class="mb-4"><i class="fas fa-city me-2"></i>تقرير محافظة @Model.ProvinceName</h5>
+
+    <!-- ملخص -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card bg-primary text-white"><div class="card-body text-center"><h3>@Model.TotalMosques</h3><small>مسجد</small></div></div></div>
+        <div class="col-md-3"><div class="card bg-success text-white"><div class="card-body text-center"><h3>@Model.TotalProperties</h3><small>عقار</small></div></div></div>
+        <div class="col-md-3"><div class="card bg-warning"><div class="card-body text-center"><h3>@Model.TotalOffices</h3><small>دائرة</small></div></div></div>
+        <div class="col-md-3"><div class="card bg-info text-white"><div class="card-body text-center"><h3>@Model.TotalCapacity.ToString("N0")</h3><small>سعة المساجد</small></div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card"><div class="card-header">المساجد حسب النوع</div><div class="card-body">
+                <ul class="list-group list-group-flush">
+                    @foreach(var item in Model.MosquesByType){<li class="list-group-item d-flex justify-content-between">@item.Name<span class="badge bg-primary">@item.Count</span></li>}
+                </ul>
+            </div></div>
+        </div>
+        <div class="col-md-6">
+            <div class="card"><div class="card-header">العقارات حسب النوع</div><div class="card-body">
+                <ul class="list-group list-group-flush">
+                    @foreach(var item in Model.PropertiesByType){<li class="list-group-item d-flex justify-content-between">@item.Name<span class="badge bg-success">@item.Count</span></li>}
+                </ul>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- جداول البيانات -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#mosques">المساجد (@Model.Mosques.Count)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#properties">العقارات (@Model.Properties.Count)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#offices">الدوائر (@Model.Offices.Count)</a></li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="mosques">
+            <div class="table-responsive"><table class="table table-sm table-bordered">
+                <thead class="table-light"><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>السعة</th></tr></thead>
+                <tbody>@foreach(var m in Model.Mosques){<tr><td>@m.Code</td><td>@m.NameAr</td><td>@m.MosqueType?.NameAr</td><td>@m.Capacity</td></tr>}</tbody>
+            </table></div>
+        </div>
+        <div class="tab-pane fade" id="properties">
+            <div class="table-responsive"><table class="table table-sm table-bordered">
+                <thead class="table-light"><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>المساحة</th></tr></thead>
+                <tbody>@foreach(var p in Model.Properties){<tr><td>@p.Code</td><td>@p.NameAr</td><td>@p.PropertyType?.NameAr</td><td>@p.AreaSqm</td></tr>}</tbody>
+            </table></div>
+        </div>
+        <div class="tab-pane fade" id="offices">
+            <div class="table-responsive"><table class="table table-sm table-bordered">
+                <thead class="table-light"><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>المدير</th></tr></thead>
+                <tbody>@foreach(var o in Model.Offices){<tr><td>@o.Code</td><td>@o.NameAr</td><td>@o.OfficeType?.NameAr</td><td>@o.ManagerName</td></tr>}</tbody>
+            </table></div>
+        </div>
+    </div>
+}

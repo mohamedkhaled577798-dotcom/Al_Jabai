@@ -198,6 +198,7 @@
     </script>
 }
 ///////////////////////////// *@
+<div asp-validation-summary="All" class="alert alert-danger"></div>
 @model MosqueViewModel
 @{
     ViewData["Title"] = "إضافة جامع";
@@ -222,11 +223,15 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-
+                        <select asp-for="MosqueTypeId" class="form-select" asp-items="Model.MosqueTypes">
+                            <option value="">-- اختر نوع المسجد --</option>
+                        </select>
+                        <span asp-validation-for="MosqueTypeId" class="text-danger"></span>
+@* 
                         <div class="col-md-6">
                             <label asp-for="Code" class="form-label">كود الجامع</label>
                             <input asp-for="Code" class="form-control" />
-                        </div>
+                        </div> *@
 
                         <div class="col-md-6">
                             <label asp-for="NameAr" class="form-label">اسم الجامع (عربي)</label>
@@ -241,20 +246,20 @@
 
                         <div class="col-md-6">
                             <label asp-for="MosqueStatusId" class="form-label"></label>
-                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses">
+                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@Model.MosqueStatuses">
                                 <option value="">-- اختر الحالة --</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="WaqfOfficeId" class="form-label"></label>
-                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
+                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@Model.WaqfOffices">
                                 <option value="">-- اختر الدائرة الوقفية --</option>
                             </select>
                             <span asp-validation-for="WaqfOfficeId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ProvinceId" class="form-label"></label>
-                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                            <select asp-for="ProvinceId" class="form-select" asp-items="@Model.Provinces">
                                 <option value="">-- اختر المحافظة --</option>
                             </select>
                             <span asp-validation-for="ProvinceId" class="text-danger small"></span>
