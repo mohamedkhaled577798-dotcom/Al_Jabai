@@ -39,10 +39,7 @@ public class MosquesController : Controller
 
     public async Task<IActionResult> Index(int? provinceId, int? typeId, string? search)
     {
-        // الحصول على المساجد حسب صلاحيات المستخدم
-        var query = await _permissionService.GetAuthorizedMosquesAsync(User);
-        
-        var mosques = await query
+        var mosques = await _unitOfWork.Mosques.Query()
             .Include(m => m.MosqueType)
             .Include(m => m.MosqueStatus)
             .Include(m => m.Province)
@@ -60,54 +57,39 @@ public class MosquesController : Controller
         ViewBag.CurrentProvinceId = provinceId;
         ViewBag.CurrentTypeId = typeId;
         ViewBag.CurrentSearch = search;
-        ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
-        ViewBag.CanDelete = await _permissionService.CanDeleteAsync(User);
+        ViewBag.CanEdit = true;
+        ViewBag.CanDelete = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
         return View(mosques);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var mosque = await _mosqueService.GetByIdAsync(id);
+        var mosque = await _unitOfWork.Mosques.Query()
+            .Include(m => m.MosqueType)
+            .Include(m => m.MosqueStatus)
+            .Include(m => m.Province)
+            .Include(m => m.District)
+            .Include(m => m.WaqfOffice)
+            .FirstOrDefaultAsync(m => m.Id == id);
+            
         if (mosque == null) return NotFound();
 
-        // التحقق من الصلاحية
-        if (!await _permissionService.CanAccessMosqueAsync(User, mosque))
-            return Forbid();
-
         ViewBag.Images = await _imageUploadService.GetMosqueImagesAsync(id);
-        ViewBag.AuditLogs = await _auditLogService.GetLogsAsync("Mosque", id);
-        ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
+        ViewBag.CanEdit = true;
         return View(mosque);
     }
 
     public async Task<IActionResult> Create()
     {
-        if (!await _permissionService.CanCreateAsync(User))
-            return Forbid();
-
         await LoadViewDataAsync();
-        return View(new MosqueViewModel());
+        return View(new MosqueViewModel { Latitude = 33.3, Longitude = 44.4 });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MosqueViewModel model, IFormFileCollection images)
     {
-        if (!await _permissionService.CanCreateAsync(User))
-            return Forbid();
-
-        // التحقق من صلاحية المحافظة أو الدائرة
-        var user = await _permissionService.GetCurrentUserAsync(User);
-        if (user != null && user.PermissionLevel == PermissionLevel.ProvinceLevel && user.ProvinceId != model.ProvinceId)
-        {
-            ModelState.AddModelError("ProvinceId", "لا يمكنك إضافة مسجد في محافظة أخرى");
-        }
-        if (user != null && user.PermissionLevel == PermissionLevel.OfficeLevel && user.WaqfOfficeId != model.WaqfOfficeId)
-        {
-            ModelState.AddModelError("WaqfOfficeId", "لا يمكنك إضافة مسجد في دائرة أخرى");
-        }
-
         if (!ModelState.IsValid)
         {
             await LoadViewDataAsync();
@@ -134,19 +116,21 @@ public class MosquesController : Controller
             HasDome = model.HasDome,
             HasParking = model.HasParking,
             HasWomenSection = model.HasWomenSection,
+            HasAirConditioning = model.HasAirConditioning,
+            HasAblutionFacility = model.HasWuduArea,
             ImamName = model.ImamName,
             ImamPhone = model.ImamPhone,
+            MuezzinName = model.MuezzinName,
+            MuezzinPhone = model.MuezzinPhone,
             EstablishedYear = model.EstablishedYear,
+            LastRenovationYear = model.LastRenovationYear,
             Notes = model.Notes,
             CreatedBy = User.Identity?.Name
         };
 
         await _mosqueService.CreateAsync(mosque);
 
-        await _auditLogService.LogCreateAsync("Mosque", mosque.Id, mosque.NameAr,
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            User.Identity?.Name, HttpContext.Connection.RemoteIpAddress?.ToString());
-
+        // رفع الصور إذا وجدت
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadMosqueImagesAsync(mosque.Id, images, User.Identity?.Name);
 
@@ -156,14 +140,8 @@ public class MosquesController : Controller
 
     public async Task<IActionResult> Edit(int id)
     {
-        if (!await _permissionService.CanEditAsync(User))
-            return Forbid();
-
         var mosque = await _mosqueService.GetByIdAsync(id);
         if (mosque == null) return NotFound();
-
-        if (!await _permissionService.CanAccessMosqueAsync(User, mosque))
-            return Forbid();
 
         var model = new MosqueViewModel
         {
@@ -175,8 +153,8 @@ public class MosquesController : Controller
             MosqueStatusId = mosque.MosqueStatusId,
             ProvinceId = mosque.ProvinceId,
             DistrictId = mosque.DistrictId,
-            Latitude = mosque.Location.Y,
-            Longitude = mosque.Location.X,
+            Latitude = mosque.Location?.Y ?? 33.3,
+            Longitude = mosque.Location?.X ?? 44.4,
             Address = mosque.Address,
             Neighborhood = mosque.Neighborhood,
             NearestLandmark = mosque.NearestLandmark,
@@ -187,9 +165,14 @@ public class MosquesController : Controller
             HasDome = mosque.HasDome,
             HasParking = mosque.HasParking,
             HasWomenSection = mosque.HasWomenSection,
+            HasAirConditioning = mosque.HasAirConditioning,
+            HasWuduArea = mosque.HasAblutionFacility,
             ImamName = mosque.ImamName,
             ImamPhone = mosque.ImamPhone,
+            MuezzinName = mosque.MuezzinName,
+            MuezzinPhone = mosque.MuezzinPhone,
             EstablishedYear = mosque.EstablishedYear,
+            LastRenovationYear = mosque.LastRenovationYear,
             Notes = mosque.Notes
         };
 
@@ -204,14 +187,8 @@ public class MosquesController : Controller
     {
         if (id != model.Id) return NotFound();
 
-        if (!await _permissionService.CanEditAsync(User))
-            return Forbid();
-
         var mosque = await _mosqueService.GetByIdAsync(id);
         if (mosque == null) return NotFound();
-
-        if (!await _permissionService.CanAccessMosqueAsync(User, mosque))
-            return Forbid();
 
         if (!ModelState.IsValid)
         {
@@ -220,8 +197,7 @@ public class MosquesController : Controller
             return View(model);
         }
 
-        var oldValues = $"الاسم: {mosque.NameAr}, السعة: {mosque.Capacity}";
-
+        // تحديث جميع البيانات
         mosque.NameAr = model.NameAr;
         mosque.NameEn = model.NameEn;
         mosque.WaqfOfficeId = model.WaqfOfficeId;
@@ -232,20 +208,28 @@ public class MosquesController : Controller
         mosque.Location = new Point(model.Longitude, model.Latitude) { SRID = 4326 };
         mosque.Address = model.Address;
         mosque.Neighborhood = model.Neighborhood;
+        mosque.NearestLandmark = model.NearestLandmark;
         mosque.Capacity = model.Capacity;
+        mosque.AreaSqm = model.AreaSqm;
         mosque.HasFridayPrayer = model.HasFridayPrayer;
+        mosque.HasMinaret = model.HasMinaret;
+        mosque.HasDome = model.HasDome;
+        mosque.HasParking = model.HasParking;
+        mosque.HasWomenSection = model.HasWomenSection;
+        mosque.HasAirConditioning = model.HasAirConditioning;
+        mosque.HasAblutionFacility = model.HasWuduArea;
         mosque.ImamName = model.ImamName;
         mosque.ImamPhone = model.ImamPhone;
+        mosque.MuezzinName = model.MuezzinName;
+        mosque.MuezzinPhone = model.MuezzinPhone;
+        mosque.EstablishedYear = model.EstablishedYear;
+        mosque.LastRenovationYear = model.LastRenovationYear;
         mosque.Notes = model.Notes;
         mosque.UpdatedBy = User.Identity?.Name;
 
         await _mosqueService.UpdateAsync(mosque);
 
-        var newValues = $"الاسم: {mosque.NameAr}, السعة: {mosque.Capacity}";
-        await _auditLogService.LogUpdateAsync("Mosque", mosque.Id, mosque.NameAr,
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            User.Identity?.Name, oldValues, newValues, HttpContext.Connection.RemoteIpAddress?.ToString());
-
+        // رفع الصور الجديدة
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadMosqueImagesAsync(mosque.Id, images, User.Identity?.Name);
 
@@ -257,34 +241,19 @@ public class MosquesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!await _permissionService.CanDeleteAsync(User))
-        {
-            TempData["Error"] = "ليس لديك صلاحية الحذف";
-            return RedirectToAction(nameof(Index));
-        }
-
         var mosque = await _mosqueService.GetByIdAsync(id);
         if (mosque != null)
         {
-            if (!await _permissionService.CanAccessMosqueAsync(User, mosque))
-                return Forbid();
-
             await _mosqueService.DeleteAsync(id);
-            
-            await _auditLogService.LogDeleteAsync("Mosque", id, mosque.NameAr,
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-                User.Identity?.Name, HttpContext.Connection.RemoteIpAddress?.ToString());
+            TempData["Success"] = "تم حذف المسجد بنجاح";
         }
-        
-        TempData["Success"] = "تم حذف المسجد بنجاح";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
     public async Task<IActionResult> Export(int? provinceId, int? typeId)
     {
-        var query = await _permissionService.GetAuthorizedMosquesAsync(User);
-        var mosques = await query
+        var mosques = await _unitOfWork.Mosques.Query()
             .Include(m => m.MosqueType).Include(m => m.MosqueStatus)
             .Include(m => m.Province).Include(m => m.WaqfOffice)
             .ToListAsync();
@@ -295,42 +264,21 @@ public class MosquesController : Controller
             mosques = mosques.Where(m => m.MosqueTypeId == typeId.Value).ToList();
 
         var fileContent = _excelExportService.ExportMosquesToExcel(mosques);
-        var fileName = $"المساجد_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-        
-        return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UploadImages(int mosqueId, IFormFileCollection images)
-    {
-        if (!await _permissionService.CanEditAsync(User))
-            return Forbid();
-
-        if (images != null && images.Count > 0)
-        {
-            await _imageUploadService.UploadMosqueImagesAsync(mosqueId, images, User.Identity?.Name);
-            TempData["Success"] = $"تم رفع {images.Count} صورة بنجاح";
-        }
-        return RedirectToAction(nameof(Edit), new { id = mosqueId });
+        return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            $"المساجد_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
     }
 
     [HttpPost]
     public async Task<IActionResult> DeleteImage(int imageId, int mosqueId)
     {
-        if (!await _permissionService.CanEditAsync(User))
-            return Forbid();
-
         await _imageUploadService.DeleteMosqueImageAsync(imageId);
-        TempData["Success"] = "تم حذف الصورة بنجاح";
+        TempData["Success"] = "تم حذف الصورة";
         return RedirectToAction(nameof(Edit), new { id = mosqueId });
     }
 
     [HttpPost]
     public async Task<IActionResult> SetMainImage(int imageId, int mosqueId)
     {
-        if (!await _permissionService.CanEditAsync(User))
-            return Forbid();
-
         await _imageUploadService.SetMainMosqueImageAsync(mosqueId, imageId);
         TempData["Success"] = "تم تعيين الصورة الرئيسية";
         return RedirectToAction(nameof(Edit), new { id = mosqueId });
@@ -338,23 +286,11 @@ public class MosquesController : Controller
 
     private async Task LoadViewDataAsync()
     {
-        var user = await _permissionService.GetCurrentUserAsync(User);
-        
-        // تحميل المحافظات حسب الصلاحية
-        var provinces = await _permissionService.GetAuthorizedProvincesAsync(User);
-        ViewBag.Provinces = new SelectList(provinces, "Id", "NameAr");
-
-        // تحميل الدوائر حسب الصلاحية
-        var offices = await _permissionService.GetAuthorizedOfficesAsync(User);
-        ViewBag.WaqfOffices = new SelectList(await offices.ToListAsync(), "Id", "NameAr");
-
+        // تحميل جميع البيانات
+        ViewBag.Provinces = new SelectList(await _unitOfWork.Provinces.GetAllAsync(), "Id", "NameAr");
+        ViewBag.WaqfOffices = new SelectList(await _unitOfWork.WaqfOffices.GetAllAsync(), "Id", "NameAr");
         ViewBag.MosqueTypes = new SelectList(await _unitOfWork.MosqueTypes.GetAllAsync(), "Id", "NameAr");
         ViewBag.MosqueStatuses = new SelectList(await _unitOfWork.MosqueStatuses.GetAllAsync(), "Id", "NameAr");
         ViewBag.Districts = new SelectList(await _unitOfWork.Districts.GetAllAsync(), "Id", "NameAr");
-
-        // معلومات الصلاحية للـ View
-        ViewBag.UserPermissionLevel = user?.PermissionLevel;
-        ViewBag.UserProvinceId = user?.ProvinceId;
-        ViewBag.UserOfficeId = user?.WaqfOfficeId;
     }
 }

@@ -44,8 +44,10 @@ public class Mosque : BaseEntity
     public string? ImamName { get; set; }
     public string? ImamPhone { get; set; }
     public string? MuezzinName { get; set; }
+    public string? MuezzinPhone { get; set; }
     public int? EstablishedYear { get; set; }
     public int? LastRenovationYear { get; set; }
+    public bool HasAirConditioning { get; set; } = false;
 
     // الملكية والتسجيل
     public string? DeedNumber { get; set; }

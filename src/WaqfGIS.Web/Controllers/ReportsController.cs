@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Web.Models;

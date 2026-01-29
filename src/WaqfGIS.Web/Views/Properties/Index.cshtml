@@ -87,8 +87,14 @@
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a asp-action="Details" asp-route-id="@property.Id" class="btn btn-outline-info"><i class="fas fa-eye"></i></a>
-                                        <a asp-action="Edit" asp-route-id="@property.Id" class="btn btn-outline-primary"><i class="fas fa-edit"></i></a>
-                                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete(@property.Id, '@property.NameAr')"><i class="fas fa-trash"></i></button>
+                                        @if (ViewBag.CanEdit == true)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@property.Id" class="btn btn-outline-primary"><i class="fas fa-edit"></i></a>
+                                        }
+                                        @if (ViewBag.CanDelete == true)
+                                        {
+                                            <button type="button" class="btn btn-outline-danger" onclick="confirmDelete(@property.Id, '@property.NameAr')"><i class="fas fa-trash"></i></button>
+                                        }
                                     </div>
                                 </td>
                             </tr>

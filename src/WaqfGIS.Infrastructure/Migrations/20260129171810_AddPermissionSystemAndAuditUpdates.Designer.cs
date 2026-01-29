@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Infrastructure.Data;
@@ -12,9 +13,11 @@ using WaqfGIS.Infrastructure.Data;
 namespace WaqfGIS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129171810_AddPermissionSystemAndAuditUpdates")]
+    partial class AddPermissionSystemAndAuditUpdates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -444,9 +447,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Property<bool>("HasAblutionFacility")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("HasAirConditioning")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("HasDome")
                         .HasColumnType("bit");
 
@@ -501,9 +501,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Property<string>("MuezzinName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("MuezzinPhone")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NameAr")
                         .IsRequired()

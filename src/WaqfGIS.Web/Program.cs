@@ -46,6 +46,7 @@ builder.Services.AddScoped<OfficeService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<AuditLogService>();
+builder.Services.AddScoped<PermissionService>();
 builder.Services.AddScoped<ImageUploadService>(sp => 
     new ImageUploadService(sp.GetRequiredService<IUnitOfWork>(), 
         sp.GetRequiredService<IWebHostEnvironment>().WebRootPath));

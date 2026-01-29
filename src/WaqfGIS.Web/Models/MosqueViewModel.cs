@@ -37,12 +37,12 @@ public class MosqueViewModel
     [Required(ErrorMessage = "خط العرض مطلوب")]
     [Display(Name = "خط العرض")]
     [Range(-90, 90)]
-    public double Latitude { get; set; }
+    public double Latitude { get; set; } = 33.3;
 
     [Required(ErrorMessage = "خط الطول مطلوب")]
     [Display(Name = "خط الطول")]
     [Range(-180, 180)]
-    public double Longitude { get; set; }
+    public double Longitude { get; set; } = 44.4;
 
     [Display(Name = "العنوان")]
     [MaxLength(500)]
@@ -56,13 +56,21 @@ public class MosqueViewModel
     [MaxLength(200)]
     public string? NearestLandmark { get; set; }
 
-    [Display(Name = "السعة")]
+    // ================== المواصفات ==================
+    [Display(Name = "السعة (مصلي)")]
     [Range(0, 100000)]
     public int? Capacity { get; set; }
 
     [Display(Name = "المساحة (م²)")]
     public decimal? AreaSqm { get; set; }
 
+    [Display(Name = "سنة التأسيس")]
+    public int? EstablishedYear { get; set; }
+
+    [Display(Name = "سنة آخر ترميم")]
+    public int? LastRenovationYear { get; set; }
+
+    // ================== المرافق ==================
     [Display(Name = "صلاة الجمعة")]
     public bool HasFridayPrayer { get; set; }
 
@@ -78,6 +86,16 @@ public class MosqueViewModel
     [Display(Name = "قسم نسائي")]
     public bool HasWomenSection { get; set; }
 
+    [Display(Name = "تكييف")]
+    public bool HasAirConditioning { get; set; }
+
+    [Display(Name = "مرافق وضوء")]
+    public bool HasWuduArea { get; set; } = true;
+
+    [Display(Name = "مكتبة")]
+    public bool HasLibrary { get; set; }
+
+    // ================== بيانات الإمام ==================
     [Display(Name = "اسم الإمام")]
     [MaxLength(100)]
     public string? ImamName { get; set; }
@@ -86,55 +104,16 @@ public class MosqueViewModel
     [MaxLength(20)]
     public string? ImamPhone { get; set; }
 
-    [Display(Name = "سنة التأسيس")]
-    public int? EstablishedYear { get; set; }
-
-    [Display(Name = "ملاحظات")]
-    public string? Notes { get; set; }
-    // ================== تعريف وتسجيل ==================
-    [Display(Name = "كود المسجد")]
-    [MaxLength(50)]
-    public string Code { get; set; } = string.Empty;
-
-    [Display(Name = "رقم السند")]
-    [MaxLength(100)]
-    public string? DeedNumber { get; set; }
-
-    [Display(Name = "رقم التسجيل")]
-    [MaxLength(100)]
-    public string? RegistrationNumber { get; set; }
-
-    [Display(Name = "تاريخ التسجيل")]
-    public DateTime? RegistrationDate { get; set; }
-
-    // ================== مواصفات البناية ==================
-    [Display(Name = "عدد الطوابق")]
-    [Range(0, 50)]
-    public int FloorsCount { get; set; } = 1;
-
-    [Display(Name = "سنة آخر ترميم")]
-    public int? LastRenovationYear { get; set; }
-
-    [Display(Name = "مكتبة")]
-    public bool HasLibrary { get; set; }
-
-    [Display(Name = "مرافق وضوء")]
-    public bool HasAblutionFacility { get; set; }
-
-    // ================== بيانات إدارية ==================
+    // ================== بيانات المؤذن ==================
     [Display(Name = "اسم المؤذن")]
     [MaxLength(100)]
     public string? MuezzinName { get; set; }
 
-    // ================== تقسيم إداري ==================
-    [Display(Name = "الناحية")]
-    public int? SubDistrictId { get; set; }
+    [Display(Name = "هاتف المؤذن")]
+    [MaxLength(20)]
+    public string? MuezzinPhone { get; set; }
 
-    // ================== القوائم ==================
-    public IEnumerable<SelectListItem> MosqueTypes { get; set; } = Enumerable.Empty<SelectListItem>();
-    public IEnumerable<SelectListItem> MosqueStatuses { get; set; } = Enumerable.Empty<SelectListItem>();
-    public IEnumerable<SelectListItem> WaqfOffices { get; set; } = Enumerable.Empty<SelectListItem>();
-    public IEnumerable<SelectListItem> Provinces { get; set; } = Enumerable.Empty<SelectListItem>();
-    public IEnumerable<SelectListItem> Districts { get; set; } = Enumerable.Empty<SelectListItem>();
-
+    // ================== ملاحظات ==================
+    [Display(Name = "ملاحظات")]
+    public string? Notes { get; set; }
 }

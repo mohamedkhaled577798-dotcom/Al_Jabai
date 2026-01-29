@@ -1,184 +1,235 @@
 @model Mosque
 @{
-    ViewData["Title"] = $"تفاصيل - {Model.NameAr}";
+    ViewData["Title"] = "تفاصيل المسجد";
+    var images = ViewBag.Images as IEnumerable<MosqueImage> ?? new List<MosqueImage>();
+    var mainImage = images.FirstOrDefault(i => i.IsMain) ?? images.FirstOrDefault();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-0"><i class="fas fa-mosque text-primary me-2"></i>@Model.NameAr</h4>
-        <small class="text-muted">@Model.Code</small>
+        <small class="text-muted">@Model.NameEn</small>
     </div>
     <div>
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
-            <i class="fas fa-edit me-2"></i>تعديل
-        </a>
-        <a asp-action="Index" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
-        </a>
+        @if (ViewBag.CanEdit == true)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-2"><i class="fas fa-edit me-1"></i>تعديل</a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
     </div>
 </div>
 
 <div class="row">
     <div class="col-lg-8">
-        <!-- Basic Info -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6>
+        <!-- الصورة الرئيسية -->
+        @if (mainImage != null)
+        {
+            <div class="card mb-4">
+                <img src="@mainImage.FilePath" class="card-img-top" style="height:350px;object-fit:cover;cursor:pointer;" onclick="showImage('@mainImage.FilePath')" />
             </div>
+        }
+
+        <!-- البيانات الأساسية -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6></div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">الاسم بالعربية</label>
-                        <p class="mb-0 fw-bold">@Model.NameAr</p>
+                        <p class="fw-bold mb-0">@Model.NameAr</p>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">الاسم بالإنجليزية</label>
                         <p class="mb-0">@(Model.NameEn ?? "-")</p>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="text-muted small">نوع المسجد</label>
-                        <p class="mb-0"><span class="badge bg-primary">@Model.MosqueType?.NameAr</span></p>
+                        <p class="mb-0"><span class="badge bg-primary">@(Model.MosqueType?.NameAr ?? "-")</span></p>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="text-muted small">الحالة</label>
-                        <p class="mb-0">
-                            <span class="badge" style="background-color: @(Model.MosqueStatus?.ColorCode ?? "#6c757d")">
-                                @(Model.MosqueStatus?.NameAr ?? "غير محدد")
-                            </span>
-                        </p>
+                        <p class="mb-0"><span class="badge" style="background-color:@(Model.MosqueStatus?.ColorCode ?? "#6c757d")">@(Model.MosqueStatus?.NameAr ?? "غير محدد")</span></p>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">الكود</label>
+                        <p class="mb-0 font-monospace">@Model.Code</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
                         <label class="text-muted small">المحافظة</label>
-                        <p class="mb-0">@Model.Province?.NameAr</p>
+                        <p class="mb-0">@(Model.Province?.NameAr ?? "-")</p>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">القضاء</label>
+                        <p class="mb-0">@(Model.District?.NameAr ?? "-")</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
                         <label class="text-muted small">الدائرة الوقفية</label>
-                        <p class="mb-0">@Model.WaqfOffice?.NameAr</p>
+                        <p class="mb-0">@(Model.WaqfOffice?.NameAr ?? "-")</p>
                     </div>
-                    <div class="col-12">
+                    <div class="col-12 mb-3">
                         <label class="text-muted small">العنوان</label>
                         <p class="mb-0">@(Model.Address ?? "-")</p>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">الحي/المنطقة</label>
+                        <p class="mb-0">@(Model.Neighborhood ?? "-")</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">أقرب معلم</label>
+                        <p class="mb-0">@(Model.NearestLandmark ?? "-")</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Location Map -->
+        <!-- الموقع -->
         <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع على الخريطة</h6>
-            </div>
+            <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6></div>
             <div class="card-body p-0">
-                <div id="detailsMap" style="height: 300px;"></div>
+                <div id="map" style="height:300px;"></div>
+            </div>
+            <div class="card-footer">
+                <small><strong>الإحداثيات:</strong> @Model.Location?.Y.ToString("F6"), @Model.Location?.X.ToString("F6")</small>
+                <a href="https://www.google.com/maps?q=@Model.Location?.Y,@Model.Location?.X" target="_blank" class="btn btn-sm btn-outline-success float-end">
+                    <i class="fas fa-external-link-alt me-1"></i>فتح في خرائط Google
+                </a>
             </div>
         </div>
 
-        <!-- Specifications -->
+        <!-- المواصفات -->
         <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات</h6>
-            </div>
+            <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات والمرافق</h6></div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">السعة</label>
-                        <p class="mb-0 fw-bold">@(Model.Capacity?.ToString("N0") ?? "-") مصلي</p>
+                <div class="row mb-4">
+                    <div class="col-md-3 text-center border-end">
+                        <h3 class="text-primary mb-0">@(Model.Capacity?.ToString("N0") ?? "-")</h3>
+                        <small class="text-muted">مصلي</small>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">المساحة</label>
-                        <p class="mb-0">@(Model.AreaSqm?.ToString("N2") ?? "-") م²</p>
+                    <div class="col-md-3 text-center border-end">
+                        <h3 class="text-success mb-0">@(Model.AreaSqm?.ToString("N0") ?? "-")</h3>
+                        <small class="text-muted">م²</small>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">سنة التأسيس</label>
-                        <p class="mb-0">@(Model.EstablishedYear?.ToString() ?? "-")</p>
+                    <div class="col-md-3 text-center border-end">
+                        <h3 class="text-info mb-0">@(Model.EstablishedYear?.ToString() ?? "-")</h3>
+                        <small class="text-muted">سنة التأسيس</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-warning mb-0">@(Model.LastRenovationYear?.ToString() ?? "-")</h3>
+                        <small class="text-muted">آخر ترميم</small>
                     </div>
                 </div>
                 <hr>
+                <h6 class="mb-3">المرافق</h6>
                 <div class="row">
-                    <div class="col-md-4">
-                        <span class="@(Model.HasFridayPrayer ? "text-success" : "text-muted")">
-                            <i class="fas @(Model.HasFridayPrayer ? "fa-check-circle" : "fa-times-circle") me-1"></i>
-                            صلاة الجمعة
-                        </span>
-                    </div>
-                    <div class="col-md-4">
-                        <span class="@(Model.HasMinaret ? "text-success" : "text-muted")">
-                            <i class="fas @(Model.HasMinaret ? "fa-check-circle" : "fa-times-circle") me-1"></i>
-                            مئذنة
-                        </span>
-                    </div>
-                    <div class="col-md-4">
-                        <span class="@(Model.HasDome ? "text-success" : "text-muted")">
-                            <i class="fas @(Model.HasDome ? "fa-check-circle" : "fa-times-circle") me-1"></i>
-                            قبة
-                        </span>
-                    </div>
-                    <div class="col-md-4">
-                        <span class="@(Model.HasParking ? "text-success" : "text-muted")">
-                            <i class="fas @(Model.HasParking ? "fa-check-circle" : "fa-times-circle") me-1"></i>
-                            موقف سيارات
-                        </span>
-                    </div>
-                    <div class="col-md-4">
-                        <span class="@(Model.HasWomenSection ? "text-success" : "text-muted")">
-                            <i class="fas @(Model.HasWomenSection ? "fa-check-circle" : "fa-times-circle") me-1"></i>
-                            قسم نسائي
-                        </span>
-                    </div>
+                    <div class="col-md-3 mb-2">@(Model.HasFridayPrayer ? "✅" : "❌") صلاة الجمعة</div>
+                    <div class="col-md-3 mb-2">@(Model.HasMinaret ? "✅" : "❌") مئذنة</div>
+                    <div class="col-md-3 mb-2">@(Model.HasDome ? "✅" : "❌") قبة</div>
+                    <div class="col-md-3 mb-2">@(Model.HasParking ? "✅" : "❌") موقف سيارات</div>
+                    <div class="col-md-3 mb-2">@(Model.HasWomenSection ? "✅" : "❌") قسم نسائي</div>
+                    <div class="col-md-3 mb-2">@(Model.HasAirConditioning ? "✅" : "❌") تكييف</div>
+                    <div class="col-md-3 mb-2">@(Model.HasAblutionFacility ? "✅" : "❌") مرافق وضوء</div>
+                    <div class="col-md-3 mb-2">@(Model.HasLibrary ? "✅" : "❌") مكتبة</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sidebar -->
     <div class="col-lg-4">
-        <!-- Imam Info -->
+        <!-- بيانات الإمام -->
         <div class="card mb-4">
-            <div class="card-header bg-warning">
-                <h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات الإمام</h6>
-            </div>
+            <div class="card-header bg-warning"><h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>بيانات الإمام</h6></div>
             <div class="card-body">
-                <p class="mb-2"><strong>الاسم:</strong> @(Model.ImamName ?? "-")</p>
-                <p class="mb-0"><strong>الهاتف:</strong> @(Model.ImamPhone ?? "-")</p>
+                <p class="mb-1"><strong>الاسم:</strong> @(Model.ImamName ?? "-")</p>
+                <p class="mb-0"><strong>الهاتف:</strong> 
+                    @if (!string.IsNullOrEmpty(Model.ImamPhone))
+                    {<a href="tel:@Model.ImamPhone" dir="ltr">@Model.ImamPhone</a>}
+                    else {<span>-</span>}
+                </p>
             </div>
         </div>
 
-        <!-- Coordinates -->
+        <!-- بيانات المؤذن -->
         <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
-                <h6 class="mb-0"><i class="fas fa-crosshairs me-2"></i>الإحداثيات</h6>
-            </div>
+            <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المؤذن</h6></div>
             <div class="card-body">
-                <p class="mb-2"><strong>خط العرض:</strong> @Model.Location?.Y.ToString("F6")</p>
-                <p class="mb-0"><strong>خط الطول:</strong> @Model.Location?.X.ToString("F6")</p>
+                <p class="mb-1"><strong>الاسم:</strong> @(Model.MuezzinName ?? "-")</p>
+                <p class="mb-0"><strong>الهاتف:</strong> 
+                    @if (!string.IsNullOrEmpty(Model.MuezzinPhone))
+                    {<a href="tel:@Model.MuezzinPhone" dir="ltr">@Model.MuezzinPhone</a>}
+                    else {<span>-</span>}
+                </p>
             </div>
         </div>
 
-        <!-- Audit Info -->
+        <!-- صور المسجد -->
+        @if (images.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد (@images.Count())</h6></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach (var img in images)
+                        {
+                            <div class="col-4">
+                                <img src="@img.FilePath" class="img-fluid rounded @(img.IsMain ? "border border-2 border-primary" : "")" 
+                                     style="height:70px;width:100%;object-fit:cover;cursor:pointer;" onclick="showImage('@img.FilePath')" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ملاحظات -->
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6></div>
+                <div class="card-body">
+                    <p class="mb-0">@Model.Notes</p>
+                </div>
+            </div>
+        }
+
+        <!-- معلومات النظام -->
         <div class="card">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="fas fa-history me-2"></i>معلومات التدقيق</h6>
-            </div>
+            <div class="card-header bg-dark text-white"><h6 class="mb-0"><i class="fas fa-info me-2"></i>معلومات النظام</h6></div>
             <div class="card-body small">
-                <p class="mb-2"><strong>تاريخ الإنشاء:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</p>
-                <p class="mb-2"><strong>أنشئ بواسطة:</strong> @(Model.CreatedBy ?? "-")</p>
+                <p class="mb-1"><strong>تاريخ الإنشاء:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</p>
+                <p class="mb-1"><strong>أنشأ بواسطة:</strong> @(Model.CreatedBy ?? "-")</p>
                 @if (Model.UpdatedAt.HasValue)
                 {
-                    <p class="mb-2"><strong>آخر تعديل:</strong> @Model.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm")</p>
-                    <p class="mb-0"><strong>عدّل بواسطة:</strong> @(Model.UpdatedBy ?? "-")</p>
+                    <p class="mb-1"><strong>آخر تحديث:</strong> @Model.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm")</p>
+                    <p class="mb-0"><strong>حُدث بواسطة:</strong> @(Model.UpdatedBy ?? "-")</p>
                 }
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal لعرض الصور -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 text-center">
+                <img id="modalImage" src="" class="img-fluid" style="max-height:90vh;" />
+                <button type="button" class="btn btn-light position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script>
-        var lat = @Model.Location?.Y.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var lng = @Model.Location?.X.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        
-        var map = L.map('detailsMap').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        L.marker([lat, lng]).addTo(map).bindPopup('<strong>@Model.NameAr</strong>').openPopup();
-    </script>
+<script>
+    var lat = @(Model.Location?.Y.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "33.3");
+    var lng = @(Model.Location?.X.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "44.4");
+    var map = L.map('map').setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup('<strong>@Model.NameAr</strong>').openPopup();
+
+    function showImage(src) {
+        document.getElementById('modalImage').src = src;
+        new bootstrap.Modal(document.getElementById('imageModal')).show();
+    }
+</script>
 }

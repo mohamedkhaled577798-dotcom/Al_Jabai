@@ -28,8 +28,8 @@ public class AuditLogService
             UserName = userName,
             OldValues = oldValues,
             NewValues = newValues,
-            IpAddress = ipAddress,
-            Timestamp = DateTime.UtcNow
+            IpAddress = ipAddress
+            // CreatedAt يتم تعيينه تلقائياً في BaseEntity
         };
 
         await _unitOfWork.AuditLogs.AddAsync(log);
@@ -53,7 +53,7 @@ public class AuditLogService
 
     public async Task<IEnumerable<AuditLog>> GetLogsAsync(string? entityType = null, int? entityId = null, int take = 100)
     {
-        var query = _unitOfWork.AuditLogs.Query().OrderByDescending(l => l.Timestamp);
+        var query = _unitOfWork.AuditLogs.Query().OrderByDescending(l => l.CreatedAt);
 
         if (!string.IsNullOrEmpty(entityType))
             query = (IOrderedQueryable<AuditLog>)query.Where(l => l.EntityType == entityType);
@@ -68,7 +68,7 @@ public class AuditLogService
     {
         return await Task.FromResult(_unitOfWork.AuditLogs.Query()
             .Where(l => l.UserId == userId)
-            .OrderByDescending(l => l.Timestamp)
+            .OrderByDescending(l => l.CreatedAt)
             .Take(take)
             .ToList());
     }
@@ -76,7 +76,7 @@ public class AuditLogService
     public async Task<IEnumerable<AuditLog>> GetRecentLogsAsync(int take = 50)
     {
         return await Task.FromResult(_unitOfWork.AuditLogs.Query()
-            .OrderByDescending(l => l.Timestamp)
+            .OrderByDescending(l => l.CreatedAt)
             .Take(take)
             .ToList());
     }

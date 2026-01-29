@@ -1,484 +1,247 @@
-@* @model MosqueViewModel
-<form>
-    <div class="col-md-6">
-        <label asp-for="NameAr" class="form-label"> الاسم بالعربي</label>
-        <input asp-for="NameAr" class="form-control" />
-        <span asp-validation-for="NameAr" class="text-danger small"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="NameEn" class="form-label"> الاسم بالانكليزي</label>
-        <input asp-for="NameEn" class="form-control" />
-        <span asp-validation-for="NameEn" class="text-danger small"></span>
-    </div>
-
-    <div class="col-md-6">
-        <label asp-for="MosqueTypeId" class="form-label"></label>
-        <select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes">
-            <option value="">-- اختر نوع المسجد --</option>
-        </select>
-        <span asp-validation-for="MosqueTypeId" class="text-danger small"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="MosqueStatusId" class="form-label"></label>
-        <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses">
-            <option value="">-- اختر الحالة --</option>
-        </select>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="WaqfOfficeId" class="form-label"></label>
-        <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
-            <option value="">-- اختر الدائرة الوقفية --</option>
-        </select>
-        <span asp-validation-for="WaqfOfficeId" class="text-danger small"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="ProvinceId" class="form-label"></label>
-        <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
-            <option value="">-- اختر المحافظة --</option>
-        </select>
-        <span asp-validation-for="ProvinceId" class="text-danger small"></span>
-    </div>
-    <div class="col-12">
-        <label asp-for="Address" class="form-label"></label>
-        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
-    </div>
-    </div>
-    </div>
-    </div>
-
-    <!-- Location Card -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <div id="locationMap" style="height: 300px; border-radius: 8px;"></div>
-                <small class="text-muted">انقر على الخريطة لتحديد موقع المسجد</small>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label asp-for="Latitude" class="form-label"></label>
-                    <input asp-for="Latitude" class="form-control" id="latitude" readonly />
-                    <span asp-validation-for="Latitude" class="text-danger small"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Longitude" class="form-label"></label>
-                    <input asp-for="Longitude" class="form-control" id="longitude" readonly />
-                    <span asp-validation-for="Longitude" class="text-danger small"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Specifications Card -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات</h6>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label asp-for="Capacity" class="form-label"></label>
-                    <input asp-for="Capacity" class="form-control" type="number" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="AreaSqm" class="form-label"></label>
-                    <input asp-for="AreaSqm" class="form-control" type="number" step="0.01" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="EstablishedYear" class="form-label"></label>
-                    <input asp-for="EstablishedYear" class="form-control" type="number" />
-                </div>
-            </div>
-            <hr>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="HasFridayPrayer" class="form-check-input" />
-                        <label asp-for="HasFridayPrayer" class="form-check-label"></label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="HasMinaret" class="form-check-input" />
-                        <label asp-for="HasMinaret" class="form-check-label"></label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="HasDome" class="form-check-input" />
-                        <label asp-for="HasDome" class="form-check-label"></label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="HasParking" class="form-check-input" />
-                        <label asp-for="HasParking" class="form-check-label"></label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="HasWomenSection" class="form-check-input" />
-                        <label asp-for="HasWomenSection" class="form-check-label"></label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <!-- Side Panel -->
-    <div class="col-lg-4">
-        <!-- Imam Info Card -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning">
-                <h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات الإمام</h6>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label asp-for="ImamName" class="form-label"></label>
-                    <input asp-for="ImamName" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label asp-for="ImamPhone" class="form-label"></label>
-                    <input asp-for="ImamPhone" class="form-control" />
-                </div>
-            </div>
-        </div>
-
-        <!-- Notes Card -->
-        <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
-                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6>
-            </div>
-            <div class="card-body">
-                <textarea asp-for="Notes" class="form-control" rows="4" placeholder="أدخل أي ملاحظات إضافية..."></textarea>
-            </div>
-        </div>
-
-        <!-- Images Card -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد</h6>
-            </div>
-            <div class="card-body">
-                <input type="file" name="images" class="form-control" multiple accept="image/*" />
-                <small class="text-muted">يمكنك اختيار عدة صور. الحد الأقصى 10MB لكل صورة.</small>
-            </div>
-        </div>
-
-        <!-- Submit Buttons -->
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary btn-lg">
-                <i class="fas fa-save me-2"></i>حفظ المسجد
-            </button>
-            <a asp-action="Index" class="btn btn-outline-secondary">
-                <i class="fas fa-times me-2"></i>إلغاء
-            </a>
-        </div>
-    </div>
-    </div>
-</form>
-
-@section Scripts {
-    <script>
-        // Initialize map for location selection
-        var map = L.map('locationMap').setView([33.3, 44.4], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        var marker = null;
-
-        map.on('click', function(e) {
-            if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng, { draggable: true }).addTo(map);
-                marker.on('dragend', updateCoordinates);
-            }
-            updateCoordinates();
-        });
-
-        function updateCoordinates() {
-            if (marker) {
-                var latlng = marker.getLatLng();
-                document.getElementById('latitude').value = latlng.lat.toFixed(6);
-                document.getElementById('longitude').value = latlng.lng.toFixed(6);
-            }
-        }
-    </script>
-}
-///////////////////////////// *@
-<div asp-validation-summary="All" class="alert alert-danger"></div>
 @model MosqueViewModel
 @{
-    ViewData["Title"] = "إضافة جامع";
+    ViewData["Title"] = "إضافة مسجد جديد";
 }
 
-<h4 class="mb-4">إضافة مسجد / جامع جديد</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-plus text-primary me-2"></i>إضافة مسجد جديد</h4>
+        <small class="text-muted">إدخال بيانات المسجد</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+</div>
 
-<form asp-action="Create" method="post">
-    @Html.AntiForgeryToken()
-
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
+<form asp-action="Create" method="post" enctype="multipart/form-data">
     <div class="row">
-
-        <!-- ======================= المحتوى الرئيسي ======================= -->
         <div class="col-lg-8">
-
             <!-- البيانات الأساسية -->
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <strong>البيانات الأساسية</strong>
-                </div>
+                <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6></div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <select asp-for="MosqueTypeId" class="form-select" asp-items="Model.MosqueTypes">
-                            <option value="">-- اختر نوع المسجد --</option>
-                        </select>
-                        <span asp-validation-for="MosqueTypeId" class="text-danger"></span>
-@* 
                         <div class="col-md-6">
-                            <label asp-for="Code" class="form-label">كود الجامع</label>
-                            <input asp-for="Code" class="form-control" />
-                        </div> *@
-
-                        <div class="col-md-6">
-                            <label asp-for="NameAr" class="form-label">اسم الجامع (عربي)</label>
-                            <input asp-for="NameAr" class="form-control" />
+                            <label asp-for="NameAr" class="form-label"></label>
+                            <input asp-for="NameAr" class="form-control" placeholder="مسجد..." />
                             <span asp-validation-for="NameAr" class="text-danger small"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="NameEn" class="form-label">اسم الجامع (إنكليزي)</label>
-                            <input asp-for="NameEn" class="form-control" />
+                            <label asp-for="NameEn" class="form-label"></label>
+                            <input asp-for="NameEn" class="form-control" placeholder="Mosque..." />
                         </div>
-
+                        <div class="col-md-6">
+                            <label asp-for="MosqueTypeId" class="form-label"></label>
+                            <select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes">
+                                <option value="">-- اختر النوع --</option>
+                            </select>
+                            <span asp-validation-for="MosqueTypeId" class="text-danger small"></span>
+                        </div>
                         <div class="col-md-6">
                             <label asp-for="MosqueStatusId" class="form-label"></label>
-                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@Model.MosqueStatuses">
+                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses">
                                 <option value="">-- اختر الحالة --</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="WaqfOfficeId" class="form-label"></label>
-                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@Model.WaqfOffices">
-                                <option value="">-- اختر الدائرة الوقفية --</option>
+                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
+                                <option value="">-- اختر الدائرة --</option>
                             </select>
                             <span asp-validation-for="WaqfOfficeId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ProvinceId" class="form-label"></label>
-                            <select asp-for="ProvinceId" class="form-select" asp-items="@Model.Provinces">
+                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
                                 <option value="">-- اختر المحافظة --</option>
                             </select>
                             <span asp-validation-for="ProvinceId" class="text-danger small"></span>
                         </div>
-
+                        <div class="col-md-6">
+                            <label asp-for="DistrictId" class="form-label"></label>
+                            <select asp-for="DistrictId" class="form-select" asp-items="@ViewBag.Districts">
+                                <option value="">-- اختر القضاء --</option>
+                            </select>
+                        </div>
                         <div class="col-12">
-                            <label asp-for="Address" class="form-label">العنوان</label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2" placeholder="العنوان التفصيلي..."></textarea>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="Neighborhood" class="form-label">المنطقة / الحي</label>
-                            <input asp-for="Neighborhood" class="form-control" />
+                            <label asp-for="Neighborhood" class="form-label"></label>
+                            <input asp-for="Neighborhood" class="form-control" placeholder="اسم الحي..." />
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="NearestLandmark" class="form-label">أقرب معلم</label>
-                            <input asp-for="NearestLandmark" class="form-control" />
+                            <label asp-for="NearestLandmark" class="form-label"></label>
+                            <input asp-for="NearestLandmark" class="form-control" placeholder="بالقرب من..." />
                         </div>
-
                     </div>
                 </div>
             </div>
 
             <!-- الموقع الجغرافي -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <strong>الموقع الجغرافي</strong>
-                </div>
+                <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6></div>
                 <div class="card-body">
-
-                    <div id="locationMap" style="height:300px;border-radius:8px"></div>
-                    <small class="text-muted d-block mt-1">انقر على الخريطة لتحديد موقع الجامع</small>
-
+                    <div id="locationMap" style="height:300px;border-radius:8px;" class="mb-3"></div>
+                    <small class="text-muted">انقر على الخريطة لتحديد موقع المسجد</small>
                     <div class="row g-3 mt-2">
                         <div class="col-md-6">
-                            <label asp-for="Latitude" class="form-label">خط العرض (Latitude)</label>
+                            <label asp-for="Latitude" class="form-label"></label>
                             <input asp-for="Latitude" class="form-control" id="latitude" readonly />
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Longitude" class="form-label">خط الطول (Longitude)</label>
+                            <label asp-for="Longitude" class="form-label"></label>
                             <input asp-for="Longitude" class="form-control" id="longitude" readonly />
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            <!-- مواصفات البناية -->
+            <!-- المواصفات -->
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <strong>مواصفات البناية</strong>
-                </div>
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-cogs me-2"></i>المواصفات</h6></div>
                 <div class="card-body">
-
                     <div class="row g-3">
-
-                        <div class="col-md-4">
-                            <label asp-for="Capacity" class="form-label">الطاقة الاستيعابية</label>
-                            <input asp-for="Capacity" class="form-control" type="number" />
+                        <div class="col-md-3">
+                            <label asp-for="Capacity" class="form-label"></label>
+                            <input asp-for="Capacity" class="form-control" type="number" min="0" />
                         </div>
-
-                        <div class="col-md-4">
-                            <label asp-for="AreaSqm" class="form-label">المساحة (م²)</label>
+                        <div class="col-md-3">
+                            <label asp-for="AreaSqm" class="form-label"></label>
                             <input asp-for="AreaSqm" class="form-control" type="number" step="0.01" />
                         </div>
-
-                        <div class="col-md-4">
-                            <label asp-for="FloorsCount" class="form-label">عدد الطوابق</label>
-                            <input asp-for="FloorsCount" class="form-control" type="number" />
+                        <div class="col-md-3">
+                            <label asp-for="EstablishedYear" class="form-label"></label>
+                            <input asp-for="EstablishedYear" class="form-control" type="number" min="600" max="2030" />
                         </div>
-
-                        <div class="col-md-4">
-                            <label asp-for="EstablishedYear" class="form-label">سنة التأسيس</label>
-                            <input asp-for="EstablishedYear" class="form-control" type="number" />
+                        <div class="col-md-3">
+                            <label asp-for="LastRenovationYear" class="form-label"></label>
+                            <input asp-for="LastRenovationYear" class="form-control" type="number" min="1900" max="2030" />
                         </div>
-
-                        <div class="col-md-4">
-                            <label asp-for="LastRenovationYear" class="form-label">سنة آخر ترميم</label>
-                            <input asp-for="LastRenovationYear" class="form-control" type="number" />
-                        </div>
-
                     </div>
-
-                    <hr />
-
+                    <hr>
+                    <h6 class="mb-3">المرافق والخدمات</h6>
                     <div class="row">
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasFridayPrayer" class="form-check-input" />
-                            <label asp-for="HasFridayPrayer" class="form-check-label">تقام صلاة الجمعة</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasMinaret" class="form-check-input" />
-                            <label asp-for="HasMinaret" class="form-check-label">يحتوي على مئذنة</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasDome" class="form-check-input" />
-                            <label asp-for="HasDome" class="form-check-label">يحتوي على قبة</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasParking" class="form-check-input" />
-                            <label asp-for="HasParking" class="form-check-label">موقف سيارات</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasWomenSection" class="form-check-input" />
-                            <label asp-for="HasWomenSection" class="form-check-label">قسم نسائي</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasLibrary" class="form-check-input" />
-                            <label asp-for="HasLibrary" class="form-check-label">مكتبة</label>
-                        </div>
-                        <div class="col-md-4 form-check">
-                            <input asp-for="HasAblutionFacility" class="form-check-input" />
-                            <label asp-for="HasAblutionFacility" class="form-check-label">مرافق وضوء</label>
-                        </div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasFridayPrayer" class="form-check-input" /><label asp-for="HasFridayPrayer" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasMinaret" class="form-check-input" /><label asp-for="HasMinaret" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasDome" class="form-check-input" /><label asp-for="HasDome" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasParking" class="form-check-input" /><label asp-for="HasParking" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasWomenSection" class="form-check-input" /><label asp-for="HasWomenSection" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasAirConditioning" class="form-check-input" /><label asp-for="HasAirConditioning" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasWuduArea" class="form-check-input" /><label asp-for="HasWuduArea" class="form-check-label"></label></div></div>
+                        <div class="col-md-3"><div class="form-check"><input asp-for="HasLibrary" class="form-check-input" /><label asp-for="HasLibrary" class="form-check-label"></label></div></div>
                     </div>
-
                 </div>
             </div>
-
         </div>
 
-        <!-- ======================= اللوحة الجانبية ======================= -->
+        <!-- الشريط الجانبي -->
         <div class="col-lg-4">
-
-            <!-- بيانات الإمام والمؤذن -->
+            <!-- بيانات الإمام -->
             <div class="card mb-4">
-                <div class="card-header bg-warning">
-                    <strong>البيانات الإدارية</strong>
-                </div>
+                <div class="card-header bg-warning"><h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>بيانات الإمام</h6></div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label asp-for="ImamName" class="form-label">اسم الإمام</label>
+                        <label asp-for="ImamName" class="form-label"></label>
                         <input asp-for="ImamName" class="form-control" />
                     </div>
                     <div class="mb-3">
-                        <label asp-for="ImamPhone" class="form-label">هاتف الإمام</label>
-                        <input asp-for="ImamPhone" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label asp-for="MuezzinName" class="form-label">اسم المؤذن</label>
-                        <input asp-for="MuezzinName" class="form-control" />
+                        <label asp-for="ImamPhone" class="form-label"></label>
+                        <input asp-for="ImamPhone" class="form-control" dir="ltr" />
                     </div>
                 </div>
             </div>
 
-            <!-- بيانات التسجيل -->
+            <!-- بيانات المؤذن -->
             <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <strong>بيانات التسجيل والملكية</strong>
-                </div>
+                <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المؤذن</h6></div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label asp-for="DeedNumber" class="form-label">رقم السند</label>
-                        <input asp-for="DeedNumber" class="form-control" />
+                        <label asp-for="MuezzinName" class="form-label"></label>
+                        <input asp-for="MuezzinName" class="form-control" />
                     </div>
                     <div class="mb-3">
-                        <label asp-for="RegistrationNumber" class="form-label">رقم التسجيل</label>
-                        <input asp-for="RegistrationNumber" class="form-control" />
+                        <label asp-for="MuezzinPhone" class="form-label"></label>
+                        <input asp-for="MuezzinPhone" class="form-control" dir="ltr" />
                     </div>
-                    <div class="mb-3">
-                        <label asp-for="RegistrationDate" class="form-label">تاريخ التسجيل</label>
-                        <input asp-for="RegistrationDate" class="form-control" type="date" />
-                    </div>
+                </div>
+            </div>
+
+            <!-- صور المسجد -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد</h6></div>
+                <div class="card-body">
+                    <input type="file" name="images" class="form-control" id="imageInput" multiple accept="image/*" onchange="previewImages(this)" />
+                    <small class="text-muted d-block mt-1">يمكنك اختيار عدة صور (الحد الأقصى 10MB)</small>
+                    <div id="imagePreview" class="row g-2 mt-2"></div>
                 </div>
             </div>
 
             <!-- ملاحظات -->
             <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <strong>ملاحظات</strong>
-                </div>
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6></div>
                 <div class="card-body">
-                    <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
                 </div>
             </div>
 
-            <!-- أزرار -->
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg">حفظ الجامع</button>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>حفظ المسجد</button>
                 <a asp-action="Index" class="btn btn-outline-secondary">إلغاء</a>
             </div>
-
         </div>
     </div>
 </form>
 
+<!-- Modal لعرض الصور بالحجم الطبيعي -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+                <img id="modalImage" src="" class="img-fluid w-100" />
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script>
-        var map = L.map('locationMap').setView([33.3, 44.4], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        var marker = null;
-
-        map.on('click', function (e) {
-            if (!marker) {
-                marker = L.marker(e.latlng, { draggable: true }).addTo(map);
-                marker.on('dragend', updateCoords);
-            } else {
-                marker.setLatLng(e.latlng);
-            }
-            updateCoords();
-        });
-
-        function updateCoords() {
-            var p = marker.getLatLng();
-            document.getElementById('latitude').value = p.lat.toFixed(6);
-            document.getElementById('longitude').value = p.lng.toFixed(6);
+<script>
+    // خريطة
+    var map = L.map('locationMap').setView([33.3, 44.4], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var marker = null;
+    
+    map.on('click', function(e) {
+        if (marker) marker.setLatLng(e.latlng);
+        else { marker = L.marker(e.latlng, {draggable:true}).addTo(map); marker.on('dragend', updateCoords); }
+        updateCoords();
+    });
+    
+    function updateCoords() {
+        if (marker) {
+            var ll = marker.getLatLng();
+            document.getElementById('latitude').value = ll.lat.toFixed(6);
+            document.getElementById('longitude').value = ll.lng.toFixed(6);
         }
-    </script>
+    }
+
+    // معاينة الصور
+    function previewImages(input) {
+        var preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+        if (input.files) {
+            Array.from(input.files).forEach(function(file, i) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML += '<div class="col-6"><img src="'+e.target.result+'" class="img-fluid rounded" style="cursor:pointer;max-height:100px;object-fit:cover;width:100%;" onclick="showImage(\''+e.target.result+'\')"></div>';
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    function showImage(src) {
+        document.getElementById('modalImage').src = src;
+        new bootstrap.Modal(document.getElementById('imageModal')).show();
+    }
+</script>
 }

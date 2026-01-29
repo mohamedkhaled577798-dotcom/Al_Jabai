@@ -1,3 +1,4 @@
+@using WaqfGIS.Core.Entities
 @model IEnumerable<AuditLog>
 @{
     ViewData["Title"] = "سجل التدقيق";
@@ -77,7 +78,7 @@
                                 _ => "bg-secondary"
                             };
                             <tr>
-                                <td><small>@log.Timestamp.ToString("yyyy/MM/dd HH:mm:ss")</small></td>
+                                <td><small>@log.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</small></td>
                                 <td><strong>@log.UserName</strong></td>
                                 <td><span class="badge @actionClass">@log.Action</span></td>
                                 <td>

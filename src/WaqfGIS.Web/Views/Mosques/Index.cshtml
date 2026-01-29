@@ -109,13 +109,19 @@
                                         <a asp-action="Details" asp-route-id="@mosque.Id" class="btn btn-outline-info" title="عرض">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@mosque.Id" class="btn btn-outline-primary" title="تعديل">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-outline-danger" title="حذف"
-                                                onclick="confirmDelete(@mosque.Id, '@mosque.NameAr')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        @if (ViewBag.CanEdit == true)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@mosque.Id" class="btn btn-outline-primary" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        }
+                                        @if (ViewBag.CanDelete == true)
+                                        {
+                                            <button type="button" class="btn btn-outline-danger" title="حذف"
+                                                    onclick="confirmDelete(@mosque.Id, '@mosque.NameAr')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>

@@ -71,10 +71,12 @@ public static class DbSeeder
         if (!await context.OfficeTypes.AnyAsync())
         {
             context.OfficeTypes.AddRange(
-                new OfficeType { NameAr = "ديوان الوقف", NameEn = "Waqf Diwan", Level = 1 },
-                new OfficeType { NameAr = "مديرية الوقف", NameEn = "Waqf Directorate", Level = 2 },
-                new OfficeType { NameAr = "دائرة الوقف", NameEn = "Waqf Department", Level = 3 },
-                new OfficeType { NameAr = "شعبة الوقف", NameEn = "Waqf Division", Level = 4 }
+                new OfficeType { NameAr = "مركز الديوان في ام القرى", NameEn = "Waqf Diwan", Level = 1 },
+                new OfficeType { NameAr = "دائرة الوقف", NameEn = "Waqf Department", Level = 2 },
+                new OfficeType { NameAr = "مديرية الوقف", NameEn = "Waqf Directorate", Level = 3 },
+                                new OfficeType { NameAr = "ملاحظية الوقف", NameEn = "Waqf Molahdya", Level = 4 },
+
+                new OfficeType { NameAr = "شعبة الوقف", NameEn = "Waqf Division", Level = 5 }
             );
             await context.SaveChangesAsync();
         }
@@ -107,13 +109,16 @@ public static class DbSeeder
         if (!await context.PropertyTypes.AnyAsync())
         {
             context.PropertyTypes.AddRange(
+                                                new PropertyType { NameAr = "مدرسة", NameEn = "School", IconName = "School" },
                 new PropertyType { NameAr = "أرض", NameEn = "Land", IconName = "land" },
                 new PropertyType { NameAr = "مبنى", NameEn = "Building", IconName = "building" },
                 new PropertyType { NameAr = "شقة", NameEn = "Apartment", IconName = "apartment" },
                 new PropertyType { NameAr = "محل تجاري", NameEn = "Commercial Shop", IconName = "shop" },
                 new PropertyType { NameAr = "مخزن", NameEn = "Warehouse", IconName = "warehouse" },
                 new PropertyType { NameAr = "مزرعة", NameEn = "Farm", IconName = "farm" },
-                new PropertyType { NameAr = "بستان", NameEn = "Orchard", IconName = "orchard" }
+                new PropertyType { NameAr = "بستان", NameEn = "Orchard", IconName = "orchard" },
+                new PropertyType { NameAr = "بيت", NameEn = "House", IconName = "House" }
+
             );
             await context.SaveChangesAsync();
         }
