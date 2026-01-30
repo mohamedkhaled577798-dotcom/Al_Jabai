@@ -48,6 +48,10 @@
                        asp-controller="Offices" asp-action="Index">
                         <i class="fas fa-landmark me-2"></i> الدوائر الوقفية
                     </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Districts" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Districts" asp-action="Index">
+                        <i class="fas fa-map-signs me-2"></i> الأقضية
+                    </a>
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "WaqfLands" ? "active bg-primary rounded" : "")" 
                        asp-controller="WaqfLands" asp-action="Index">
                         <i class="fas fa-map me-2"></i> أراضي الوقف
@@ -63,6 +67,10 @@
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["action"]?.ToString() == "GisViewer" ? "active bg-primary rounded" : "")" 
                        asp-controller="Map" asp-action="GisViewer">
                         <i class="fas fa-map-marked-alt me-2"></i> نظام GIS
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["action"]?.ToString() == "Georeferencing" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Map" asp-action="Georeferencing">
+                        <i class="fas fa-satellite me-2"></i> إسقاط الصور الجوية
                     </a>
                     <hr class="border-secondary">
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active bg-primary rounded" : "")" 

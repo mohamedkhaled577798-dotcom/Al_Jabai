@@ -1,0 +1,43 @@
+@* Cascading Province-District Dropdown Script *@
+@* Include this partial in views that need province-district cascading *@
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var provinceSelect = document.getElementById('ProvinceId');
+    var districtSelect = document.getElementById('DistrictId');
+    
+    if (provinceSelect && districtSelect) {
+        var currentDistrictId = districtSelect.value;
+        
+        provinceSelect.addEventListener('change', function() {
+            loadDistricts(this.value);
+        });
+        
+        // Load districts if province is already selected
+        if (provinceSelect.value) {
+            loadDistricts(provinceSelect.value, currentDistrictId);
+        }
+    }
+    
+    function loadDistricts(provinceId, selectedDistrictId) {
+        districtSelect.innerHTML = '<option value="">-- اختر القضاء --</option>';
+        
+        if (!provinceId) return;
+        
+        fetch('/Districts/GetByProvince?provinceId=' + provinceId)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function(district) {
+                    var option = document.createElement('option');
+                    option.value = district.id;
+                    option.textContent = district.nameAr;
+                    if (selectedDistrictId && district.id == selectedDistrictId) {
+                        option.selected = true;
+                    }
+                    districtSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading districts:', error));
+    }
+});
+</script>

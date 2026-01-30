@@ -1,0 +1,539 @@
+@{
+    ViewData["Title"] = "إسقاط الصور الجوية";
+    Layout = "_Layout";
+}
+
+<style>
+    #georefMap { height: calc(100vh - 180px); min-height: 500px; }
+    .control-point { background: #ff5722; border: 2px solid white; border-radius: 50%; width: 20px; height: 20px; cursor: crosshair; }
+    .corner-marker { width: 12px; height: 12px; background: #2196f3; border: 2px solid white; border-radius: 50%; cursor: move; }
+    .image-overlay { border: 2px dashed #ff5722; }
+    #imagePreview { max-height: 300px; object-fit: contain; border: 2px dashed #ddd; }
+    .step-card { transition: all 0.3s; }
+    .step-card.active { border-color: #007bff !important; box-shadow: 0 0 15px rgba(0,123,255,0.3); }
+    .step-number { width: 30px; height: 30px; background: #007bff; color: white; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="fas fa-satellite text-info me-2"></i>إسقاط الصور الجوية (Georeferencing)</h4>
+    <div>
+        <a asp-controller="Map" asp-action="Index" class="btn btn-outline-primary"><i class="fas fa-map me-1"></i>الخريطة</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Control Panel -->
+    <div class="col-lg-4">
+        <!-- الخطوة 1: رفع الصورة -->
+        <div class="card step-card mb-3 active" id="step1Card">
+            <div class="card-header bg-primary text-white">
+                <span class="step-number me-2">1</span>رفع الصورة الجوية
+            </div>
+            <div class="card-body">
+                <input type="file" id="imageInput" class="form-control mb-3" accept="image/*" onchange="loadImage(this)">
+                <img id="imagePreview" src="" class="w-100 d-none rounded">
+                <div id="imageInfo" class="small text-muted mt-2 d-none">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span id="imageDimensions"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- الخطوة 2: تحديد النقاط -->
+        <div class="card step-card mb-3" id="step2Card">
+            <div class="card-header bg-warning text-dark">
+                <span class="step-number bg-warning text-dark me-2">2</span>تحديد نقاط التحكم
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">حدد 4 نقاط على زوايا الصورة (أو على الأقل 3 نقاط معروفة الإحداثيات)</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm" id="controlPointsTable">
+                        <thead>
+                            <tr><th>#</th><th>خط العرض</th><th>خط الطول</th><th></th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                
+                <div class="btn-group btn-group-sm w-100">
+                    <button class="btn btn-outline-primary" onclick="startAddingPoint()" id="addPointBtn">
+                        <i class="fas fa-plus me-1"></i>إضافة نقطة
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="clearPoints()">
+                        <i class="fas fa-trash me-1"></i>مسح
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- الخطوة 3: إسقاط الصورة -->
+        <div class="card step-card mb-3" id="step3Card">
+            <div class="card-header bg-success text-white">
+                <span class="step-number bg-success me-2">3</span>إسقاط وتعديل
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">شفافية الصورة</label>
+                    <input type="range" class="form-range" id="opacitySlider" min="0" max="100" value="70" onchange="setOverlayOpacity(this.value)">
+                </div>
+                <button class="btn btn-success w-100 mb-2" onclick="projectImage()" id="projectBtn" disabled>
+                    <i class="fas fa-globe me-1"></i>إسقاط الصورة على الخريطة
+                </button>
+                <button class="btn btn-warning w-100" onclick="enableImageEdit()" id="editImageBtn" disabled>
+                    <i class="fas fa-arrows-alt me-1"></i>تعديل الموضع والحجم
+                </button>
+            </div>
+        </div>
+
+        <!-- الخطوة 4: رسم الحدود -->
+        <div class="card step-card mb-3" id="step4Card">
+            <div class="card-header bg-info text-white">
+                <span class="step-number bg-info me-2">4</span>رسم الحدود
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">بعد إسقاط الصورة، ارسم حدود المعلم على الخريطة</p>
+                <div class="btn-group btn-group-sm w-100 mb-2">
+                    <button class="btn btn-outline-primary" onclick="startDrawPolygon()" id="drawPolygonBtn" disabled>
+                        <i class="fas fa-draw-polygon me-1"></i>رسم مضلع
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="editDrawnPolygon()" id="editPolygonBtn" disabled>
+                        <i class="fas fa-edit me-1"></i>تعديل
+                    </button>
+                </div>
+                
+                <div id="boundaryInfo" class="p-2 bg-light rounded d-none">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <small class="text-muted">المساحة</small>
+                            <h6 class="mb-0 text-success" id="areaDisplay">--</h6>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">المحيط</small>
+                            <h6 class="mb-0 text-info" id="perimeterDisplay">--</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الخطوة 5: الحفظ -->
+        <div class="card step-card" id="step5Card">
+            <div class="card-header bg-dark text-white">
+                <span class="step-number bg-dark me-2">5</span>حفظ النتيجة
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">نوع الكيان</label>
+                    <select id="saveEntityType" class="form-select" onchange="loadEntities()">
+                        <option value="">-- اختر --</option>
+                        <option value="mosque">حدود مسجد</option>
+                        <option value="property">حدود عقار</option>
+                        <option value="land">أرض وقف جديدة</option>
+                    </select>
+                </div>
+                <div id="entitySelectDiv" class="mb-3 d-none">
+                    <label class="form-label">الكيان</label>
+                    <select id="entitySelect" class="form-select"></select>
+                </div>
+                <div id="newEntityDiv" class="d-none">
+                    <div class="mb-2">
+                        <input type="text" id="newEntityName" class="form-control" placeholder="اسم الأرض">
+                    </div>
+                    <div class="mb-2">
+                        <select id="newEntityProvince" class="form-select">
+                            <option value="">المحافظة</option>
+                            @foreach (var p in ViewBag.Provinces as IEnumerable<WaqfGIS.Core.Entities.Province> ?? new List<WaqfGIS.Core.Entities.Province>())
+                            {
+                                <option value="@p.Id">@p.NameAr</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="saveBoundary()" id="saveBtn" disabled>
+                    <i class="fas fa-save me-1"></i>حفظ الحدود
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Area -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-map me-2"></i>الخريطة</span>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-light" onclick="setBaseMap('osm')">عادية</button>
+                    <button class="btn btn-light active" onclick="setBaseMap('satellite')">فضائية</button>
+                    <button class="btn btn-light" onclick="setBaseMap('hybrid')">هجين</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="georefMap"></div>
+            </div>
+            <div class="card-footer small">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>الإحداثيات:</strong> <span id="mouseCoords">--</span>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>التكبير:</strong> <span id="zoomLevel">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+// Base Maps
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+var hybridLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png');
+
+// Initialize Map
+var map = L.map('georefMap', { layers: [satelliteLayer] }).setView([33.3, 44.4], 7);
+
+// Layer Groups
+var controlPointsLayer = L.layerGroup().addTo(map);
+var imageOverlay = null;
+var drawnItems = new L.FeatureGroup().addTo(map);
+var currentPolygon = null;
+
+// State
+var controlPoints = [];
+var uploadedImage = null;
+var addingPoint = false;
+
+// Draw Control
+var drawControl = new L.Control.Draw({
+    position: 'topright',
+    draw: {
+        polygon: { allowIntersection: false, shapeOptions: { color: '#ff5722', fillOpacity: 0.3, weight: 3 } },
+        polyline: false, circle: false, circlemarker: false, marker: false, rectangle: false
+    },
+    edit: { featureGroup: drawnItems }
+});
+map.addControl(drawControl);
+
+// Map Events
+map.on('mousemove', function(e) {
+    document.getElementById('mouseCoords').textContent = 
+        e.latlng.lat.toFixed(6) + ', ' + e.latlng.lng.toFixed(6);
+});
+
+map.on('zoomend', function() {
+    document.getElementById('zoomLevel').textContent = map.getZoom();
+});
+
+map.on('click', function(e) {
+    if (addingPoint) {
+        addControlPoint(e.latlng.lat, e.latlng.lng);
+        addingPoint = false;
+        document.getElementById('addPointBtn').classList.remove('btn-primary');
+        document.getElementById('addPointBtn').classList.add('btn-outline-primary');
+        map.getContainer().style.cursor = '';
+    }
+});
+
+map.on(L.Draw.Event.CREATED, function(e) {
+    drawnItems.clearLayers();
+    drawnItems.addLayer(e.layer);
+    currentPolygon = e.layer;
+    updateBoundaryInfo(e.layer);
+    document.getElementById('saveBtn').disabled = false;
+    document.getElementById('editPolygonBtn').disabled = false;
+});
+
+map.on(L.Draw.Event.EDITED, function(e) {
+    e.layers.eachLayer(function(layer) {
+        updateBoundaryInfo(layer);
+    });
+});
+
+// Load Image
+function loadImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImage = e.target.result;
+            var preview = document.getElementById('imagePreview');
+            preview.src = uploadedImage;
+            preview.classList.remove('d-none');
+            document.getElementById('imageInfo').classList.remove('d-none');
+            
+            var img = new Image();
+            img.onload = function() {
+                document.getElementById('imageDimensions').textContent = 
+                    'الأبعاد: ' + img.width + ' × ' + img.height + ' بكسل';
+            };
+            img.src = uploadedImage;
+            
+            activateStep(2);
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Control Points
+function startAddingPoint() {
+    addingPoint = true;
+    document.getElementById('addPointBtn').classList.remove('btn-outline-primary');
+    document.getElementById('addPointBtn').classList.add('btn-primary');
+    map.getContainer().style.cursor = 'crosshair';
+}
+
+function addControlPoint(lat, lng) {
+    var index = controlPoints.length + 1;
+    controlPoints.push({ lat: lat, lng: lng });
+    
+    // Add marker
+    var marker = L.circleMarker([lat, lng], {
+        radius: 8, fillColor: '#ff5722', color: '#fff', fillOpacity: 1, weight: 2
+    }).addTo(controlPointsLayer);
+    marker.bindTooltip('نقطة ' + index, { permanent: true, direction: 'top' });
+    
+    // Update table
+    updatePointsTable();
+    
+    // Enable project button if >= 3 points
+    if (controlPoints.length >= 3) {
+        document.getElementById('projectBtn').disabled = false;
+        activateStep(3);
+    }
+}
+
+function updatePointsTable() {
+    var tbody = document.querySelector('#controlPointsTable tbody');
+    tbody.innerHTML = '';
+    
+    controlPoints.forEach(function(point, i) {
+        tbody.innerHTML += '<tr>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td><small>' + point.lat.toFixed(5) + '</small></td>' +
+            '<td><small>' + point.lng.toFixed(5) + '</small></td>' +
+            '<td><button class="btn btn-sm btn-outline-danger" onclick="removePoint(' + i + ')"><i class="fas fa-times"></i></button></td>' +
+            '</tr>';
+    });
+}
+
+function removePoint(index) {
+    controlPoints.splice(index, 1);
+    controlPointsLayer.clearLayers();
+    
+    // Re-add remaining points
+    controlPoints.forEach(function(point, i) {
+        var marker = L.circleMarker([point.lat, point.lng], {
+            radius: 8, fillColor: '#ff5722', color: '#fff', fillOpacity: 1, weight: 2
+        }).addTo(controlPointsLayer);
+        marker.bindTooltip('نقطة ' + (i + 1), { permanent: true, direction: 'top' });
+    });
+    
+    updatePointsTable();
+    document.getElementById('projectBtn').disabled = controlPoints.length < 3;
+}
+
+function clearPoints() {
+    controlPoints = [];
+    controlPointsLayer.clearLayers();
+    updatePointsTable();
+    document.getElementById('projectBtn').disabled = true;
+}
+
+// Project Image
+function projectImage() {
+    if (!uploadedImage || controlPoints.length < 3) {
+        alert('يرجى رفع صورة وتحديد 3 نقاط على الأقل');
+        return;
+    }
+    
+    // Calculate bounding box from control points
+    var lats = controlPoints.map(p => p.lat);
+    var lngs = controlPoints.map(p => p.lng);
+    
+    var bounds = [
+        [Math.min(...lats), Math.min(...lngs)],
+        [Math.max(...lats), Math.max(...lngs)]
+    ];
+    
+    // Remove existing overlay
+    if (imageOverlay) {
+        map.removeLayer(imageOverlay);
+    }
+    
+    // Create image overlay
+    imageOverlay = L.imageOverlay(uploadedImage, bounds, {
+        opacity: 0.7,
+        interactive: true
+    }).addTo(map);
+    
+    map.fitBounds(bounds);
+    
+    document.getElementById('editImageBtn').disabled = false;
+    document.getElementById('drawPolygonBtn').disabled = false;
+    activateStep(4);
+}
+
+// Overlay Controls
+function setOverlayOpacity(value) {
+    if (imageOverlay) {
+        imageOverlay.setOpacity(value / 100);
+    }
+}
+
+function enableImageEdit() {
+    if (!imageOverlay) return;
+    
+    // Simple bounds editing - allow drag
+    alert('لتعديل موضع الصورة:\n1. اضغط على زوايا نقاط التحكم في الخريطة\n2. اسحب لتعديل الموضع\n3. أو احذف النقاط وأضف نقاط جديدة');
+}
+
+// Drawing
+function startDrawPolygon() {
+    new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable();
+}
+
+function editDrawnPolygon() {
+    drawnItems.eachLayer(function(layer) {
+        if (layer.editing) layer.editing.enable();
+    });
+}
+
+function updateBoundaryInfo(layer) {
+    var latlngs = layer.getLatLngs()[0];
+    var area = L.GeometryUtil.geodesicArea(latlngs);
+    var perimeter = 0;
+    for (var i = 0; i < latlngs.length - 1; i++) {
+        perimeter += latlngs[i].distanceTo(latlngs[i + 1]);
+    }
+    perimeter += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+    
+    document.getElementById('areaDisplay').textContent = area.toFixed(2) + ' م²';
+    document.getElementById('perimeterDisplay').textContent = perimeter.toFixed(2) + ' م';
+    document.getElementById('boundaryInfo').classList.remove('d-none');
+    
+    activateStep(5);
+}
+
+// Base Map
+function setBaseMap(type) {
+    map.removeLayer(osmLayer);
+    map.removeLayer(satelliteLayer);
+    map.removeLayer(hybridLabels);
+    
+    switch(type) {
+        case 'osm': map.addLayer(osmLayer); break;
+        case 'satellite': map.addLayer(satelliteLayer); break;
+        case 'hybrid': map.addLayer(satelliteLayer); map.addLayer(hybridLabels); break;
+    }
+}
+
+// Step Activation
+function activateStep(step) {
+    for (var i = 1; i <= 5; i++) {
+        var card = document.getElementById('step' + i + 'Card');
+        card.classList.remove('active');
+    }
+    document.getElementById('step' + step + 'Card').classList.add('active');
+}
+
+// Save Functions
+async function loadEntities() {
+    var type = document.getElementById('saveEntityType').value;
+    var entityDiv = document.getElementById('entitySelectDiv');
+    var newDiv = document.getElementById('newEntityDiv');
+    var select = document.getElementById('entitySelect');
+    
+    if (type === 'mosque' || type === 'property') {
+        entityDiv.classList.remove('d-none');
+        newDiv.classList.add('d-none');
+        select.innerHTML = '<option value="">جاري التحميل...</option>';
+        
+        try {
+            var url = type === 'mosque' ? '/api/GisApi/layers/mosques/geojson' : '/api/GisApi/layers/properties/geojson';
+            var response = await fetch(url);
+            var data = await response.json();
+            
+            select.innerHTML = '<option value="">-- اختر --</option>';
+            data.features.forEach(function(f) {
+                select.innerHTML += '<option value="' + f.properties.id + '">' + f.properties.name + '</option>';
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    } else if (type === 'land') {
+        entityDiv.classList.add('d-none');
+        newDiv.classList.remove('d-none');
+    } else {
+        entityDiv.classList.add('d-none');
+        newDiv.classList.add('d-none');
+    }
+}
+
+async function saveBoundary() {
+    if (!currentPolygon) {
+        alert('يرجى رسم الحدود أولاً');
+        return;
+    }
+    
+    var type = document.getElementById('saveEntityType').value;
+    if (!type) {
+        alert('اختر نوع الكيان');
+        return;
+    }
+    
+    var geoJson = currentPolygon.toGeoJSON();
+    var url, body;
+    
+    if (type === 'mosque') {
+        var mosqueId = document.getElementById('entitySelect').value;
+        if (!mosqueId) { alert('اختر المسجد'); return; }
+        url = '/api/GisApi/mosques/' + mosqueId + '/boundary';
+        body = { geoJson: JSON.stringify(geoJson.geometry), boundaryType: 'Building' };
+    } else if (type === 'property') {
+        var propertyId = document.getElementById('entitySelect').value;
+        if (!propertyId) { alert('اختر العقار'); return; }
+        url = '/api/GisApi/properties/' + propertyId + '/boundary';
+        body = { geoJson: JSON.stringify(geoJson.geometry), boundaryType: 'Building' };
+    } else if (type === 'land') {
+        var name = document.getElementById('newEntityName').value;
+        var province = document.getElementById('newEntityProvince').value;
+        if (!name || !province) { alert('أدخل الاسم والمحافظة'); return; }
+        url = '/api/GisApi/lands';
+        body = {
+            nameAr: name,
+            provinceId: parseInt(province),
+            boundaryGeoJson: JSON.stringify(geoJson.geometry),
+            landType: 'Waqf',
+            landUse: 'Vacant'
+        };
+    }
+    
+    try {
+        var response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        
+        if (response.ok) {
+            alert('تم حفظ الحدود بنجاح!');
+            window.location.href = '/Map';
+        } else {
+            var error = await response.text();
+            alert('خطأ: ' + error);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('حدث خطأ أثناء الحفظ');
+    }
+}
+
+// Initialize zoom display
+document.getElementById('zoomLevel').textContent = map.getZoom();
+</script>
+}

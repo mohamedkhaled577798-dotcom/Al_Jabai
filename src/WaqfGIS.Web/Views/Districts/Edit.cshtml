@@ -1,0 +1,56 @@
+@model WaqfGIS.Core.Entities.District
+@{ ViewData["Title"] = Model.Id == 0 ? "إضافة قضاء جديد" : "تعديل قضاء"; }
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-map-signs me-2"></i>@ViewData["Title"]</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="Code" />
+                    
+                    @if (!string.IsNullOrEmpty(Model.Code))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">الكود</label>
+                            <input class="form-control bg-light" value="@Model.Code" readonly />
+                        </div>
+                    }
+                    
+                    <div class="mb-3">
+                        <label asp-for="ProvinceId" class="form-label">المحافظة <span class="text-danger">*</span></label>
+                        <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces" required>
+                            <option value="">-- اختر المحافظة --</option>
+                        </select>
+                        <span asp-validation-for="ProvinceId" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="NameAr" class="form-label">الاسم بالعربية <span class="text-danger">*</span></label>
+                        <input asp-for="NameAr" class="form-control" placeholder="مثال: الكرخ" required />
+                        <span asp-validation-for="NameAr" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="NameEn" class="form-label">الاسم بالإنجليزية</label>
+                        <input asp-for="NameEn" class="form-control" placeholder="Example: Karkh" dir="ltr" />
+                    </div>
+                    
+                    <hr />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>رجوع
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>حفظ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

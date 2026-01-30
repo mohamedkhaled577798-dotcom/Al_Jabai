@@ -39,6 +39,12 @@ public class MapController : Controller
         return View();
     }
 
+    public async Task<IActionResult> Georeferencing()
+    {
+        ViewBag.Provinces = await _unitOfWork.Provinces.GetAllAsync();
+        return View();
+    }
+
     [HttpGet]
     public async Task<IActionResult> ExportAll()
     {

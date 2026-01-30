@@ -1,0 +1,73 @@
+@* 
+    Cascading Province-District Dropdown Script
+    Include this partial at the end of any view that has Province and District dropdowns
+    Requirements: 
+    - Province dropdown must have id="ProvinceId"
+    - District dropdown must have id="DistrictId"
+*@
+
+<script>
+(function() {
+    var provinceSelect = document.getElementById('ProvinceId');
+    var districtSelect = document.getElementById('DistrictId');
+    
+    if (!provinceSelect || !districtSelect) {
+        console.log('Province or District select not found');
+        return;
+    }
+    
+    // Store current district value for re-selection after load
+    var currentDistrictId = districtSelect.value;
+    
+    // Handle province change
+    provinceSelect.addEventListener('change', function() {
+        var provinceId = this.value;
+        loadDistricts(provinceId, null);
+    });
+    
+    // Load districts on page load if province is already selected
+    if (provinceSelect.value) {
+        loadDistricts(provinceSelect.value, currentDistrictId);
+    }
+    
+    function loadDistricts(provinceId, selectedDistrictId) {
+        // Clear current options
+        districtSelect.innerHTML = '<option value="">-- اختر القضاء --</option>';
+        
+        if (!provinceId) {
+            return;
+        }
+        
+        // Show loading
+        districtSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+        districtSelect.disabled = true;
+        
+        fetch('/Districts/GetByProvince?provinceId=' + provinceId)
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                districtSelect.innerHTML = '<option value="">-- اختر القضاء --</option>';
+                
+                data.forEach(function(district) {
+                    var option = document.createElement('option');
+                    option.value = district.id;
+                    option.textContent = district.nameAr;
+                    
+                    if (selectedDistrictId && district.id == selectedDistrictId) {
+                        option.selected = true;
+                    }
+                    
+                    districtSelect.appendChild(option);
+                });
+                
+                districtSelect.disabled = false;
+            })
+            .catch(function(error) {
+                console.error('Error loading districts:', error);
+                districtSelect.innerHTML = '<option value="">خطأ في التحميل</option>';
+                districtSelect.disabled = false;
+            });
+    }
+})();
+</script>

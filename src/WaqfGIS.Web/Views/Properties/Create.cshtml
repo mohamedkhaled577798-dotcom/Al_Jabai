@@ -55,6 +55,12 @@
                             </select>
                             <span asp-validation-for="ProvinceId" class="text-danger small"></span>
                         </div>
+                        <div class="col-md-6">
+                            <label asp-for="DistrictId" class="form-label"></label>
+                            <select asp-for="DistrictId" class="form-select" asp-items="@ViewBag.Districts">
+                                <option value="">-- اختر القضاء --</option>
+                            </select>
+                        </div>
                         <div class="col-12">
                             <label asp-for="Address" class="form-label"></label>
                             <textarea asp-for="Address" class="form-control" rows="2"></textarea>
@@ -206,4 +212,6 @@
         }
     }
 </script>
+
+@await Html.PartialAsync("_CascadingDistricts")
 }

@@ -1,0 +1,116 @@
+@model IEnumerable<WaqfGIS.Core.Entities.District>
+@{ ViewData["Title"] = "إدارة الأقضية"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-map-signs text-info me-2"></i>إدارة الأقضية</h4>
+    <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus me-1"></i>إضافة قضاء</a>
+</div>
+
+@if (TempData["Success"] != null)
+{<div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>@TempData["Success"]<button class="btn-close" data-bs-dismiss="alert"></button></div>}
+@if (TempData["Error"] != null)
+{<div class="alert alert-danger alert-dismissible fade show"><i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div>}
+
+<div class="card mb-4">
+    <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-filter me-2"></i>تصفية</h6></div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <select name="provinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                    <option value="">كل المحافظات</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو الكود..." value="@ViewBag.CurrentSearch">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary"><i class="fas fa-search me-1"></i>بحث</button>
+                <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th width="15%">الكود</th>
+                        <th width="25%">الاسم بالعربية</th>
+                        <th width="20%">الاسم بالإنجليزية</th>
+                        <th width="25%">المحافظة</th>
+                        <th width="15%">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var district in Model)
+                    {
+                        <tr>
+                            <td><code class="bg-light p-1 rounded">@district.Code</code></td>
+                            <td><strong>@district.NameAr</strong></td>
+                            <td>@(district.NameEn ?? "-")</td>
+                            <td><span class="badge bg-primary">@district.Province?.NameAr</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Edit" asp-route-id="@district.Id" class="btn btn-outline-warning" title="تعديل"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="confirmDelete(@district.Id, '@district.NameAr')" title="حذف"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2 d-block"></i>لا توجد أقضية</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light">
+        <div class="row align-items-center">
+            <div class="col-md-6"><strong>إجمالي:</strong> @Model.Count() قضاء</div>
+            <div class="col-md-6 text-end">
+                @{ var grouped = Model.GroupBy(d => d.Province?.NameAr).Take(3); }
+                @foreach (var g in grouped)
+                {
+                    <span class="badge bg-secondary me-1">@g.Key: @g.Count()</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>تأكيد الحذف</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف القضاء: <strong id="deleteDistrictName"></strong>؟</p>
+                <p class="text-muted small">لن يتم حذف القضاء إذا كان مرتبطاً بمساجد أو عقارات.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function confirmDelete(id, name) {
+    document.getElementById('deleteDistrictName').textContent = name;
+    document.getElementById('deleteForm').action = '/Districts/Delete/' + id;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+}
