@@ -7,6 +7,7 @@ using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Services.GIS;
+using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
 
@@ -88,17 +89,15 @@ public class RoadsController : Controller
             if (geometry is LineString lineString)
             {
                 road.Geometry = lineString;
-                road.LengthMeters = _geometryService.CalculatePerimeterMeters(lineString);
+                road.LengthMeters = _geometryService.CalculateLengthMeters(lineString);
             }
         }
 
         await _unitOfWork.Repository<Road>().AddAsync(road);
         await _unitOfWork.SaveChangesAsync();
 
-        await _auditLogService.LogCreateAsync("Road", road.Id, road.NameAr,
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, 
-            User.Identity?.Name,
-            HttpContext.Connection.RemoteIpAddress?.ToString());
+        await _auditLogService.LogAsync("Create", "Road", road.Id, road.NameAr,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, User.Identity?.Name);
 
         TempData["Success"] = "تم إضافة الطريق بنجاح";
         return RedirectToAction(nameof(Index));
@@ -163,17 +162,14 @@ public class RoadsController : Controller
             if (geometry is LineString lineString)
             {
                 road.Geometry = lineString;
-                road.LengthMeters = _geometryService.CalculatePerimeterMeters(lineString);
+                road.LengthMeters = _geometryService.CalculateLengthMeters(lineString);
             }
         }
 
         await _unitOfWork.SaveChangesAsync();
 
-        await _auditLogService.LogUpdateAsync("Road", road.Id, road.NameAr,
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, 
-            User.Identity?.Name,
-            null, null,
-            HttpContext.Connection.RemoteIpAddress?.ToString());
+        await _auditLogService.LogAsync("Update", "Road", road.Id, road.NameAr,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, User.Identity?.Name);
 
         TempData["Success"] = "تم تحديث الطريق بنجاح";
         return RedirectToAction(nameof(Index));
@@ -215,10 +211,8 @@ public class RoadsController : Controller
         road.UpdatedBy = User.Identity?.Name;
         await _unitOfWork.SaveChangesAsync();
 
-        await _auditLogService.LogDeleteAsync("Road", road.Id, road.NameAr,
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, 
-            User.Identity?.Name,
-            HttpContext.Connection.RemoteIpAddress?.ToString());
+        await _auditLogService.LogAsync("Delete", "Road", road.Id, road.NameAr,
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, User.Identity?.Name);
 
         TempData["Success"] = "تم حذف الطريق بنجاح";
         return RedirectToAction(nameof(Index));
@@ -267,21 +261,4 @@ public class RoadsController : Controller
         var count = await _unitOfWork.Repository<Road>().Query().CountAsync();
         return $"RD-{DateTime.Now:yyyyMM}-{(count + 1):D4}";
     }
-}
-
-public class RoadViewModel
-{
-    public int Id { get; set; }
-    public string? Code { get; set; }
-    public string NameAr { get; set; } = string.Empty;
-    public string? NameEn { get; set; }
-    public int? ProvinceId { get; set; }
-    public int? DistrictId { get; set; }
-    public string? RoadType { get; set; }
-    public double? WidthMeters { get; set; }
-    public int? LanesCount { get; set; }
-    public string? SurfaceType { get; set; }
-    public double? LengthMeters { get; set; }
-    public string? Notes { get; set; }
-    public string? GeometryGeoJson { get; set; }
 }

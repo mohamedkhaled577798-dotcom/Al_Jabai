@@ -1,0 +1,98 @@
+@{ ViewData["Title"] = "خريطة الطرق"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="fas fa-road text-secondary me-2"></i>خريطة الطرق</h4>
+    <div>
+        <a asp-action="Create" class="btn btn-success me-2"><i class="fas fa-plus me-1"></i>إضافة طريق</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-list me-1"></i>القائمة</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-secondary text-white d-flex justify-content-between">
+        <span><i class="fas fa-map me-2"></i>عرض الطرق</span>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-light" onclick="setBase('osm')">عادية</button>
+            <button class="btn btn-light active" onclick="setBase('satellite')">فضائية</button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="roadsMap" style="height:600px;"></div>
+    </div>
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-6">
+                <span class="badge bg-danger me-2">طريق سريع</span>
+                <span class="badge bg-warning me-2">رئيسي</span>
+                <span class="badge bg-info me-2">فرعي</span>
+                <span class="badge bg-secondary">محلي</span>
+            </div>
+            <div class="col-md-6 text-end">
+                <strong>الطرق:</strong> <span id="roadsCount">0</span> |
+                <strong>إجمالي الطول:</strong> <span id="totalLength">0</span> كم
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+var map = L.map('roadsMap', { layers: [satelliteLayer] }).setView([33.3, 44.4], 7);
+
+function setBase(type) {
+    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer);
+    map.addLayer(type === 'osm' ? osmLayer : satelliteLayer);
+}
+
+async function loadRoads() {
+    try {
+        var response = await fetch('/api/GisApi/layers/roads/geojson');
+        var data = await response.json();
+        
+        var totalLength = 0;
+        
+        L.geoJSON(data, {
+            style: function(feature) {
+                var color = '#795548';
+                var weight = 3;
+                switch(feature.properties.roadType) {
+                    case 'Highway': color = '#dc3545'; weight = 5; break;
+                    case 'Main': color = '#ffc107'; weight = 4; break;
+                    case 'Secondary': color = '#17a2b8'; weight = 3; break;
+                }
+                return { color: color, weight: weight };
+            },
+            onEachFeature: function(feature, layer) {
+                var p = feature.properties;
+                totalLength += p.lengthMeters || 0;
+                layer.bindPopup(`
+                    <h6><i class="fas fa-road me-2"></i>${p.name}</h6>
+                    <p class="mb-1"><strong>الكود:</strong> ${p.code || '-'}</p>
+                    <p class="mb-1"><strong>النوع:</strong> ${p.roadType || '-'}</p>
+                    <p class="mb-1"><strong>الطول:</strong> ${p.lengthMeters ? p.lengthMeters.toFixed(0) + ' م' : '-'}</p>
+                    <div class="btn-group btn-group-sm mt-2">
+                        <a href="/Roads/Details/${p.id}" class="btn btn-info"><i class="fas fa-eye"></i></a>
+                        <a href="/Roads/Edit/${p.id}" class="btn btn-warning"><i class="fas fa-edit"></i></a>
+                    </div>
+                `);
+            }
+        }).addTo(map);
+        
+        document.getElementById('roadsCount').textContent = data.features?.length || 0;
+        document.getElementById('totalLength').textContent = (totalLength / 1000).toFixed(2);
+        
+        if (data.features?.length > 0) {
+            var bounds = L.geoJSON(data).getBounds();
+            map.fitBounds(bounds);
+        }
+    } catch (e) {
+        console.error('Error loading roads:', e);
+    }
+}
+
+loadRoads();
+</script>
+}
