@@ -1,0 +1,238 @@
+@model List<WaqfGIS.Web.Models.WaqfLandViewModel>
+@{
+    ViewData["Title"] = "أراضي الوقف";
+    var search = ViewBag.Search as WaqfGIS.Web.Models.WaqfLandSearchViewModel ?? new WaqfGIS.Web.Models.WaqfLandSearchViewModel();
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-map text-success me-2"></i>أراضي الوقف</h4>
+        <small class="text-muted">إجمالي: @totalCount أرض</small>
+    </div>
+    <div>
+        <a asp-action="Statistics" class="btn btn-outline-info me-2">
+            <i class="fas fa-chart-pie me-1"></i>الإحصائيات
+        </a>
+        <a asp-action="Map" class="btn btn-outline-primary me-2">
+            <i class="fas fa-map-marked-alt me-1"></i>عرض الخريطة
+        </a>
+        <a asp-action="Create" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Search Card -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-search me-2"></i>البحث والتصفية</h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">بحث</label>
+                    <input type="text" name="SearchTerm" value="@search.SearchTerm" class="form-control" placeholder="الاسم، الكود، رقم السند...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">المحافظة</label>
+                    <select name="ProvinceId" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (var item in (SelectList)ViewBag.Provinces)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == search.ProvinceId?.ToString())">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">نوع الأرض</label>
+                    <select name="LandType" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (var item in WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == search.LandType)">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الاستخدام</label>
+                    <select name="LandUse" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (var item in WaqfGIS.Web.Models.WaqfLandViewModel.LandUses)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == search.LandUse)">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الحدود</label>
+                    <select name="HasBoundary" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="true" selected="@(search.HasBoundary == true)">مع حدود</option>
+                        <option value="false" selected="@(search.HasBoundary == false)">بدون حدود</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" name="PageSize" value="@search.PageSize" />
+            <input type="hidden" name="SortBy" value="@search.SortBy" />
+            <input type="hidden" name="SortDescending" value="@search.SortDescending" />
+        </form>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:60px">#</th>
+                        <th>الكود</th>
+                        <th>الاسم</th>
+                        <th>المحافظة</th>
+                        <th>النوع</th>
+                        <th>الاستخدام</th>
+                        <th>المساحة</th>
+                        <th>الحدود</th>
+                        <th style="width:150px">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        var index = (search.PageNumber - 1) * search.PageSize;
+                        @foreach (var item in Model)
+                        {
+                            index++;
+                            <tr>
+                                <td>@index</td>
+                                <td><code>@item.Code</code></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-bold">
+                                        @item.NameAr
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(item.NameEn))
+                                    {
+                                        <br><small class="text-muted">@item.NameEn</small>
+                                    }
+                                </td>
+                                <td>@item.ProvinceName</td>
+                                <td>
+                                    @{
+                                        var typeClass = item.LandType switch
+                                        {
+                                            "Waqf" => "bg-success",
+                                            "Leased" => "bg-info",
+                                            "Disputed" => "bg-danger",
+                                            "Reserved" => "bg-warning",
+                                            _ => "bg-secondary"
+                                        };
+                                        var typeName = WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes
+                                            .FirstOrDefault(t => t.Value == item.LandType)?.Text ?? item.LandType;
+                                    }
+                                    <span class="badge @typeClass">@typeName</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var useName = WaqfGIS.Web.Models.WaqfLandViewModel.LandUses
+                                            .FirstOrDefault(u => u.Value == item.LandUse)?.Text ?? item.LandUse;
+                                    }
+                                    @useName
+                                </td>
+                                <td>
+                                    @if (item.CalculatedAreaSqm.HasValue)
+                                    {
+                                        <span>@item.CalculatedAreaSqm.Value.ToString("N0") م²</span>
+                                        @if (item.AreaDonum.HasValue)
+                                        {
+                                            <br><small class="text-muted">@item.AreaDonum.Value.ToString("N2") دونم</small>
+                                        }
+                                    }
+                                    else if (item.LegalAreaSqm.HasValue)
+                                    {
+                                        <span class="text-muted">@item.LegalAreaSqm.Value.ToString("N0") م² (قانوني)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.CalculatedAreaSqm.HasValue)
+                                    {
+                                        <span class="badge bg-success"><i class="fas fa-check"></i></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i></span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary" title="التفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger" title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted mb-0">لا توجد أراضي مطابقة لمعايير البحث</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    @if (totalPages > 1)
+    {
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == search.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Index" 
+                               asp-route-SearchTerm="@search.SearchTerm"
+                               asp-route-ProvinceId="@search.ProvinceId"
+                               asp-route-LandType="@search.LandType"
+                               asp-route-LandUse="@search.LandUse"
+                               asp-route-HasBoundary="@search.HasBoundary"
+                               asp-route-PageNumber="@i"
+                               asp-route-PageSize="@search.PageSize">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

@@ -66,6 +66,39 @@ public class MosqueBoundary : BaseEntity
 }
 
 /// <summary>
+/// حدود العقار (مضلع)
+/// </summary>
+public class PropertyBoundary : BaseEntity
+{
+    public int PropertyId { get; set; }
+    
+    /// <summary>
+    /// حدود العقار كمضلع
+    /// </summary>
+    public Polygon? Boundary { get; set; }
+    
+    /// <summary>
+    /// المساحة المحسوبة بالمتر المربع
+    /// </summary>
+    public double? CalculatedAreaSqm { get; set; }
+    
+    /// <summary>
+    /// محيط العقار بالمتر
+    /// </summary>
+    public double? PerimeterMeters { get; set; }
+    
+    /// <summary>
+    /// نوع الحدود (مبنى، أرض، سور)
+    /// </summary>
+    public string BoundaryType { get; set; } = "Building"; // Building, Land, Fence
+    
+    public string? Notes { get; set; }
+    
+    // Navigation
+    public virtual WaqfProperty Property { get; set; } = null!;
+}
+
+/// <summary>
 /// أراضي الوقف
 /// </summary>
 public class WaqfLand : BaseEntity

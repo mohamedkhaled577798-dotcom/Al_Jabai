@@ -1,0 +1,209 @@
+@{
+    ViewData["Title"] = "خريطة أراضي الوقف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-map-marked-alt text-success me-2"></i>خريطة أراضي الوقف</h4>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-success me-2">
+            <i class="fas fa-plus me-1"></i>إضافة أرض
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-list me-1"></i>عرض القائمة
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <!-- Filters -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-filter me-2"></i>التصفية</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">المحافظة</label>
+                    <select id="filterProvince" class="form-select" onchange="filterLands()">
+                        <option value="">الكل</option>
+                        @foreach (var item in (SelectList)ViewBag.Provinces)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">نوع الأرض</label>
+                    <select id="filterType" class="form-select" onchange="filterLands()">
+                        <option value="">الكل</option>
+                        @foreach (var item in WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الاستخدام</label>
+                    <select id="filterUse" class="form-select" onchange="filterLands()">
+                        <option value="">الكل</option>
+                        @foreach (var item in WaqfGIS.Web.Models.WaqfLandViewModel.LandUses)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                    <i class="fas fa-redo me-1"></i>إعادة ضبط
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>الدليل</h6>
+            </div>
+            <div class="card-body p-2">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge me-2" style="background:#28a745; width:20px; height:20px;"></span>
+                    <small>وقف</small>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge me-2" style="background:#17a2b8; width:20px; height:20px;"></span>
+                    <small>مؤجرة</small>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge me-2" style="background:#dc3545; width:20px; height:20px;"></span>
+                    <small>متنازع عليها</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge me-2" style="background:#ffc107; width:20px; height:20px;"></span>
+                    <small>محجوزة</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>الإحصائيات</h6>
+            </div>
+            <div class="card-body text-center">
+                <h4 id="landCount" class="text-primary mb-0">0</h4>
+                <small class="text-muted">أرض معروضة</small>
+                <hr>
+                <h5 id="totalArea" class="text-success mb-0">0</h5>
+                <small class="text-muted">دونم</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body p-0">
+                <div id="map" style="height: calc(100vh - 200px); min-height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var map = L.map('map').setView([33.3, 44.4], 7);
+var landsLayer = L.layerGroup().addTo(map);
+var allLands = [];
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Color by type
+function getColor(landType) {
+    switch(landType) {
+        case 'Waqf': return '#28a745';
+        case 'Leased': return '#17a2b8';
+        case 'Disputed': return '#dc3545';
+        case 'Reserved': return '#ffc107';
+        default: return '#6c757d';
+    }
+}
+
+// Load lands
+async function loadLands() {
+    try {
+        var response = await fetch('/api/GisApi/layers/waqflands/geojson');
+        var data = await response.json();
+        allLands = data.features;
+        filterLands();
+    } catch (error) {
+        console.error('Error loading lands:', error);
+    }
+}
+
+function filterLands() {
+    var province = document.getElementById('filterProvince').value;
+    var type = document.getElementById('filterType').value;
+    var use = document.getElementById('filterUse').value;
+
+    landsLayer.clearLayers();
+    var count = 0;
+    var totalArea = 0;
+
+    allLands.forEach(function(feature) {
+        var props = feature.properties;
+        
+        // Apply filters
+        if (province && props.province !== province) return;
+        if (type && props.landType !== type) return;
+        if (use && props.landUse !== use) return;
+
+        count++;
+        totalArea += props.calculatedAreaSqm || 0;
+
+        var color = getColor(props.landType);
+
+        if (feature.geometry.type === 'Point') {
+            var marker = L.circleMarker(
+                [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
+                { radius: 8, fillColor: color, color: color, fillOpacity: 0.7, weight: 2 }
+            );
+            marker.bindPopup(createPopup(props));
+            landsLayer.addLayer(marker);
+        } else {
+            var polygon = L.geoJSON(feature.geometry, {
+                style: { fillColor: color, color: color, fillOpacity: 0.4, weight: 2 }
+            });
+            polygon.bindPopup(createPopup(props));
+            landsLayer.addLayer(polygon);
+        }
+    });
+
+    document.getElementById('landCount').textContent = count;
+    document.getElementById('totalArea').textContent = (totalArea / 2500).toFixed(2);
+}
+
+function createPopup(props) {
+    return `<div style="min-width:200px">
+        <h6 class="mb-2">${props.name}</h6>
+        <p class="mb-1"><strong>الكود:</strong> ${props.code}</p>
+        <p class="mb-1"><strong>النوع:</strong> ${props.landType}</p>
+        <p class="mb-1"><strong>الاستخدام:</strong> ${props.landUse}</p>
+        ${props.calculatedAreaSqm ? '<p class="mb-1"><strong>المساحة:</strong> ' + props.calculatedAreaSqm.toFixed(0) + ' م²</p>' : ''}
+        <a href="/WaqfLands/Details/${props.id}" class="btn btn-sm btn-primary mt-2">التفاصيل</a>
+        <a href="/WaqfLands/Edit/${props.id}" class="btn btn-sm btn-warning mt-2">تعديل</a>
+    </div>`;
+}
+
+function resetFilters() {
+    document.getElementById('filterProvince').value = '';
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterUse').value = '';
+    filterLands();
+}
+
+// Initial load
+loadLands();
+</script>
+}

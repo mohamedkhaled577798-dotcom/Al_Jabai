@@ -38,6 +38,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     // GIS Tables - Phase 2
     public DbSet<GisLayer> GisLayers => Set<GisLayer>();
     public DbSet<MosqueBoundary> MosqueBoundaries => Set<MosqueBoundary>();
+    public DbSet<PropertyBoundary> PropertyBoundaries => Set<PropertyBoundary>();
     public DbSet<WaqfLand> WaqfLands => Set<WaqfLand>();
     public DbSet<Road> Roads => Set<Road>();
     public DbSet<NearbyProject> NearbyProjects => Set<NearbyProject>();
@@ -122,6 +123,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Road>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<NearbyProject>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<MosqueBoundary>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<PropertyBoundary>().HasQueryFilter(e => !e.IsDeleted);
+        
+        // PropertyBoundary configuration
+        modelBuilder.Entity<PropertyBoundary>()
+            .Property(b => b.Boundary).HasColumnType("geometry");
+        modelBuilder.Entity<PropertyBoundary>()
+            .HasOne(b => b.Property)
+            .WithMany()
+            .HasForeignKey(b => b.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

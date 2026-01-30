@@ -29,6 +29,7 @@ public class WaqfProperty : BaseEntity
     // المساحة والقيمة
     public decimal? AreaSqm { get; set; }
     public decimal? BuiltAreaSqm { get; set; }
+    public decimal? TotalArea { get; set; } // المساحة المحسوبة من الحدود
     public int? FloorsCount { get; set; }
     public int? RoomsCount { get; set; }
     public decimal? EstimatedValue { get; set; }

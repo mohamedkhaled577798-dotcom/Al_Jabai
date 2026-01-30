@@ -177,15 +177,84 @@ public class LayerService
                     name = p.NameAr,
                     nameEn = p.NameEn,
                     code = p.Code,
-                    propertyType = p.PropertyType?.NameAr,
+                    type = p.PropertyType?.NameAr,
                     usage = p.UsageType?.NameAr,
                     province = p.Province?.NameAr,
                     areaSqm = p.AreaSqm,
+                    totalArea = p.TotalArea,
                     estimatedValue = p.EstimatedValue,
                     monthlyRent = p.MonthlyRent,
                     rentalStatus = p.RentalStatus
                 }
             }).ToList();
+
+        return new { type = "FeatureCollection", features };
+    }
+
+    public async Task<object> GetMosqueBoundariesGeoJson(int? provinceId = null)
+    {
+        var query = _unitOfWork.Repository<MosqueBoundary>().Query()
+            .Include(b => b.Mosque)
+            .ThenInclude(m => m.Province)
+            .Where(b => b.Boundary != null);
+
+        if (provinceId.HasValue)
+            query = query.Where(b => b.Mosque.ProvinceId == provinceId.Value);
+
+        var boundaries = await query.ToListAsync();
+
+        var features = boundaries.Select(b => new
+        {
+            type = "Feature",
+            id = b.Id,
+            geometry = ParseGeoJson(_geometryService.ToGeoJson(b.Boundary)),
+            properties = new
+            {
+                id = b.Id,
+                entityId = b.MosqueId,
+                entityName = b.Mosque?.NameAr,
+                entityCode = b.Mosque?.Code,
+                boundaryType = b.BoundaryType,
+                calculatedAreaSqm = b.CalculatedAreaSqm,
+                perimeterMeters = b.PerimeterMeters,
+                province = b.Mosque?.Province?.NameAr,
+                entityType = "mosque"
+            }
+        }).ToList();
+
+        return new { type = "FeatureCollection", features };
+    }
+
+    public async Task<object> GetPropertyBoundariesGeoJson(int? provinceId = null)
+    {
+        var query = _unitOfWork.Repository<PropertyBoundary>().Query()
+            .Include(b => b.Property)
+            .ThenInclude(p => p.Province)
+            .Where(b => b.Boundary != null);
+
+        if (provinceId.HasValue)
+            query = query.Where(b => b.Property.ProvinceId == provinceId.Value);
+
+        var boundaries = await query.ToListAsync();
+
+        var features = boundaries.Select(b => new
+        {
+            type = "Feature",
+            id = b.Id,
+            geometry = ParseGeoJson(_geometryService.ToGeoJson(b.Boundary)),
+            properties = new
+            {
+                id = b.Id,
+                entityId = b.PropertyId,
+                entityName = b.Property?.NameAr,
+                entityCode = b.Property?.Code,
+                boundaryType = b.BoundaryType,
+                calculatedAreaSqm = b.CalculatedAreaSqm,
+                perimeterMeters = b.PerimeterMeters,
+                province = b.Property?.Province?.NameAr,
+                entityType = "property"
+            }
+        }).ToList();
 
         return new { type = "FeatureCollection", features };
     }

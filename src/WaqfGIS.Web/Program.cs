@@ -55,6 +55,8 @@ builder.Services.AddScoped<ImageUploadService>(sp =>
 builder.Services.AddScoped<WaqfGIS.Services.GIS.GeometryService>();
 builder.Services.AddScoped<WaqfGIS.Services.GIS.SpatialAnalysisService>();
 builder.Services.AddScoped<WaqfGIS.Services.GIS.LayerService>();
+builder.Services.AddScoped<WaqfGIS.Services.WaqfLandService>();
+builder.Services.AddScoped<WaqfGIS.Services.RoadService>();
 
 // Add MVC
 builder.Services.AddControllersWithViews();

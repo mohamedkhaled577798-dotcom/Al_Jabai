@@ -1,0 +1,50 @@
+@model WaqfGIS.Core.Entities.Road
+@{ ViewData["Title"] = "تفاصيل الطريق"; var geoJson = ViewBag.GeometryGeoJson as string; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4><i class="fas fa-road text-secondary me-2"></i>@Model.NameAr</h4><small class="text-muted">@Model.Code</small></div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="fas fa-edit me-1"></i>تعديل</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-7 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-route me-2"></i>مسار الطريق</h6></div>
+            <div class="card-body p-0"><div id="roadMap" style="height:400px;"></div></div>
+            @if (Model.LengthMeters.HasValue)
+            {
+                <div class="card-footer text-center"><h5 class="text-primary mb-0">@Model.LengthMeters.Value.ToString("N0") متر</h5><small>طول الطريق</small></div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات</h6></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th width="35%">الكود:</th><td><code>@Model.Code</code></td></tr>
+                    <tr><th>الاسم:</th><td>@Model.NameAr</td></tr>
+                    @if (!string.IsNullOrEmpty(Model.NameEn)){<tr><th>Name:</th><td>@Model.NameEn</td></tr>}
+                    <tr><th>المحافظة:</th><td>@(Model.Province?.NameAr ?? "-")</td></tr>
+                    <tr><th>النوع:</th><td><span class="badge bg-info">@Model.RoadType</span></td></tr>
+                    <tr><th>السطح:</th><td>@(Model.SurfaceType ?? "-")</td></tr>
+                    <tr><th>العرض:</th><td>@(Model.WidthMeters?.ToString("N1") ?? "-") م</td></tr>
+                    <tr><th>المسارات:</th><td>@(Model.LanesCount?.ToString() ?? "-")</td></tr>
+                    @if (!string.IsNullOrEmpty(Model.Notes)){<tr><th>ملاحظات:</th><td>@Model.Notes</td></tr>}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var geoJson = @Html.Raw(geoJson ?? "null");
+var map = L.map('roadMap').setView([33.3, 44.4], 7);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+if (geoJson) { var layer = L.geoJSON(geoJson, { style: { color: '#795548', weight: 5 } }).addTo(map); map.fitBounds(layer.getBounds()); }
+</script>
+}

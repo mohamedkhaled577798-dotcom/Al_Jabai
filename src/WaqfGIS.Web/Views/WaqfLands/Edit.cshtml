@@ -1,0 +1,341 @@
+@model WaqfGIS.Web.Models.WaqfLandViewModel
+@{
+    ViewData["Title"] = "تعديل أرض الوقف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-edit text-warning me-2"></i>تعديل أرض الوقف</h4>
+        <small class="text-muted">@Model.Code - @Model.NameAr</small>
+    </div>
+    <div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary me-2">
+            <i class="fas fa-eye me-1"></i>التفاصيل
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة للقائمة
+        </a>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post" id="landForm">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="Code" />
+    
+    <div class="row">
+        <!-- Form Section -->
+        <div class="col-lg-5">
+            <!-- Basic Info -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">الكود</label>
+                        <input type="text" class="form-control" value="@Model.Code" readonly disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NameAr" class="form-label"></label>
+                        <input asp-for="NameAr" class="form-control">
+                        <span asp-validation-for="NameAr" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NameEn" class="form-label"></label>
+                        <input asp-for="NameEn" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="ProvinceId" class="form-label"></label>
+                            <select asp-for="ProvinceId" asp-items="Model.Provinces" class="form-select">
+                                <option value="">-- اختر المحافظة --</option>
+                            </select>
+                            <span asp-validation-for="ProvinceId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DistrictId" class="form-label"></label>
+                            <select asp-for="DistrictId" asp-items="Model.Districts" class="form-select">
+                                <option value="">-- اختر القضاء --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="WaqfOfficeId" class="form-label"></label>
+                            <select asp-for="WaqfOfficeId" asp-items="Model.WaqfOffices" class="form-select">
+                                <option value="">-- اختر الدائرة --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Neighborhood" class="form-label"></label>
+                            <input asp-for="Neighborhood" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label"></label>
+                            <input asp-for="Address" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classification -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-tags me-2"></i>التصنيف</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="LandType" class="form-label"></label>
+                            <select asp-for="LandType" asp-items="WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes" class="form-select"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LandUse" class="form-label"></label>
+                            <select asp-for="LandUse" asp-items="WaqfGIS.Web.Models.WaqfLandViewModel.LandUses" class="form-select"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ZoningCode" class="form-label"></label>
+                            <input asp-for="ZoningCode" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="OwnershipStatus" class="form-label"></label>
+                            <select asp-for="OwnershipStatus" asp-items="WaqfGIS.Web.Models.WaqfLandViewModel.OwnershipStatuses" class="form-select">
+                                <option value="">-- اختر --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Financial -->
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>البيانات القانونية والمالية</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="DeedNumber" class="form-label"></label>
+                            <input asp-for="DeedNumber" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RegistrationNumber" class="form-label"></label>
+                            <input asp-for="RegistrationNumber" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RegistrationDate" class="form-label"></label>
+                            <input asp-for="RegistrationDate" type="date" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LegalAreaSqm" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="LegalAreaSqm" class="form-control" type="number" step="0.01">
+                                <span class="input-group-text">م²</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EstimatedValue" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="EstimatedValue" class="form-control" type="number">
+                                <span class="input-group-text">د.ع</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AnnualRevenue" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="AnnualRevenue" class="form-control" type="number">
+                                <span class="input-group-text">د.ع</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label asp-for="Notes" class="form-label"></label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="col-lg-7">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-draw-polygon me-2"></i>تعديل حدود الأرض</h6>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-light me-1" onclick="enableDraw()">
+                            <i class="fas fa-pencil-alt"></i> رسم جديد
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-light" onclick="clearDrawing()">
+                            <i class="fas fa-eraser"></i> مسح
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" style="height: 400px;"></div>
+                </div>
+                <div class="card-footer">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">المساحة</small>
+                            <h5 class="mb-0 text-primary" id="displayArea">@(Model.CalculatedAreaSqm?.ToString("N2") ?? "--")</h5>
+                            <small>م²</small>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">المساحة بالدونم</small>
+                            <h5 class="mb-0 text-success" id="displayDonum">@(Model.AreaDonum?.ToString("N2") ?? "--")</h5>
+                            <small>دونم</small>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">المحيط</small>
+                            <h5 class="mb-0 text-info" id="displayPerimeter">@(Model.PerimeterMeters?.ToString("N2") ?? "--")</h5>
+                            <small>م</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" asp-for="BoundaryGeoJson" id="BoundaryGeoJson" />
+            <input type="hidden" asp-for="CenterLatitude" />
+            <input type="hidden" asp-for="CenterLongitude" />
+
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="fas fa-save me-2"></i>حفظ التعديلات
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+var centerLat = @(Model.CenterLatitude ?? 33.3);
+var centerLng = @(Model.CenterLongitude ?? 44.4);
+var existingGeoJson = @Html.Raw(Model.BoundaryGeoJson ?? "null");
+
+var map = L.map('map').setView([centerLat, centerLng], existingGeoJson ? 15 : 7);
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Load existing boundary
+if (existingGeoJson) {
+    var layer = L.geoJSON(existingGeoJson, {
+        style: {
+            color: '#ff9800',
+            fillColor: '#ff9800',
+            fillOpacity: 0.3
+        }
+    });
+    
+    layer.eachLayer(function(l) {
+        drawnItems.addLayer(l);
+    });
+    
+    map.fitBounds(drawnItems.getBounds());
+}
+
+var drawControl = new L.Control.Draw({
+    position: 'topright',
+    draw: {
+        polygon: {
+            allowIntersection: false,
+            showArea: true,
+            shapeOptions: {
+                color: '#ff9800',
+                fillColor: '#ff9800',
+                fillOpacity: 0.3
+            }
+        },
+        polyline: false,
+        circle: false,
+        circlemarker: false,
+        marker: false,
+        rectangle: false
+    },
+    edit: {
+        featureGroup: drawnItems,
+        remove: true
+    }
+});
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED, function(e) {
+    drawnItems.clearLayers();
+    drawnItems.addLayer(e.layer);
+    updateGeometry(e.layer);
+});
+
+map.on(L.Draw.Event.EDITED, function(e) {
+    e.layers.eachLayer(function(layer) {
+        updateGeometry(layer);
+    });
+});
+
+map.on(L.Draw.Event.DELETED, function() {
+    document.getElementById('BoundaryGeoJson').value = '';
+    document.getElementById('displayArea').textContent = '--';
+    document.getElementById('displayDonum').textContent = '--';
+    document.getElementById('displayPerimeter').textContent = '--';
+});
+
+function updateGeometry(layer) {
+    var geoJson = layer.toGeoJSON();
+    document.getElementById('BoundaryGeoJson').value = JSON.stringify(geoJson.geometry);
+    
+    var latlngs = layer.getLatLngs ? layer.getLatLngs()[0] : layer.feature.geometry.coordinates[0].map(c => L.latLng(c[1], c[0]));
+    
+    if (layer.getLatLngs) {
+        var area = L.GeometryUtil.geodesicArea(latlngs);
+        var donum = area / 2500;
+        
+        var perimeter = 0;
+        for (var i = 0; i < latlngs.length - 1; i++) {
+            perimeter += latlngs[i].distanceTo(latlngs[i + 1]);
+        }
+        perimeter += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+        
+        var center = layer.getBounds().getCenter();
+        document.getElementById('CenterLatitude').value = center.lat;
+        document.getElementById('CenterLongitude').value = center.lng;
+        
+        document.getElementById('displayArea').textContent = area.toFixed(2);
+        document.getElementById('displayDonum').textContent = donum.toFixed(2);
+        document.getElementById('displayPerimeter').textContent = perimeter.toFixed(2);
+    }
+}
+
+function enableDraw() {
+    new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable();
+}
+
+function clearDrawing() {
+    drawnItems.clearLayers();
+    document.getElementById('BoundaryGeoJson').value = '';
+    document.getElementById('displayArea').textContent = '--';
+    document.getElementById('displayDonum').textContent = '--';
+    document.getElementById('displayPerimeter').textContent = '--';
+}
+</script>
+}

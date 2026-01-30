@@ -26,8 +26,9 @@ public class MapController : Controller
         _excelExportService = excelExportService;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
+        ViewBag.Provinces = await _unitOfWork.Provinces.GetAllAsync();
         return View();
     }
 

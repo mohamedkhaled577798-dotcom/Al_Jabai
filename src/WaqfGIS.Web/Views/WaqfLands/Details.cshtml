@@ -1,0 +1,174 @@
+@model WaqfGIS.Web.Models.WaqfLandViewModel
+@{
+    ViewData["Title"] = "تفاصيل أرض الوقف";
+    var typeName = WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes.FirstOrDefault(t => t.Value == Model.LandType)?.Text ?? Model.LandType;
+    var useName = WaqfGIS.Web.Models.WaqfLandViewModel.LandUses.FirstOrDefault(u => u.Value == Model.LandUse)?.Text ?? Model.LandUse;
+    var typeClass = Model.LandType switch { "Waqf" => "bg-success", "Leased" => "bg-info", "Disputed" => "bg-danger", "Reserved" => "bg-warning", _ => "bg-secondary" };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-map text-success me-2"></i>@Model.NameAr</h4>
+        <small class="text-muted">@Model.Code</small>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="fas fa-edit me-1"></i>تعديل</a>
+        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger"><i class="fas fa-trash me-1"></i>حذف</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-7 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>موقع الأرض</h6>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" style="height: 400px;"></div>
+            </div>
+            @if (Model.CalculatedAreaSqm.HasValue)
+            {
+                <div class="card-footer">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <small class="text-muted">المساحة</small>
+                            <h5 class="mb-0 text-primary">@Model.CalculatedAreaSqm.Value.ToString("N0")</h5>
+                            <small>م²</small>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">بالدونم</small>
+                            <h5 class="mb-0 text-success">@(Model.AreaDonum?.ToString("N2") ?? "--")</h5>
+                            <small>دونم</small>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">المحيط</small>
+                            <h5 class="mb-0 text-info">@(Model.PerimeterMeters?.ToString("N0") ?? "--")</h5>
+                            <small>م</small>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">القانونية</small>
+                            <h5 class="mb-0 text-secondary">@(Model.LegalAreaSqm?.ToString("N0") ?? "--")</h5>
+                            <small>م²</small>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th width="40%">الكود:</th><td><code>@Model.Code</code></td></tr>
+                    <tr><th>الاسم:</th><td>@Model.NameAr</td></tr>
+                    @if (!string.IsNullOrEmpty(Model.NameEn)) { <tr><th>Name:</th><td>@Model.NameEn</td></tr> }
+                    <tr><th>نوع الأرض:</th><td><span class="badge @typeClass">@typeName</span></td></tr>
+                    <tr><th>الاستخدام:</th><td>@useName</td></tr>
+                    @if (!string.IsNullOrEmpty(Model.ZoningCode)) { <tr><th>كود التنظيم:</th><td>@Model.ZoningCode</td></tr> }
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th width="40%">المحافظة:</th><td>@(Model.ProvinceName ?? "-")</td></tr>
+                    @if (!string.IsNullOrEmpty(Model.DistrictName)) { <tr><th>القضاء:</th><td>@Model.DistrictName</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.WaqfOfficeName)) { <tr><th>دائرة الوقف:</th><td>@Model.WaqfOfficeName</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.Neighborhood)) { <tr><th>المحلة:</th><td>@Model.Neighborhood</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.Address)) { <tr><th>العنوان:</th><td>@Model.Address</td></tr> }
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>البيانات القانونية</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    @if (!string.IsNullOrEmpty(Model.DeedNumber)) { <tr><th width="40%">رقم السند:</th><td>@Model.DeedNumber</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.RegistrationNumber)) { <tr><th>رقم التسجيل:</th><td>@Model.RegistrationNumber</td></tr> }
+                    @if (Model.RegistrationDate.HasValue) { <tr><th>تاريخ التسجيل:</th><td>@Model.RegistrationDate.Value.ToString("yyyy/MM/dd")</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.OwnershipStatus)) { <tr><th>حالة الملكية:</th><td>@(WaqfGIS.Web.Models.WaqfLandViewModel.OwnershipStatuses.FirstOrDefault(s => s.Value == Model.OwnershipStatus)?.Text ?? Model.OwnershipStatus)</td></tr> }
+                </table>
+            </div>
+        </div>
+
+        @if (Model.EstimatedValue.HasValue || Model.AnnualRevenue.HasValue)
+        {
+            <div class="card mb-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>البيانات المالية</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        @if (Model.EstimatedValue.HasValue) { <tr><th width="40%">القيمة التقديرية:</th><td>@Model.EstimatedValue.Value.ToString("N0") د.ع</td></tr> }
+                        @if (Model.AnnualRevenue.HasValue) { <tr><th>الإيراد السنوي:</th><td>@Model.AnnualRevenue.Value.ToString("N0") د.ع</td></tr> }
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Description) || !string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Description)) { <p>@Model.Description</p> }
+                    @if (!string.IsNullOrEmpty(Model.Notes)) { <p class="text-muted mb-0">@Model.Notes</p> }
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>تم الإنشاء: @Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm")
+                    @if (!string.IsNullOrEmpty(Model.CreatedBy)) { <span> بواسطة @Model.CreatedBy</span> }
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var centerLat = @(Model.CenterLatitude ?? 33.3);
+var centerLng = @(Model.CenterLongitude ?? 44.4);
+var boundaryGeoJson = @Html.Raw(Model.BoundaryGeoJson ?? "null");
+
+var map = L.map('map').setView([centerLat, centerLng], boundaryGeoJson ? 15 : 7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+if (boundaryGeoJson) {
+    var layer = L.geoJSON(boundaryGeoJson, {
+        style: { color: '#ff9800', fillColor: '#ff9800', fillOpacity: 0.4, weight: 3 }
+    }).addTo(map);
+    map.fitBounds(layer.getBounds());
+} else if (centerLat && centerLng) {
+    L.marker([centerLat, centerLng]).addTo(map);
+}
+</script>
+}

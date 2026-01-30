@@ -1,0 +1,26 @@
+@model WaqfGIS.Core.Entities.Road
+@{ ViewData["Title"] = "حذف طريق"; }
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>تأكيد حذف الطريق</h5></div>
+            <div class="card-body">
+                <div class="alert alert-warning"><i class="fas fa-info-circle me-2"></i>هل أنت متأكد من حذف هذا الطريق؟</div>
+                <table class="table">
+                    <tr><th width="30%">الكود:</th><td><code>@Model.Code</code></td></tr>
+                    <tr><th>الاسم:</th><td><strong>@Model.NameAr</strong></td></tr>
+                    <tr><th>المحافظة:</th><td>@(Model.Province?.NameAr ?? "-")</td></tr>
+                    <tr><th>النوع:</th><td>@Model.RoadType</td></tr>
+                    @if (Model.LengthMeters.HasValue){<tr><th>الطول:</th><td>@Model.LengthMeters.Value.ToString("N0") م</td></tr>}
+                </table>
+                <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post">
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-right me-1"></i>إلغاء</a>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>تأكيد الحذف</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -45,7 +45,9 @@ public class GisApiController : ControllerBase
         object? result = layerCode.ToLower() switch
         {
             "mosques" => await _layerService.GetMosquesGeoJson(provinceId),
+            "mosqueboundaries" => await _layerService.GetMosqueBoundariesGeoJson(provinceId),
             "properties" => await _layerService.GetPropertiesGeoJson(provinceId),
+            "propertyboundaries" => await _layerService.GetPropertyBoundariesGeoJson(provinceId),
             "waqflands" or "lands" => await _layerService.GetWaqfLandsGeoJson(provinceId),
             "roads" => await _layerService.GetRoadsGeoJson(provinceId),
             "projects" => await _layerService.GetNearbyProjectsGeoJson(provinceId),
@@ -148,6 +150,94 @@ public class GisApiController : ControllerBase
             return NotFound();
 
         await _unitOfWork.Repository<MosqueBoundary>().DeleteAsync(boundary);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new { success = true });
+    }
+
+    #endregion
+
+    #region Property Boundary Endpoints
+
+    [HttpPost("properties/{id}/boundary")]
+    public async Task<IActionResult> SavePropertyBoundary(int id, [FromBody] GeometryDto dto)
+    {
+        var property = await _unitOfWork.WaqfProperties.GetByIdAsync(id);
+        if (property == null)
+            return NotFound(new { error = "Property not found" });
+
+        var geometry = _geometryService.FromGeoJson(dto.GeoJson);
+        if (geometry == null || !(geometry is Polygon polygon))
+            return BadRequest(new { error = "Invalid polygon geometry" });
+
+        if (!_geometryService.IsValid(polygon))
+            polygon = (Polygon?)_geometryService.MakeValid(polygon);
+
+        var existingBoundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
+            .FirstOrDefaultAsync(b => b.PropertyId == id && b.BoundaryType == (dto.BoundaryType ?? "Building"));
+
+        if (existingBoundary != null)
+        {
+            await LogGeometryChange("PropertyBoundary", existingBoundary.Id, property.NameAr,
+                "Modified", existingBoundary.Boundary, polygon);
+
+            existingBoundary.Boundary = polygon;
+            existingBoundary.CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon);
+            existingBoundary.PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon);
+            existingBoundary.UpdatedBy = User.Identity?.Name;
+        }
+        else
+        {
+            var boundary = new PropertyBoundary
+            {
+                PropertyId = id,
+                Boundary = polygon,
+                BoundaryType = dto.BoundaryType ?? "Building",
+                CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon),
+                PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon),
+                CreatedBy = User.Identity?.Name
+            };
+
+            await _unitOfWork.Repository<PropertyBoundary>().AddAsync(boundary);
+        }
+
+        // Update property area
+        property.TotalArea = (decimal?)_geometryService.CalculateAreaSquareMeters(polygon);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new
+        {
+            success = true,
+            areaSqm = _geometryService.CalculateAreaSquareMeters(polygon),
+            perimeterMeters = _geometryService.CalculatePerimeterMeters(polygon)
+        });
+    }
+
+    [HttpGet("properties/{id}/boundary")]
+    public async Task<IActionResult> GetPropertyBoundary(int id)
+    {
+        var boundaries = await _unitOfWork.Repository<PropertyBoundary>().Query()
+            .Where(b => b.PropertyId == id)
+            .ToListAsync();
+
+        return Ok(boundaries.Select(b => new
+        {
+            id = b.Id,
+            boundaryType = b.BoundaryType,
+            geoJson = _geometryService.ToGeoJson(b.Boundary),
+            areaSqm = b.CalculatedAreaSqm,
+            perimeterMeters = b.PerimeterMeters
+        }));
+    }
+
+    [HttpDelete("properties/{propertyId}/boundary/{boundaryId}")]
+    public async Task<IActionResult> DeletePropertyBoundary(int propertyId, int boundaryId)
+    {
+        var boundary = await _unitOfWork.Repository<PropertyBoundary>().GetByIdAsync(boundaryId);
+        if (boundary == null || boundary.PropertyId != propertyId)
+            return NotFound();
+
+        await _unitOfWork.Repository<PropertyBoundary>().DeleteAsync(boundary);
         await _unitOfWork.SaveChangesAsync();
 
         return Ok(new { success = true });

@@ -1,0 +1,189 @@
+@model WaqfGIS.Services.WaqfLandStatistics
+@{
+    ViewData["Title"] = "إحصائيات أراضي الوقف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-chart-pie text-info me-2"></i>إحصائيات أراضي الوقف</h4>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-right me-1"></i>العودة للقائمة
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-map fa-2x mb-2"></i>
+                <h3 class="mb-0">@Model.TotalCount</h3>
+                <small>إجمالي الأراضي</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-ruler-combined fa-2x mb-2"></i>
+                <h3 class="mb-0">@Model.TotalAreaDonum.ToString("N0")</h3>
+                <small>إجمالي المساحة (دونم)</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h3 class="mb-0">@Model.WithBoundaryCount</h3>
+                <small>أراضي بحدود مرسومة</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                <h3 class="mb-0">@Model.TotalEstimatedValue.ToString("N0")</h3>
+                <small>القيمة التقديرية (د.ع)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- By Land Type -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-tags me-2"></i>حسب نوع الأرض</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="landTypeChart"></canvas>
+            </div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in Model.ByLandType)
+                {
+                    var typeName = WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes.FirstOrDefault(t => t.Value == item.Key)?.Text ?? item.Key;
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@typeName</span>
+                        <span class="badge bg-success">@item.Value</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- By Land Use -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-building me-2"></i>حسب الاستخدام</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="landUseChart"></canvas>
+            </div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in Model.ByLandUse)
+                {
+                    var useName = WaqfGIS.Web.Models.WaqfLandViewModel.LandUses.FirstOrDefault(u => u.Value == item.Key)?.Text ?? item.Key;
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@useName</span>
+                        <span class="badge bg-info">@item.Value</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- By Province -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>حسب المحافظة</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="provinceChart"></canvas>
+            </div>
+            <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                @foreach (var item in Model.ByProvince.OrderByDescending(p => p.Value))
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@item.Key</span>
+                        <span class="badge bg-primary">@item.Value</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Boundary Status -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-draw-polygon me-2"></i>حالة رسم الحدود</h6>
+            </div>
+            <div class="card-body">
+                <div class="progress" style="height: 30px;">
+                    @{
+                        var withBoundaryPercent = Model.TotalCount > 0 ? (Model.WithBoundaryCount * 100.0 / Model.TotalCount) : 0;
+                    }
+                    <div class="progress-bar bg-success" style="width: @withBoundaryPercent%">
+                        مع حدود: @Model.WithBoundaryCount (@withBoundaryPercent.ToString("N1")%)
+                    </div>
+                    <div class="progress-bar bg-warning" style="width: @(100 - withBoundaryPercent)%">
+                        بدون حدود: @Model.WithoutBoundaryCount (@((100 - withBoundaryPercent).ToString("N1"))%)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Land Type Chart
+new Chart(document.getElementById('landTypeChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [@Html.Raw(string.Join(",", Model.ByLandType.Keys.Select(k => $"'{WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes.FirstOrDefault(t => t.Value == k)?.Text ?? k}'")))],
+        datasets: [{
+            data: [@string.Join(",", Model.ByLandType.Values)],
+            backgroundColor: ['#28a745', '#17a2b8', '#dc3545', '#ffc107', '#6c757d', '#007bff']
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+// Land Use Chart
+new Chart(document.getElementById('landUseChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [@Html.Raw(string.Join(",", Model.ByLandUse.Keys.Select(k => $"'{WaqfGIS.Web.Models.WaqfLandViewModel.LandUses.FirstOrDefault(u => u.Value == k)?.Text ?? k}'")))],
+        datasets: [{
+            data: [@string.Join(",", Model.ByLandUse.Values)],
+            backgroundColor: ['#6c757d', '#28a745', '#17a2b8', '#ffc107', '#dc3545', '#007bff', '#6610f2', '#fd7e14']
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+// Province Chart
+new Chart(document.getElementById('provinceChart'), {
+    type: 'bar',
+    data: {
+        labels: [@Html.Raw(string.Join(",", Model.ByProvince.OrderByDescending(p => p.Value).Take(10).Select(p => $"'{p.Key}'")))],
+        datasets: [{
+            label: 'عدد الأراضي',
+            data: [@string.Join(",", Model.ByProvince.OrderByDescending(p => p.Value).Take(10).Select(p => p.Value))],
+            backgroundColor: '#007bff'
+        }]
+    },
+    options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+});
+</script>
+}

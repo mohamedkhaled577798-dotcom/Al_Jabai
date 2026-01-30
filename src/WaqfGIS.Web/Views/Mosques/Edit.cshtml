@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "تعديل مسجد";
     var images = ViewBag.Images as IEnumerable<MosqueImage> ?? new List<MosqueImage>();
+    var boundaryGeoJson = ViewBag.BoundaryGeoJson as string;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -15,8 +16,10 @@
     </div>
 </div>
 
-<form asp-action="Edit" method="post" enctype="multipart/form-data">
+<form asp-action="Edit" method="post" enctype="multipart/form-data" id="mosqueForm">
     <input type="hidden" asp-for="Id" />
+    <input type="hidden" id="BoundaryGeoJson" name="BoundaryGeoJson" value="@boundaryGeoJson" />
+    
     <div class="row">
         <div class="col-lg-8">
             <!-- البيانات الأساسية -->
@@ -35,41 +38,31 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="MosqueTypeId" class="form-label"></label>
-                            <select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes">
-                                <option value="">-- اختر --</option>
-                            </select>
+                            <select asp-for="MosqueTypeId" class="form-select" asp-items="@ViewBag.MosqueTypes"><option value="">-- اختر --</option></select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="MosqueStatusId" class="form-label"></label>
-                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses">
-                                <option value="">-- اختر --</option>
-                            </select>
+                            <select asp-for="MosqueStatusId" class="form-select" asp-items="@ViewBag.MosqueStatuses"><option value="">-- اختر --</option></select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="WaqfOfficeId" class="form-label"></label>
-                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices">
-                                <option value="">-- اختر --</option>
-                            </select>
+                            <select asp-for="WaqfOfficeId" class="form-select" asp-items="@ViewBag.WaqfOffices"><option value="">-- اختر --</option></select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ProvinceId" class="form-label"></label>
-                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
-                                <option value="">-- اختر --</option>
-                            </select>
+                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces"><option value="">-- اختر --</option></select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="DistrictId" class="form-label"></label>
-                            <select asp-for="DistrictId" class="form-select" asp-items="@ViewBag.Districts">
-                                <option value="">-- اختر --</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="Address" class="form-label"></label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <select asp-for="DistrictId" class="form-select" asp-items="@ViewBag.Districts"><option value="">-- اختر --</option></select>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Neighborhood" class="form-label"></label>
                             <input asp-for="Neighborhood" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="NearestLandmark" class="form-label"></label>
@@ -79,19 +72,48 @@
                 </div>
             </div>
 
-            <!-- الموقع -->
+            <!-- الموقع والحدود -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع</h6></div>
-                <div class="card-body">
-                    <div id="locationMap" style="height:300px;" class="mb-3"></div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="Latitude" class="form-label"></label>
-                            <input asp-for="Latitude" id="latitude" class="form-control" readonly />
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع وحدود المسجد</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light" onclick="setBaseMap('osm')" title="خريطة عادية"><i class="fas fa-map"></i></button>
+                        <button type="button" class="btn btn-light" onclick="setBaseMap('satellite')" title="صور جوية"><i class="fas fa-satellite"></i></button>
+                        <button type="button" class="btn btn-light" onclick="setBaseMap('hybrid')" title="هجين"><i class="fas fa-layer-group"></i></button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="locationMap" style="height:400px;"></div>
+                </div>
+                <div class="card-footer">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">خط العرض</label>
+                            <input asp-for="Latitude" id="latitude" class="form-control form-control-sm" readonly />
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="Longitude" class="form-label"></label>
-                            <input asp-for="Longitude" id="longitude" class="form-control" readonly />
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">خط الطول</label>
+                            <input asp-for="Longitude" id="longitude" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">أدوات الرسم</label>
+                            <div class="btn-group btn-group-sm w-100">
+                                <button type="button" class="btn btn-outline-primary" onclick="enableDrawPolygon()" title="رسم حدود"><i class="fas fa-draw-polygon"></i></button>
+                                <button type="button" class="btn btn-outline-warning" onclick="enableEditMode()" title="تعديل"><i class="fas fa-edit"></i></button>
+                                <button type="button" class="btn btn-outline-danger" onclick="clearBoundary()" title="مسح الحدود"><i class="fas fa-eraser"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="boundaryInfo" class="mt-2 p-2 bg-light rounded" style="display:none;">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <small class="text-muted">المساحة</small>
+                                <h6 class="mb-0 text-primary" id="displayArea">--</h6>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">المحيط</small>
+                                <h6 class="mb-0 text-info" id="displayPerimeter">--</h6>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -108,7 +130,7 @@
                         </div>
                         <div class="col-md-3">
                             <label asp-for="AreaSqm" class="form-label"></label>
-                            <input asp-for="AreaSqm" class="form-control" type="number" step="0.01" />
+                            <input asp-for="AreaSqm" class="form-control" type="number" step="0.01" id="areaSqmInput" />
                         </div>
                         <div class="col-md-3">
                             <label asp-for="EstablishedYear" class="form-label"></label>
@@ -166,17 +188,14 @@
                                     <div class="position-relative">
                                         <img src="@img.FilePath" class="img-fluid rounded @(img.IsMain ? "border border-3 border-primary" : "")" 
                                              style="height:80px;width:100%;object-fit:cover;cursor:pointer;" onclick="showImage('@img.FilePath')" />
-                                        @if (img.IsMain)
-                                        {<span class="badge bg-primary position-absolute top-0 start-0 m-1" style="font-size:10px;">رئيسية</span>}
+                                        @if (img.IsMain){<span class="badge bg-primary position-absolute top-0 start-0 m-1" style="font-size:10px;">رئيسية</span>}
                                         <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 p-1 text-center">
                                             <form asp-action="SetMainImage" method="post" class="d-inline">
-                                                <input type="hidden" name="imageId" value="@img.Id" />
-                                                <input type="hidden" name="mosqueId" value="@Model.Id" />
+                                                <input type="hidden" name="imageId" value="@img.Id" /><input type="hidden" name="mosqueId" value="@Model.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-light p-0 px-1" title="رئيسية"><i class="fas fa-star" style="font-size:10px;"></i></button>
                                             </form>
                                             <form asp-action="DeleteImage" method="post" class="d-inline" onsubmit="return confirm('حذف؟')">
-                                                <input type="hidden" name="imageId" value="@img.Id" />
-                                                <input type="hidden" name="mosqueId" value="@Model.Id" />
+                                                <input type="hidden" name="imageId" value="@img.Id" /><input type="hidden" name="mosqueId" value="@Model.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1"><i class="fas fa-trash" style="font-size:10px;"></i></button>
                                             </form>
                                         </div>
@@ -218,32 +237,132 @@
 </div>
 
 @section Scripts {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
 <script>
-    var lat = @Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    var lng = @Model.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    var map = L.map('locationMap').setView([lat, lng], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    var marker = L.marker([lat, lng], {draggable:true}).addTo(map);
-    marker.on('dragend', function(){ var ll = marker.getLatLng(); document.getElementById('latitude').value = ll.lat.toFixed(6); document.getElementById('longitude').value = ll.lng.toFixed(6); });
-    map.on('click', function(e){ marker.setLatLng(e.latlng); document.getElementById('latitude').value = e.latlng.lat.toFixed(6); document.getElementById('longitude').value = e.latlng.lng.toFixed(6); });
+var lat = @Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+var lng = @Model.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+var existingBoundary = @Html.Raw(boundaryGeoJson ?? "null");
 
-    function previewImages(input) {
-        var preview = document.getElementById('imagePreview');
-        preview.innerHTML = '';
-        if (input.files) {
-            Array.from(input.files).forEach(function(file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML += '<div class="col-6"><img src="'+e.target.result+'" class="img-fluid rounded" style="height:60px;width:100%;object-fit:cover;cursor:pointer;" onclick="showImage(\''+e.target.result+'\')"></div>';
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-    }
+// Base Maps
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+var hybridLayer = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { opacity: 0.4 })
+]);
 
-    function showImage(src) {
-        document.getElementById('modalImage').src = src;
-        new bootstrap.Modal(document.getElementById('imageModal')).show();
+var map = L.map('locationMap', { layers: [satelliteLayer] }).setView([lat, lng], 18);
+var currentBaseMap = 'satellite';
+
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+// Marker for location
+var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+marker.on('dragend', function() {
+    var ll = marker.getLatLng();
+    document.getElementById('latitude').value = ll.lat.toFixed(6);
+    document.getElementById('longitude').value = ll.lng.toFixed(6);
+});
+
+map.on('click', function(e) {
+    marker.setLatLng(e.latlng);
+    document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+    document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+});
+
+// Load existing boundary
+if (existingBoundary) {
+    var layer = L.geoJSON(existingBoundary, {
+        style: { color: '#1565c0', fillColor: '#1e88e5', fillOpacity: 0.3, weight: 3 }
+    });
+    layer.eachLayer(function(l) { drawnItems.addLayer(l); });
+    updateBoundaryInfo(layer.getLayers()[0]);
+    document.getElementById('boundaryInfo').style.display = 'block';
+}
+
+// Draw Control
+var drawControl = new L.Control.Draw({
+    position: 'topright',
+    draw: {
+        polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#1565c0', fillColor: '#1e88e5', fillOpacity: 0.3 } },
+        polyline: false, circle: false, circlemarker: false, marker: false, rectangle: false
+    },
+    edit: { featureGroup: drawnItems, remove: true }
+});
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED, function(e) {
+    drawnItems.clearLayers();
+    drawnItems.addLayer(e.layer);
+    updateBoundaryInfo(e.layer);
+    saveBoundaryToInput(e.layer);
+});
+
+map.on(L.Draw.Event.EDITED, function(e) {
+    e.layers.eachLayer(function(layer) {
+        updateBoundaryInfo(layer);
+        saveBoundaryToInput(layer);
+    });
+});
+
+map.on(L.Draw.Event.DELETED, function() {
+    document.getElementById('BoundaryGeoJson').value = '';
+    document.getElementById('boundaryInfo').style.display = 'none';
+});
+
+function updateBoundaryInfo(layer) {
+    if (!layer.getLatLngs) return;
+    var latlngs = layer.getLatLngs()[0];
+    var area = L.GeometryUtil.geodesicArea(latlngs);
+    var perimeter = 0;
+    for (var i = 0; i < latlngs.length - 1; i++) perimeter += latlngs[i].distanceTo(latlngs[i + 1]);
+    perimeter += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+    
+    document.getElementById('displayArea').textContent = area.toFixed(2) + ' م²';
+    document.getElementById('displayPerimeter').textContent = perimeter.toFixed(2) + ' م';
+    document.getElementById('boundaryInfo').style.display = 'block';
+    document.getElementById('areaSqmInput').value = area.toFixed(2);
+}
+
+function saveBoundaryToInput(layer) {
+    var geoJson = layer.toGeoJSON();
+    document.getElementById('BoundaryGeoJson').value = JSON.stringify(geoJson.geometry);
+}
+
+function setBaseMap(type) {
+    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer); map.removeLayer(hybridLayer);
+    if (type === 'osm') map.addLayer(osmLayer);
+    else if (type === 'satellite') map.addLayer(satelliteLayer);
+    else if (type === 'hybrid') map.addLayer(hybridLayer);
+    currentBaseMap = type;
+}
+
+function enableDrawPolygon() { new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable(); }
+function enableEditMode() { drawnItems.eachLayer(function(l) { if (l.editing) l.editing.enable(); }); }
+function clearBoundary() {
+    drawnItems.clearLayers();
+    document.getElementById('BoundaryGeoJson').value = '';
+    document.getElementById('boundaryInfo').style.display = 'none';
+}
+
+function previewImages(input) {
+    var preview = document.getElementById('imagePreview');
+    preview.innerHTML = '';
+    if (input.files) {
+        Array.from(input.files).forEach(function(file) {
+            var reader = new FileReader();
+            reader.onload = function(e) { preview.innerHTML += '<div class="col-6"><img src="'+e.target.result+'" class="img-fluid rounded" style="height:60px;width:100%;object-fit:cover;"></div>'; };
+            reader.readAsDataURL(file);
+        });
     }
+}
+
+function showImage(src) {
+    document.getElementById('modalImage').src = src;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
 </script>
 }

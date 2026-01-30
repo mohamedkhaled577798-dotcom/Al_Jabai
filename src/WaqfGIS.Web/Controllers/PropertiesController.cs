@@ -7,6 +7,7 @@ using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
+using WaqfGIS.Services.GIS;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -20,6 +21,7 @@ public class PropertiesController : Controller
     private readonly AuditLogService _auditLogService;
     private readonly ImageUploadService _imageUploadService;
     private readonly PermissionService _permissionService;
+    private readonly GeometryService _geometryService;
 
     public PropertiesController(
         PropertyService propertyService, 
@@ -27,7 +29,8 @@ public class PropertiesController : Controller
         ExcelExportService excelExportService,
         AuditLogService auditLogService,
         ImageUploadService imageUploadService,
-        PermissionService permissionService)
+        PermissionService permissionService,
+        GeometryService geometryService)
     {
         _propertyService = propertyService;
         _unitOfWork = unitOfWork;
@@ -35,6 +38,7 @@ public class PropertiesController : Controller
         _auditLogService = auditLogService;
         _imageUploadService = imageUploadService;
         _permissionService = permissionService;
+        _geometryService = geometryService;
     }
 
     public async Task<IActionResult> Index(int? provinceId, int? typeId, string? search)
@@ -74,6 +78,13 @@ public class PropertiesController : Controller
         ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
         ViewBag.AuditLogs = await _auditLogService.GetLogsAsync("Property", id);
         ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
+        
+        // Load boundary
+        var boundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
+            .FirstOrDefaultAsync(b => b.PropertyId == id && b.BoundaryType == "Building");
+        ViewBag.BoundaryGeoJson = boundary != null ? _geometryService.ToGeoJson(boundary.Boundary) : null;
+        ViewBag.BoundaryArea = boundary?.CalculatedAreaSqm;
+        
         return View(property);
     }
 
@@ -187,13 +198,19 @@ public class PropertiesController : Controller
         };
 
         ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
+        
+        // Load boundary if exists
+        var boundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
+            .FirstOrDefaultAsync(b => b.PropertyId == id && b.BoundaryType == "Building");
+        ViewBag.BoundaryGeoJson = boundary != null ? _geometryService.ToGeoJson(boundary.Boundary) : null;
+        
         await LoadViewDataAsync();
         return View(model);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, PropertyViewModel model, IFormFileCollection images)
+    public async Task<IActionResult> Edit(int id, PropertyViewModel model, IFormFileCollection images, string? BoundaryGeoJson)
     {
         if (id != model.Id) return NotFound();
 
@@ -241,6 +258,42 @@ public class PropertiesController : Controller
 
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadPropertyImagesAsync(property.Id, images, User.Identity?.Name);
+
+        // حفظ الحدود إذا وجدت
+        if (!string.IsNullOrEmpty(BoundaryGeoJson))
+        {
+            var geometry = _geometryService.FromGeoJson(BoundaryGeoJson);
+            if (geometry != null && geometry is Polygon polygon)
+            {
+                var existingBoundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
+                    .FirstOrDefaultAsync(b => b.PropertyId == id && b.BoundaryType == "Building");
+                
+                if (existingBoundary != null)
+                {
+                    existingBoundary.Boundary = polygon;
+                    existingBoundary.CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon);
+                    existingBoundary.PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon);
+                    existingBoundary.UpdatedBy = User.Identity?.Name;
+                }
+                else
+                {
+                    var newBoundary = new PropertyBoundary
+                    {
+                        PropertyId = id,
+                        Boundary = polygon,
+                        BoundaryType = "Building",
+                        CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon),
+                        PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon),
+                        CreatedBy = User.Identity?.Name
+                    };
+                    await _unitOfWork.Repository<PropertyBoundary>().AddAsync(newBoundary);
+                }
+                
+                // Update property area from boundary
+                property.TotalArea = (decimal?)_geometryService.CalculateAreaSquareMeters(polygon);
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
 
         TempData["Success"] = "تم تحديث بيانات العقار بنجاح";
         return RedirectToAction(nameof(Index));

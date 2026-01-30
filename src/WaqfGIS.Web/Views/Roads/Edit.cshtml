@@ -1,0 +1,120 @@
+@model RoadViewModel
+@{ ViewData["Title"] = Model.Id == 0 ? "إضافة طريق جديد" : "تعديل طريق"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-road text-secondary me-2"></i>@ViewData["Title"]</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+</div>
+
+<form asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" id="GeometryGeoJson" asp-for="GeometryGeoJson" />
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>البيانات الأساسية</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @if (!string.IsNullOrEmpty(Model.Code))
+                        {
+                            <div class="col-12"><label class="form-label">الكود</label><input class="form-control" value="@Model.Code" readonly /></div>
+                        }
+                        <div class="col-md-6"><label asp-for="NameAr" class="form-label">الاسم بالعربية *</label><input asp-for="NameAr" class="form-control" required /></div>
+                        <div class="col-md-6"><label asp-for="NameEn" class="form-label">الاسم بالإنجليزية</label><input asp-for="NameEn" class="form-control" /></div>
+                        <div class="col-md-6"><label asp-for="ProvinceId" class="form-label">المحافظة</label><select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="DistrictId" class="form-label">القضاء</label><select asp-for="DistrictId" class="form-select" asp-items="@ViewBag.Districts"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="RoadType" class="form-label">نوع الطريق</label><select asp-for="RoadType" class="form-select" asp-items="@ViewBag.RoadTypes"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="SurfaceType" class="form-label">نوع السطح</label><select asp-for="SurfaceType" class="form-select" asp-items="@ViewBag.SurfaceTypes"><option value="">--</option></select></div>
+                        <div class="col-md-6"><label asp-for="WidthMeters" class="form-label">العرض (متر)</label><input asp-for="WidthMeters" class="form-control" type="number" step="0.1" /></div>
+                        <div class="col-md-6"><label asp-for="LanesCount" class="form-label">عدد المسارات</label><input asp-for="LanesCount" class="form-control" type="number" /></div>
+                        <div class="col-12"><label asp-for="Notes" class="form-label">ملاحظات</label><textarea asp-for="Notes" class="form-control" rows="2"></textarea></div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid"><button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save me-2"></i>حفظ</button></div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card sticky-top" style="top:10px;">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-route me-2"></i>رسم مسار الطريق</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light" onclick="setBaseMap('osm')"><i class="fas fa-map"></i></button>
+                        <button type="button" class="btn btn-light active" onclick="setBaseMap('satellite')"><i class="fas fa-satellite"></i></button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="roadMap" style="height:500px;"></div>
+                </div>
+                <div class="card-footer">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary" onclick="startDrawLine()"><i class="fas fa-route me-1"></i>رسم</button>
+                                <button type="button" class="btn btn-outline-warning" onclick="enableEdit()"><i class="fas fa-edit me-1"></i>تعديل</button>
+                                <button type="button" class="btn btn-outline-danger" onclick="clearLine()"><i class="fas fa-eraser me-1"></i>مسح</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="lineInfo" class="text-end" style="display:none;">
+                                <strong>الطول:</strong> <span id="displayLength">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+var existingGeometry = @Html.Raw(Model.GeometryGeoJson ?? "null");
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+var map = L.map('roadMap', { layers: [satelliteLayer] }).setView([33.3, 44.4], 7);
+var drawnItems = new L.FeatureGroup().addTo(map);
+
+if (existingGeometry) {
+    var layer = L.geoJSON(existingGeometry, { style: { color: '#795548', weight: 5 } });
+    layer.eachLayer(function(l) { drawnItems.addLayer(l); });
+    map.fitBounds(layer.getBounds());
+    updateLineInfo(layer.getLayers()[0]);
+}
+
+var drawControl = new L.Control.Draw({
+    position: 'topright',
+    draw: { polygon: false, circle: false, circlemarker: false, marker: false, rectangle: false, polyline: { shapeOptions: { color: '#795548', weight: 5 } } },
+    edit: { featureGroup: drawnItems }
+});
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED, function(e) {
+    drawnItems.clearLayers();
+    drawnItems.addLayer(e.layer);
+    updateLineInfo(e.layer);
+    saveGeometry(e.layer);
+});
+
+map.on(L.Draw.Event.EDITED, function(e) { e.layers.eachLayer(function(layer) { updateLineInfo(layer); saveGeometry(layer); }); });
+map.on(L.Draw.Event.DELETED, function() { document.getElementById('GeometryGeoJson').value = ''; document.getElementById('lineInfo').style.display = 'none'; });
+
+function updateLineInfo(layer) {
+    var latlngs = layer.getLatLngs();
+    var length = 0;
+    for (var i = 0; i < latlngs.length - 1; i++) length += latlngs[i].distanceTo(latlngs[i + 1]);
+    document.getElementById('displayLength').textContent = length.toFixed(2) + ' م';
+    document.getElementById('lineInfo').style.display = 'block';
+}
+
+function saveGeometry(layer) { document.getElementById('GeometryGeoJson').value = JSON.stringify(layer.toGeoJSON().geometry); }
+function setBaseMap(type) { map.removeLayer(osmLayer); map.removeLayer(satelliteLayer); map.addLayer(type === 'osm' ? osmLayer : satelliteLayer); }
+function startDrawLine() { new L.Draw.Polyline(map, drawControl.options.draw.polyline).enable(); }
+function enableEdit() { drawnItems.eachLayer(function(l) { if (l.editing) l.editing.enable(); }); }
+function clearLine() { drawnItems.clearLayers(); document.getElementById('GeometryGeoJson').value = ''; document.getElementById('lineInfo').style.display = 'none'; }
+</script>
+}

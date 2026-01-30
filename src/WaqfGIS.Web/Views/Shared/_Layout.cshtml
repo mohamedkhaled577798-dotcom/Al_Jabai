@@ -48,6 +48,14 @@
                        asp-controller="Offices" asp-action="Index">
                         <i class="fas fa-landmark me-2"></i> الدوائر الوقفية
                     </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "WaqfLands" ? "active bg-primary rounded" : "")" 
+                       asp-controller="WaqfLands" asp-action="Index">
+                        <i class="fas fa-map me-2"></i> أراضي الوقف
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roads" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Roads" asp-action="Index">
+                        <i class="fas fa-road me-2"></i> الطرق
+                    </a>
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active bg-primary rounded" : "")" 
                        asp-controller="Reports" asp-action="Index">
                         <i class="fas fa-chart-bar me-2"></i> التقارير

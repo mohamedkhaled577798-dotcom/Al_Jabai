@@ -1,0 +1,58 @@
+@model WaqfGIS.Web.Models.WaqfLandViewModel
+@{
+    ViewData["Title"] = "حذف أرض الوقف";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>تأكيد حذف أرض الوقف</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    هل أنت متأكد من حذف أرض الوقف التالية؟ هذا الإجراء لا يمكن التراجع عنه.
+                </div>
+                
+                <table class="table">
+                    <tr>
+                        <th width="30%">الكود:</th>
+                        <td><code>@Model.Code</code></td>
+                    </tr>
+                    <tr>
+                        <th>الاسم:</th>
+                        <td><strong>@Model.NameAr</strong></td>
+                    </tr>
+                    <tr>
+                        <th>المحافظة:</th>
+                        <td>@Model.ProvinceName</td>
+                    </tr>
+                    <tr>
+                        <th>نوع الأرض:</th>
+                        <td>@(WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes.FirstOrDefault(t => t.Value == Model.LandType)?.Text ?? Model.LandType)</td>
+                    </tr>
+                    @if (Model.CalculatedAreaSqm.HasValue)
+                    {
+                        <tr>
+                            <th>المساحة:</th>
+                            <td>@Model.CalculatedAreaSqm.Value.ToString("N0") م²</td>
+                        </tr>
+                    }
+                </table>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i>تأكيد الحذف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
