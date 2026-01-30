@@ -51,6 +51,11 @@ builder.Services.AddScoped<ImageUploadService>(sp =>
     new ImageUploadService(sp.GetRequiredService<IUnitOfWork>(), 
         sp.GetRequiredService<IWebHostEnvironment>().WebRootPath));
 
+// GIS Services - Phase 2
+builder.Services.AddScoped<WaqfGIS.Services.GIS.GeometryService>();
+builder.Services.AddScoped<WaqfGIS.Services.GIS.SpatialAnalysisService>();
+builder.Services.AddScoped<WaqfGIS.Services.GIS.LayerService>();
+
 // Add MVC
 builder.Services.AddControllersWithViews();
 

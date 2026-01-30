@@ -52,6 +52,10 @@
                        asp-controller="Reports" asp-action="Index">
                         <i class="fas fa-chart-bar me-2"></i> التقارير
                     </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["action"]?.ToString() == "GisViewer" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Map" asp-action="GisViewer">
+                        <i class="fas fa-map-marked-alt me-2"></i> نظام GIS
+                    </a>
                     <hr class="border-secondary">
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active bg-primary rounded" : "")" 
                        asp-controller="Users" asp-action="Index">

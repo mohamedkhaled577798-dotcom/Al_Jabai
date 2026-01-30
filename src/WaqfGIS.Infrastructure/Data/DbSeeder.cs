@@ -24,6 +24,9 @@ public static class DbSeeder
 
         // Seed Provinces
         await SeedProvincesAsync(context);
+
+        // Seed GIS Layers
+        await SeedGisLayersAsync(context);
     }
 
     private static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
@@ -165,6 +168,108 @@ public static class DbSeeder
         };
 
         context.Provinces.AddRange(provinces);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedGisLayersAsync(ApplicationDbContext context)
+    {
+        if (await context.GisLayers.AnyAsync()) return;
+
+        var layers = new List<GisLayer>
+        {
+            new GisLayer
+            {
+                Code = "MOSQUES_POINTS",
+                NameAr = "المساجد (نقاط)",
+                NameEn = "Mosques (Points)",
+                LayerType = "Point",
+                FillColor = "#1e88e5",
+                StrokeColor = "#1565c0",
+                FillOpacity = 0.8,
+                StrokeWidth = 2,
+                IsVisible = true,
+                IsEditable = false,
+                DisplayOrder = 1,
+                SourceTable = "Mosques"
+            },
+            new GisLayer
+            {
+                Code = "MOSQUES_POLYGONS",
+                NameAr = "حدود المساجد",
+                NameEn = "Mosque Boundaries",
+                LayerType = "Polygon",
+                FillColor = "#1565c0",
+                StrokeColor = "#0d47a1",
+                FillOpacity = 0.3,
+                StrokeWidth = 2,
+                IsVisible = true,
+                IsEditable = true,
+                DisplayOrder = 2,
+                SourceTable = "MosqueBoundaries"
+            },
+            new GisLayer
+            {
+                Code = "PROPERTIES",
+                NameAr = "العقارات الوقفية",
+                NameEn = "Waqf Properties",
+                LayerType = "Point",
+                FillColor = "#43a047",
+                StrokeColor = "#2e7d32",
+                FillOpacity = 0.8,
+                StrokeWidth = 2,
+                IsVisible = true,
+                IsEditable = false,
+                DisplayOrder = 3,
+                SourceTable = "WaqfProperties"
+            },
+            new GisLayer
+            {
+                Code = "WAQF_LANDS",
+                NameAr = "أراضي الوقف",
+                NameEn = "Waqf Lands",
+                LayerType = "Polygon",
+                FillColor = "#ff9800",
+                StrokeColor = "#f57c00",
+                FillOpacity = 0.3,
+                StrokeWidth = 2,
+                IsVisible = false,
+                IsEditable = true,
+                DisplayOrder = 4,
+                SourceTable = "WaqfLands"
+            },
+            new GisLayer
+            {
+                Code = "ROADS",
+                NameAr = "الطرق",
+                NameEn = "Roads",
+                LayerType = "LineString",
+                FillColor = "#795548",
+                StrokeColor = "#795548",
+                FillOpacity = 1,
+                StrokeWidth = 3,
+                IsVisible = false,
+                IsEditable = true,
+                DisplayOrder = 5,
+                SourceTable = "Roads"
+            },
+            new GisLayer
+            {
+                Code = "NEARBY_PROJECTS",
+                NameAr = "المشاريع المجاورة",
+                NameEn = "Nearby Projects",
+                LayerType = "Polygon",
+                FillColor = "#9c27b0",
+                StrokeColor = "#7b1fa2",
+                FillOpacity = 0.3,
+                StrokeWidth = 2,
+                IsVisible = false,
+                IsEditable = true,
+                DisplayOrder = 6,
+                SourceTable = "NearbyProjects"
+            }
+        };
+
+        context.GisLayers.AddRange(layers);
         await context.SaveChangesAsync();
     }
 }

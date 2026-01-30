@@ -25,6 +25,9 @@ public interface IUnitOfWork : IDisposable
     IRepository<OfficeImage> OfficeImages { get; }
     IRepository<AuditLog> AuditLogs { get; }
 
+    // Generic repository access for GIS entities
+    IRepository<T> Repository<T>() where T : BaseEntity;
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

@@ -70,5 +70,5 @@ public class Mosque : BaseEntity
     public virtual SubDistrict? SubDistrict { get; set; }
     public virtual ICollection<MosqueDocument> Documents { get; set; } = new List<MosqueDocument>();
     public virtual ICollection<MosqueImage> Images { get; set; } = new List<MosqueImage>();
-
+    public virtual ICollection<MosqueBoundary> Boundaries { get; set; } = new List<MosqueBoundary>();
 }

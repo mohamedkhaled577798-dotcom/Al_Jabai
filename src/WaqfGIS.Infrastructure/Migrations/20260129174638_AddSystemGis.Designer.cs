@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Infrastructure.Data;
@@ -12,9 +13,11 @@ using WaqfGIS.Infrastructure.Data;
 namespace WaqfGIS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129174638_AddSystemGis")]
+    partial class AddSystemGis
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -399,164 +402,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.ToTable("Districts", (string)null);
                 });
 
-            modelBuilder.Entity("WaqfGIS.Core.Entities.GeometryAuditLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EntityId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("EntityName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<double?>("NewAreaSqm")
-                        .HasColumnType("float");
-
-                    b.Property<string>("NewGeometryWkt")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("OldAreaSqm")
-                        .HasColumnType("float");
-
-                    b.Property<string>("OldGeometryWkt")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Timestamp");
-
-                    b.HasIndex("EntityType", "EntityId");
-
-                    b.ToTable("GeometryAuditLogs");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.GisLayer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FillColor")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("FillOpacity")
-                        .HasColumnType("float");
-
-                    b.Property<string>("GeometryColumn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IconUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsEditable")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsVisible")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LayerType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("MaxZoom")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("MinZoom")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NameEn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SourceTable")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StrokeColor")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("StrokeWidth")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("GisLayers");
-                });
-
             modelBuilder.Entity("WaqfGIS.Core.Entities.Mosque", b =>
                 {
                     b.Property<int>("Id")
@@ -735,55 +580,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.HasIndex("WaqfOfficeId");
 
                     b.ToTable("Mosques", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueBoundary", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Polygon>("Boundary")
-                        .HasColumnType("geometry");
-
-                    b.Property<string>("BoundaryType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("CalculatedAreaSqm")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MosqueId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("PerimeterMeters")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MosqueId");
-
-                    b.ToTable("MosqueBoundaries");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueDocument", b =>
@@ -999,95 +795,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("MosqueTypes");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.NearbyProject", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Geometry>("Boundary")
-                        .HasColumnType("geometry");
-
-                    b.Property<double?>("CalculatedAreaSqm")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("CompletionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeveloperName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("DistrictId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<Point>("Location")
-                        .HasColumnType("geometry");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NameEn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OwnerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProjectType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("ProjectValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("ProvinceId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("DistrictId");
-
-                    b.HasIndex("ProvinceId");
-
-                    b.ToTable("NearbyProjects");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.OfficeImage", b =>
@@ -1423,80 +1130,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.ToTable("Provinces", (string)null);
                 });
 
-            modelBuilder.Entity("WaqfGIS.Core.Entities.Road", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("DistrictId")
-                        .HasColumnType("int");
-
-                    b.Property<LineString>("Geometry")
-                        .HasColumnType("geometry");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("LanesCount")
-                        .HasColumnType("int");
-
-                    b.Property<double?>("LengthMeters")
-                        .HasColumnType("float");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NameEn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ProvinceId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RoadType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SurfaceType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("WidthMeters")
-                        .HasColumnType("float");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("DistrictId");
-
-                    b.HasIndex("ProvinceId");
-
-                    b.ToTable("Roads");
-                });
-
             modelBuilder.Entity("WaqfGIS.Core.Entities.SubDistrict", b =>
                 {
                     b.Property<int>("Id")
@@ -1585,125 +1218,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("UsageTypes");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfLand", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("AnnualRevenue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("AreaDonum")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Geometry>("Boundary")
-                        .HasColumnType("geometry");
-
-                    b.Property<double?>("CalculatedAreaSqm")
-                        .HasColumnType("float");
-
-                    b.Property<Point>("CenterPoint")
-                        .HasColumnType("geometry");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeedNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("DistrictId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("EstimatedValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LandType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LandUse")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("LegalAreaSqm")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NameEn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Neighborhood")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OwnershipStatus")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("PerimeterMeters")
-                        .HasColumnType("float");
-
-                    b.Property<int>("ProvinceId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("RegistrationDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RegistrationNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("Uuid")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("WaqfOfficeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ZoningCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("DistrictId");
-
-                    b.HasIndex("ProvinceId");
-
-                    b.HasIndex("WaqfOfficeId");
-
-                    b.ToTable("WaqfLands");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfOffice", b =>
@@ -2126,17 +1640,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Navigation("WaqfOffice");
                 });
 
-            modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueBoundary", b =>
-                {
-                    b.HasOne("WaqfGIS.Core.Entities.Mosque", "Mosque")
-                        .WithMany("Boundaries")
-                        .HasForeignKey("MosqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Mosque");
-                });
-
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueDocument", b =>
                 {
                     b.HasOne("WaqfGIS.Core.Entities.Mosque", "Mosque")
@@ -2157,21 +1660,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Mosque");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.NearbyProject", b =>
-                {
-                    b.HasOne("WaqfGIS.Core.Entities.District", "District")
-                        .WithMany()
-                        .HasForeignKey("DistrictId");
-
-                    b.HasOne("WaqfGIS.Core.Entities.Province", "Province")
-                        .WithMany()
-                        .HasForeignKey("ProvinceId");
-
-                    b.Navigation("District");
-
-                    b.Navigation("Province");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.OfficeImage", b =>
@@ -2207,21 +1695,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Navigation("WaqfProperty");
                 });
 
-            modelBuilder.Entity("WaqfGIS.Core.Entities.Road", b =>
-                {
-                    b.HasOne("WaqfGIS.Core.Entities.District", "District")
-                        .WithMany()
-                        .HasForeignKey("DistrictId");
-
-                    b.HasOne("WaqfGIS.Core.Entities.Province", "Province")
-                        .WithMany()
-                        .HasForeignKey("ProvinceId");
-
-                    b.Navigation("District");
-
-                    b.Navigation("Province");
-                });
-
             modelBuilder.Entity("WaqfGIS.Core.Entities.SubDistrict", b =>
                 {
                     b.HasOne("WaqfGIS.Core.Entities.District", "District")
@@ -2231,29 +1704,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("District");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfLand", b =>
-                {
-                    b.HasOne("WaqfGIS.Core.Entities.District", "District")
-                        .WithMany()
-                        .HasForeignKey("DistrictId");
-
-                    b.HasOne("WaqfGIS.Core.Entities.Province", "Province")
-                        .WithMany()
-                        .HasForeignKey("ProvinceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfGIS.Core.Entities.WaqfOffice", "WaqfOffice")
-                        .WithMany()
-                        .HasForeignKey("WaqfOfficeId");
-
-                    b.Navigation("District");
-
-                    b.Navigation("Province");
-
-                    b.Navigation("WaqfOffice");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfOffice", b =>
@@ -2343,8 +1793,6 @@ namespace WaqfGIS.Infrastructure.Migrations
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.Mosque", b =>
                 {
-                    b.Navigation("Boundaries");
-
                     b.Navigation("Documents");
 
                     b.Navigation("Images");

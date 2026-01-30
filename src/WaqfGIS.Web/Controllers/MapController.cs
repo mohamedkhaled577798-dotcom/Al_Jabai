@@ -31,6 +31,13 @@ public class MapController : Controller
         return View();
     }
 
+    public async Task<IActionResult> GisViewer()
+    {
+        ViewBag.Provinces = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
+            await _unitOfWork.Provinces.GetAllAsync(), "Id", "NameAr");
+        return View();
+    }
+
     [HttpGet]
     public async Task<IActionResult> ExportAll()
     {

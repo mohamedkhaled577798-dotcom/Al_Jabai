@@ -1,0 +1,622 @@
+@{
+    ViewData["Title"] = "نظام GIS";
+    Layout = "_Layout";
+}
+
+<style>
+    #gisMap { height: calc(100vh - 200px); min-height: 500px; }
+    .layer-control { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .layer-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+    .layer-item:last-child { border-bottom: none; }
+    .layer-color { width: 20px; height: 20px; border-radius: 4px; display: inline-block; margin-left: 8px; }
+    .analysis-panel { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    .drawing-tools .btn { margin: 2px; }
+    .info-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 8px; max-width: 300px; display: none; }
+    .measurement-display { background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+    .leaflet-draw-toolbar a { background-color: #fff !important; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-map-marked-alt text-primary me-2"></i>نظام المعلومات الجغرافية</h4>
+        <small class="text-muted">إدارة وتحليل البيانات المكانية</small>
+    </div>
+    <div>
+        <button class="btn btn-outline-primary me-2" onclick="refreshAllLayers()"><i class="fas fa-sync-alt me-1"></i>تحديث</button>
+        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#analysisModal"><i class="fas fa-chart-area me-1"></i>تحليل مكاني</button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-lg-3 mb-3">
+        <!-- Drawing Tools -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-draw-polygon me-2"></i>أدوات الرسم</h6>
+            </div>
+            <div class="card-body drawing-tools">
+                <div class="btn-group-vertical w-100" role="group">
+                    <button class="btn btn-outline-primary" onclick="enableDrawPolygon()"><i class="fas fa-vector-square me-2"></i>رسم مضلع</button>
+                    <button class="btn btn-outline-info" onclick="enableDrawLine()"><i class="fas fa-route me-2"></i>رسم خط</button>
+                    <button class="btn btn-outline-success" onclick="enableDrawMarker()"><i class="fas fa-map-marker-alt me-2"></i>إضافة نقطة</button>
+                    <button class="btn btn-outline-warning" onclick="enableEditMode()"><i class="fas fa-edit me-2"></i>تعديل</button>
+                    <button class="btn btn-outline-danger" onclick="deleteSelected()"><i class="fas fa-trash me-2"></i>حذف المحدد</button>
+                </div>
+                <div id="measurementDisplay" class="measurement-display" style="display:none;">
+                    <div id="areaDisplay"></div>
+                    <div id="perimeterDisplay"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layers Control -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-layer-group me-2"></i>الطبقات</h6>
+            </div>
+            <div class="card-body layer-control">
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerMosques" checked onchange="toggleLayer('mosques', this.checked)">
+                        <label class="form-check-label" for="layerMosques">
+                            <span class="layer-color" style="background:#1e88e5;"></span>المساجد
+                        </label>
+                    </div>
+                </div>
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerMosquePolygons" checked onchange="toggleLayer('mosquePolygons', this.checked)">
+                        <label class="form-check-label" for="layerMosquePolygons">
+                            <span class="layer-color" style="background:#1565c0;"></span>حدود المساجد
+                        </label>
+                    </div>
+                </div>
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerProperties" checked onchange="toggleLayer('properties', this.checked)">
+                        <label class="form-check-label" for="layerProperties">
+                            <span class="layer-color" style="background:#43a047;"></span>العقارات
+                        </label>
+                    </div>
+                </div>
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerLands" onchange="toggleLayer('lands', this.checked)">
+                        <label class="form-check-label" for="layerLands">
+                            <span class="layer-color" style="background:#ff9800;"></span>أراضي الوقف
+                        </label>
+                    </div>
+                </div>
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerRoads" onchange="toggleLayer('roads', this.checked)">
+                        <label class="form-check-label" for="layerRoads">
+                            <span class="layer-color" style="background:#795548;"></span>الطرق
+                        </label>
+                    </div>
+                </div>
+                <div class="layer-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="layerProjects" onchange="toggleLayer('projects', this.checked)">
+                        <label class="form-check-label" for="layerProjects">
+                            <span class="layer-color" style="background:#9c27b0;"></span>المشاريع المجاورة
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Base Maps -->
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-map me-2"></i>الخريطة الأساسية</h6>
+            </div>
+            <div class="card-body">
+                <div class="btn-group-vertical w-100" role="group">
+                    <button class="btn btn-outline-secondary active" onclick="setBaseMap('osm')">OpenStreetMap</button>
+                    <button class="btn btn-outline-secondary" onclick="setBaseMap('satellite')">صور فضائية</button>
+                    <button class="btn btn-outline-secondary" onclick="setBaseMap('terrain')">تضاريس</button>
+                    <button class="btn btn-outline-secondary" onclick="setBaseMap('dark')">وضع داكن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-body p-0">
+                <div id="gisMap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Panel -->
+<div id="infoPanel" class="info-panel shadow"></div>
+
+<!-- Analysis Modal -->
+<div class="modal fade" id="analysisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-chart-area me-2"></i>التحليل المكاني</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="analysisTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="buffer-tab" data-bs-toggle="tab" data-bs-target="#bufferPane" type="button">تحليل Buffer</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="intersection-tab" data-bs-toggle="tab" data-bs-target="#intersectionPane" type="button">تحليل التقاطع</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="overlap-tab" data-bs-toggle="tab" data-bs-target="#overlapPane" type="button">كشف التداخل</button>
+                    </li>
+                </ul>
+                <div class="tab-content p-3" id="analysisTabContent">
+                    <!-- Buffer Analysis -->
+                    <div class="tab-pane fade show active" id="bufferPane">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">نوع الكيان</label>
+                                <select id="bufferEntityType" class="form-select">
+                                    <option value="mosque">مسجد</option>
+                                    <option value="land">أرض وقف</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الكيان</label>
+                                <select id="bufferEntityId" class="form-select"></select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">المسافة (متر)</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="bufferDistance" id="buffer50" value="50">
+                                    <label class="btn btn-outline-primary" for="buffer50">50م</label>
+                                    <input type="radio" class="btn-check" name="bufferDistance" id="buffer100" value="100" checked>
+                                    <label class="btn btn-outline-primary" for="buffer100">100م</label>
+                                    <input type="radio" class="btn-check" name="bufferDistance" id="buffer200" value="200">
+                                    <label class="btn btn-outline-primary" for="buffer200">200م</label>
+                                    <input type="radio" class="btn-check" name="bufferDistance" id="buffer500" value="500">
+                                    <label class="btn btn-outline-primary" for="buffer500">500م</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-success w-100" onclick="runBufferAnalysis()"><i class="fas fa-play me-2"></i>تشغيل التحليل</button>
+                            </div>
+                        </div>
+                        <div id="bufferResults" class="mt-3"></div>
+                    </div>
+
+                    <!-- Intersection Analysis -->
+                    <div class="tab-pane fade" id="intersectionPane">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">أرض الوقف</label>
+                                <select id="intersectionLandId" class="form-select"></select>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-success w-100" onclick="runIntersectionAnalysis()"><i class="fas fa-play me-2"></i>تحليل تقاطع الطرق</button>
+                            </div>
+                        </div>
+                        <div id="intersectionResults" class="mt-3"></div>
+                    </div>
+
+                    <!-- Overlap Detection -->
+                    <div class="tab-pane fade" id="overlapPane">
+                        <p class="text-muted">كشف التداخلات بين أراضي الوقف</p>
+                        <button class="btn btn-warning w-100" onclick="runOverlapDetection()"><i class="fas fa-search me-2"></i>كشف التداخلات</button>
+                        <div id="overlapResults" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Boundary Modal -->
+<div class="modal fade" id="saveBoundaryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-save me-2"></i>حفظ الحدود</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">نوع الكيان</label>
+                    <select id="saveBoundaryType" class="form-select" onchange="loadEntitiesForBoundary()">
+                        <option value="mosque">حدود مسجد</option>
+                        <option value="land">أرض وقف جديدة</option>
+                        <option value="road">طريق جديد</option>
+                    </select>
+                </div>
+                <div id="mosqueBoundaryFields">
+                    <div class="mb-3">
+                        <label class="form-label">المسجد</label>
+                        <select id="boundaryMosqueId" class="form-select"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">نوع الحدود</label>
+                        <select id="boundaryTypeSelect" class="form-select">
+                            <option value="Building">مبنى المسجد</option>
+                            <option value="Land">أرض المسجد</option>
+                            <option value="Fence">السور</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="landBoundaryFields" style="display:none;">
+                    <div class="mb-3">
+                        <label class="form-label">اسم الأرض</label>
+                        <input type="text" id="landNameAr" class="form-control" placeholder="اسم الأرض بالعربية">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المحافظة</label>
+                        <select id="landProvinceId" class="form-select" asp-items="@ViewBag.Provinces"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">نوع الأرض</label>
+                        <select id="landType" class="form-select">
+                            <option value="Waqf">وقف</option>
+                            <option value="Leased">مؤجرة</option>
+                            <option value="Disputed">متنازع عليها</option>
+                            <option value="Reserved">محجوزة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <strong>المساحة المحسوبة:</strong> <span id="calculatedArea">-</span> م²
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveBoundary()"><i class="fas fa-save me-2"></i>حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<!-- Leaflet Draw Plugin -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+// ========== Map Initialization ==========
+var map = L.map('gisMap').setView([33.3, 44.4], 7);
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+// Base Maps
+var baseMaps = {
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }),
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
+    terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' }),
+    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' })
+};
+baseMaps.osm.addTo(map);
+var currentBaseMap = 'osm';
+
+// Layer Groups
+var layers = {
+    mosques: L.layerGroup().addTo(map),
+    mosquePolygons: L.layerGroup().addTo(map),
+    properties: L.layerGroup().addTo(map),
+    lands: L.layerGroup(),
+    roads: L.layerGroup(),
+    projects: L.layerGroup(),
+    analysis: L.layerGroup().addTo(map)
+};
+
+// Layer Styles
+var styles = {
+    mosques: { color: '#1e88e5', fillColor: '#1e88e5', fillOpacity: 0.3, weight: 2 },
+    mosquePolygons: { color: '#1565c0', fillColor: '#1565c0', fillOpacity: 0.2, weight: 2 },
+    properties: { color: '#43a047', fillColor: '#43a047', fillOpacity: 0.3, weight: 2 },
+    lands: { color: '#ff9800', fillColor: '#ff9800', fillOpacity: 0.3, weight: 2 },
+    roads: { color: '#795548', weight: 4 },
+    projects: { color: '#9c27b0', fillColor: '#9c27b0', fillOpacity: 0.3, weight: 2 },
+    buffer: { color: '#f44336', fillColor: '#f44336', fillOpacity: 0.1, weight: 2, dashArray: '5,5' }
+};
+
+// ========== Drawing Tools ==========
+var drawControl = new L.Control.Draw({
+    position: 'topright',
+    draw: {
+        polygon: { allowIntersection: false, showArea: true, shapeOptions: styles.lands },
+        polyline: { shapeOptions: styles.roads },
+        marker: true,
+        circle: false,
+        circlemarker: false,
+        rectangle: false
+    },
+    edit: { featureGroup: drawnItems, remove: true }
+});
+map.addControl(drawControl);
+
+// Drawing Events
+map.on(L.Draw.Event.CREATED, function(e) {
+    var layer = e.layer;
+    drawnItems.addLayer(layer);
+    
+    if (e.layerType === 'polygon') {
+        var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+        var perimeter = 0;
+        var latlngs = layer.getLatLngs()[0];
+        for (var i = 0; i < latlngs.length - 1; i++) {
+            perimeter += latlngs[i].distanceTo(latlngs[i + 1]);
+        }
+        perimeter += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+        
+        document.getElementById('measurementDisplay').style.display = 'block';
+        document.getElementById('areaDisplay').innerHTML = '<i class="fas fa-vector-square me-1"></i>المساحة: ' + (area).toFixed(2) + ' م²';
+        document.getElementById('perimeterDisplay').innerHTML = '<i class="fas fa-ruler me-1"></i>المحيط: ' + (perimeter).toFixed(2) + ' م';
+        document.getElementById('calculatedArea').textContent = area.toFixed(2);
+        
+        // Show save modal
+        window.currentDrawnLayer = layer;
+        loadMosquesForBoundary();
+        new bootstrap.Modal(document.getElementById('saveBoundaryModal')).show();
+    }
+});
+
+function enableDrawPolygon() {
+    new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable();
+}
+
+function enableDrawLine() {
+    new L.Draw.Polyline(map, drawControl.options.draw.polyline).enable();
+}
+
+function enableDrawMarker() {
+    new L.Draw.Marker(map).enable();
+}
+
+function enableEditMode() {
+    drawnItems.eachLayer(function(layer) {
+        if (layer.editing) layer.editing.enable();
+    });
+}
+
+function deleteSelected() {
+    drawnItems.clearLayers();
+    document.getElementById('measurementDisplay').style.display = 'none';
+}
+
+// ========== Layer Management ==========
+function setBaseMap(mapType) {
+    map.removeLayer(baseMaps[currentBaseMap]);
+    baseMaps[mapType].addTo(map);
+    currentBaseMap = mapType;
+    document.querySelectorAll('.card:last-child .btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function toggleLayer(layerName, visible) {
+    if (visible) {
+        map.addLayer(layers[layerName]);
+        if (layers[layerName].getLayers().length === 0) {
+            loadLayer(layerName);
+        }
+    } else {
+        map.removeLayer(layers[layerName]);
+    }
+}
+
+async function loadLayer(layerName) {
+    try {
+        var endpoint = layerName === 'mosquePolygons' ? 'mosques' : layerName;
+        var response = await fetch('/api/GisApi/layers/' + endpoint + '/geojson');
+        var data = await response.json();
+        
+        layers[layerName].clearLayers();
+        
+        if (layerName === 'mosques') {
+            data.features.filter(f => !f.properties.isPolygon).forEach(f => {
+                var marker = L.circleMarker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {
+                    radius: 8, ...styles.mosques
+                }).bindPopup(createMosquePopup(f.properties));
+                layers.mosques.addLayer(marker);
+            });
+        } else if (layerName === 'mosquePolygons') {
+            data.features.filter(f => f.properties.isPolygon).forEach(f => {
+                var polygon = L.geoJSON(f.geometry, { style: styles.mosquePolygons })
+                    .bindPopup(createMosquePopup(f.properties));
+                layers.mosquePolygons.addLayer(polygon);
+            });
+        } else {
+            L.geoJSON(data, {
+                style: styles[layerName] || styles.lands,
+                pointToLayer: function(f, latlng) {
+                    return L.circleMarker(latlng, { radius: 6, ...styles[layerName] });
+                },
+                onEachFeature: function(f, layer) {
+                    layer.bindPopup(createGenericPopup(f.properties, layerName));
+                }
+            }).addTo(layers[layerName]);
+        }
+    } catch (error) {
+        console.error('Error loading layer:', error);
+    }
+}
+
+function createMosquePopup(props) {
+    return `<div class="text-center">
+        <h6><i class="fas fa-mosque text-primary me-1"></i>${props.name}</h6>
+        <hr class="my-2">
+        <p class="mb-1"><strong>النوع:</strong> ${props.type || '-'}</p>
+        <p class="mb-1"><strong>الحالة:</strong> <span style="color:${props.statusColor}">${props.status || '-'}</span></p>
+        <p class="mb-1"><strong>السعة:</strong> ${props.capacity || '-'} مصلي</p>
+        ${props.areaSqm ? '<p class="mb-1"><strong>المساحة:</strong> ' + props.areaSqm.toFixed(2) + ' م²</p>' : ''}
+        <a href="/Mosques/Details/${props.id}" class="btn btn-sm btn-primary mt-2">التفاصيل</a>
+        <button class="btn btn-sm btn-outline-primary mt-2" onclick="drawBoundaryForMosque(${props.id})">رسم الحدود</button>
+    </div>`;
+}
+
+function createGenericPopup(props, layerName) {
+    return `<div><h6>${props.name || props.nameAr}</h6>
+        <p class="mb-1">${props.type || props.landType || props.roadType || ''}</p>
+        ${props.areaSqm ? '<p class="mb-1"><strong>المساحة:</strong> ' + props.areaSqm.toFixed(2) + ' م²</p>' : ''}
+        ${props.lengthMeters ? '<p class="mb-1"><strong>الطول:</strong> ' + props.lengthMeters.toFixed(2) + ' م</p>' : ''}
+    </div>`;
+}
+
+function refreshAllLayers() {
+    Object.keys(layers).forEach(name => {
+        if (map.hasLayer(layers[name]) && name !== 'analysis') {
+            loadLayer(name);
+        }
+    });
+}
+
+// ========== Save Boundary ==========
+async function loadMosquesForBoundary() {
+    var response = await fetch('/api/GisApi/layers/mosques/geojson');
+    var data = await response.json();
+    var select = document.getElementById('boundaryMosqueId');
+    select.innerHTML = '<option value="">اختر مسجد</option>';
+    data.features.filter(f => !f.properties.isPolygon).forEach(f => {
+        select.innerHTML += `<option value="${f.properties.id}">${f.properties.name}</option>`;
+    });
+}
+
+function loadEntitiesForBoundary() {
+    var type = document.getElementById('saveBoundaryType').value;
+    document.getElementById('mosqueBoundaryFields').style.display = type === 'mosque' ? 'block' : 'none';
+    document.getElementById('landBoundaryFields').style.display = type === 'land' ? 'block' : 'none';
+}
+
+async function saveBoundary() {
+    if (!window.currentDrawnLayer) return;
+    
+    var geoJson = JSON.stringify(window.currentDrawnLayer.toGeoJSON().geometry);
+    var type = document.getElementById('saveBoundaryType').value;
+    
+    try {
+        var response;
+        if (type === 'mosque') {
+            var mosqueId = document.getElementById('boundaryMosqueId').value;
+            var boundaryType = document.getElementById('boundaryTypeSelect').value;
+            response = await fetch(`/api/GisApi/mosques/${mosqueId}/boundary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ geoJson: geoJson, boundaryType: boundaryType })
+            });
+        } else if (type === 'land') {
+            response = await fetch('/api/GisApi/lands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nameAr: document.getElementById('landNameAr').value,
+                    provinceId: parseInt(document.getElementById('landProvinceId').value),
+                    landType: document.getElementById('landType').value,
+                    boundaryGeoJson: geoJson
+                })
+            });
+        }
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('saveBoundaryModal')).hide();
+            drawnItems.clearLayers();
+            refreshAllLayers();
+            alert('تم الحفظ بنجاح!');
+        } else {
+            alert('حدث خطأ أثناء الحفظ');
+        }
+    } catch (error) {
+        console.error('Error saving:', error);
+        alert('حدث خطأ أثناء الحفظ');
+    }
+}
+
+function drawBoundaryForMosque(mosqueId) {
+    document.getElementById('boundaryMosqueId').value = mosqueId;
+    enableDrawPolygon();
+}
+
+// ========== Spatial Analysis ==========
+async function runBufferAnalysis() {
+    var type = document.getElementById('bufferEntityType').value;
+    var id = document.getElementById('bufferEntityId').value;
+    var distance = document.querySelector('input[name="bufferDistance"]:checked').value;
+    
+    layers.analysis.clearLayers();
+    
+    try {
+        var response = await fetch(`/api/GisApi/analysis/buffer/${type}/${id}?distance=${distance}`);
+        var data = await response.json();
+        
+        // Draw buffer
+        if (data.bufferGeoJson) {
+            var bufferLayer = L.geoJSON(JSON.parse(data.bufferGeoJson), { style: styles.buffer });
+            layers.analysis.addLayer(bufferLayer);
+            map.fitBounds(bufferLayer.getBounds());
+        }
+        
+        // Show results
+        var html = `<div class="alert alert-success">
+            <strong>نتائج تحليل Buffer (${distance}م)</strong><br>
+            مساحة Buffer: ${data.bufferAreaSqm.toFixed(2)} م²<br>
+            المساجد القريبة: ${data.nearbyMosques.length}<br>
+            العقارات القريبة: ${data.nearbyProperties.length}
+        </div>`;
+        
+        if (data.nearbyMosques.length > 0) {
+            html += '<h6>المساجد القريبة:</h6><ul class="list-group list-group-flush">';
+            data.nearbyMosques.forEach(m => {
+                html += `<li class="list-group-item d-flex justify-content-between">${m.name}<span class="badge bg-primary">${m.distanceMeters.toFixed(0)}م</span></li>`;
+            });
+            html += '</ul>';
+        }
+        
+        document.getElementById('bufferResults').innerHTML = html;
+    } catch (error) {
+        document.getElementById('bufferResults').innerHTML = '<div class="alert alert-danger">حدث خطأ في التحليل</div>';
+    }
+}
+
+async function runOverlapDetection() {
+    try {
+        var response = await fetch('/api/GisApi/analysis/overlaps');
+        var data = await response.json();
+        
+        var html = `<div class="alert ${data.length > 0 ? 'alert-warning' : 'alert-success'}">
+            تم العثور على ${data.length} تداخل
+        </div>`;
+        
+        if (data.length > 0) {
+            html += '<ul class="list-group">';
+            data.forEach(o => {
+                html += `<li class="list-group-item">
+                    <strong>${o.entity1Name}</strong> و <strong>${o.entity2Name}</strong><br>
+                    <small>مساحة التداخل: ${o.overlapAreaSqm.toFixed(2)} م²</small>
+                </li>`;
+            });
+            html += '</ul>';
+        }
+        
+        document.getElementById('overlapResults').innerHTML = html;
+    } catch (error) {
+        document.getElementById('overlapResults').innerHTML = '<div class="alert alert-danger">حدث خطأ</div>';
+    }
+}
+
+// ========== Initial Load ==========
+document.addEventListener('DOMContentLoaded', function() {
+    loadLayer('mosques');
+    loadLayer('mosquePolygons');
+    loadLayer('properties');
+    
+    // Load mosques for buffer analysis dropdown
+    fetch('/api/GisApi/layers/mosques/geojson').then(r => r.json()).then(data => {
+        var select = document.getElementById('bufferEntityId');
+        data.features.filter(f => !f.properties.isPolygon).forEach(f => {
+            select.innerHTML += `<option value="${f.properties.id}">${f.properties.name}</option>`;
+        });
+    });
+});
+</script>
+}

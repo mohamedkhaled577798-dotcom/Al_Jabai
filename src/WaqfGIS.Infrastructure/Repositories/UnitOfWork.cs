@@ -54,6 +54,19 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<OfficeImage> OfficeImages => _officeImages ??= new Repository<OfficeImage>(_context);
     public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
 
+    // Dictionary to cache generic repositories
+    private readonly Dictionary<Type, object> _repositories = new();
+
+    public IRepository<T> Repository<T>() where T : BaseEntity
+    {
+        var type = typeof(T);
+        if (!_repositories.ContainsKey(type))
+        {
+            _repositories[type] = new Repository<T>(_context);
+        }
+        return (IRepository<T>)_repositories[type];
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();
