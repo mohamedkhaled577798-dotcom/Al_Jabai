@@ -1,0 +1,151 @@
+@model IEnumerable<WaqfGIS.Core.Entities.PropertyComparison>
+
+@{
+    ViewData["Title"] = "مقارنة العقارات";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-balance-scale"></i> مقارنة العقارات</h2>
+        <div>
+            <a asp-action="PricingAnalysis" class="btn btn-info">
+                <i class="fas fa-chart-line"></i> تحليل الأسعار
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createComparisonModal">
+                <i class="fas fa-plus"></i> مقارنة جديدة
+            </button>
+        </div>
+    </div>
+
+    <!-- Comparisons List -->
+    <div class="row">
+        @if (Model.Any())
+        {
+            @foreach (var comparison in Model)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">@comparison.ComparisonName</h5>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(comparison.Description))
+                            {
+                                <p class="text-muted">@comparison.Description</p>
+                            }
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> @comparison.ComparisonDate.ToString("yyyy/MM/dd")
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> @comparison.CreatedBy
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <a asp-action="Details" asp-route-id="@comparison.Id" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> عرض المقارنة
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h4>لا توجد مقارنات</h4>
+                        <p class="text-muted">ابدأ بإنشاء مقارنة جديدة بين العقارات</p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createComparisonModal">
+                            <i class="fas fa-plus"></i> إنشاء مقارنة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Create Comparison Modal -->
+<div class="modal fade" id="createComparisonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إنشاء مقارنة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createComparisonForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اسم المقارنة</label>
+                        <input type="text" class="form-control" id="comparisonName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الوصف</label>
+                        <textarea class="form-control" id="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">اختر العقارات للمقارنة (2 على الأقل)</label>
+                        <div id="propertiesCheckboxes" style="max-height: 300px; overflow-y: auto;">
+                            <!-- سيتم ملؤها عبر AJAX -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إنشاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#createComparisonModal').on('show.bs.modal', function () {
+            // تحميل قائمة العقارات
+            $.get('/Properties/GetPropertiesList', function(properties) {
+                var html = '';
+                properties.forEach(function(prop) {
+                    html += '<div class="form-check mb-2">';
+                    html += '<input class="form-check-input" type="checkbox" value="' + prop.id + '" id="prop' + prop.id + '">';
+                    html += '<label class="form-check-label" for="prop' + prop.id + '">';
+                    html += prop.name + ' - ' + prop.area + ' م² - ' + prop.pricePerSqm + ' دينار/م²';
+                    html += '</label>';
+                    html += '</div>';
+                });
+                $('#propertiesCheckboxes').html(html);
+            });
+        });
+
+        $('#createComparisonForm').submit(function(e) {
+            e.preventDefault();
+            
+            var selectedProperties = [];
+            $('#propertiesCheckboxes input:checked').each(function() {
+                selectedProperties.push(parseInt($(this).val()));
+            });
+
+            if (selectedProperties.length < 2) {
+                alert('يجب اختيار عقارين على الأقل');
+                return;
+            }
+
+            $.post('@Url.Action("Create", "PropertyComparison")', {
+                comparisonName: $('#comparisonName').val(),
+                description: $('#description').val(),
+                propertyIds: selectedProperties,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(response) {
+                if (response.success) {
+                    window.location.href = '@Url.Action("Details", "PropertyComparison")/' + response.comparisonId;
+                } else {
+                    alert(response.message);
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,177 @@
+@model IEnumerable<WaqfGIS.Core.Entities.ServiceFacility>
+
+@{
+    ViewData["Title"] = "المرافق والخدمات المحيطة";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-building"></i> المرافق والخدمات المحيطة</h2>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">@Model.Count(f => f.ServiceCategory == "المرافق")</h3>
+                    <p class="mb-0">المرافق الأساسية</p>
+                    <small class="text-muted">كهرباء، ماء، غاز</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h3 class="text-success">@Model.Count(f => f.ServiceCategory == "الخدمات الصحية")</h3>
+                    <p class="mb-0">الخدمات الصحية</p>
+                    <small class="text-muted">مستشفيات، مراكز</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info">@Model.Count(f => f.ServiceCategory == "الخدمات التعليمية")</h3>
+                    <p class="mb-0">الخدمات التعليمية</p>
+                    <small class="text-muted">مدارس، جامعات</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">@Model.Count(f => f.ServiceCategory == "الخدمات التجارية")</h3>
+                    <p class="mb-0">الخدمات التجارية</p>
+                    <small class="text-muted">أسواق، بنوك</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">التصنيف</label>
+                    <select name="category" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="المرافق" selected="@(ViewBag.Category == "المرافق")">المرافق</option>
+                        <option value="الخدمات الصحية" selected="@(ViewBag.Category == "الخدمات الصحية")">الخدمات الصحية</option>
+                        <option value="الخدمات التعليمية" selected="@(ViewBag.Category == "الخدمات التعليمية")">الخدمات التعليمية</option>
+                        <option value="الخدمات التجارية" selected="@(ViewBag.Category == "الخدمات التجارية")">الخدمات التجارية</option>
+                        <option value="المواصلات" selected="@(ViewBag.Category == "المواصلات")">المواصلات</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">النوع</label>
+                    <input type="text" name="type" class="form-control" value="@ViewBag.Type" placeholder="مثال: محطة كهرباء" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Facilities Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الاسم</th>
+                            <th>التصنيف</th>
+                            <th>النوع</th>
+                            <th>الموقع</th>
+                            <th>الحالة</th>
+                            <th>التقييم</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var facility in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@facility.NameAr</strong>
+                                        @if (!string.IsNullOrEmpty(facility.OwnerName))
+                                        {
+                                            <br/><small class="text-muted">@facility.OwnerName</small>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-primary">@facility.ServiceCategory</span></td>
+                                    <td><span class="badge bg-secondary">@facility.ServiceType</span></td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(facility.Address))
+                                        {
+                                            <small>@facility.Address</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">@facility.Latitude.ToString("F6"), @facility.Longitude.ToString("F6")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (facility.IsOperational)
+                                        {
+                                            <span class="badge bg-success">نشط</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">متوقف</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (facility.QualityRating.HasValue)
+                                        {
+                                            var stars = (int)facility.QualityRating.Value;
+                                            for (int i = 0; i < stars; i++)
+                                            {
+                                                <i class="fas fa-star text-warning"></i>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="showOnMap(@facility.Latitude, @facility.Longitude, '@facility.NameAr')">
+                                            <i class="fas fa-map-marker-alt"></i> على الخريطة
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">لا توجد مرافق خدمية</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showOnMap(lat, lng, name) {
+            // سيتم ربطها بالخريطة لاحقاً
+            alert('عرض ' + name + ' على الخريطة\nالإحداثيات: ' + lat + ', ' + lng);
+        }
+    </script>
+}

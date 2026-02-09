@@ -1,0 +1,363 @@
+@model WaqfGIS.Core.Entities.LegalDispute
+
+@{
+    ViewData["Title"] = "تفاصيل الدعوى - " + Model.CaseNumber;
+    var documents = ViewBag.Documents as List<WaqfGIS.Core.Entities.DisputeDocument>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-gavel"></i> تفاصيل الدعوى</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+            @if (Model.CaseStatus == "جارية")
+            {
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStageModal">
+                    <i class="fas fa-edit"></i> تحديث المرحلة
+                </button>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addVerdictModal">
+                    <i class="fas fa-check"></i> إضافة حكم
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Case Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> معلومات الدعوى</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">رقم الدعوى:</th>
+                            <td><strong>@Model.CaseNumber</strong></td>
+                        </tr>
+                        <tr>
+                            <th>تاريخ الدعوى:</th>
+                            <td>@Model.CaseDate.ToString("yyyy/MM/dd")</td>
+                        </tr>
+                        <tr>
+                            <th>المحكمة:</th>
+                            <td>
+                                <strong>@Model.CourtName</strong><br/>
+                                <small class="text-muted">@Model.CourtType</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>الكيان:</th>
+                            <td>
+                                <span class="badge bg-info">@Model.EntityType</span><br/>
+                                @Model.EntityName
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>نوع النزاع:</th>
+                            <td><span class="badge bg-secondary">@Model.DisputeType</span></td>
+                        </tr>
+                        <tr>
+                            <th>موضوع النزاع:</th>
+                            <td>@Model.DisputeSubject</td>
+                        </tr>
+                        @if (!string.IsNullOrEmpty(Model.DisputeDescription))
+                        {
+                            <tr>
+                                <th>الوصف:</th>
+                                <td>@Model.DisputeDescription</td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+
+            <!-- Parties -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> أطراف الدعوى</h5>
+                </div>
+                <div class="card-body">
+                    <h6>المدعي:</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th width="30%">الاسم:</th>
+                            <td>@Model.PlaintiffName</td>
+                        </tr>
+                        @if (!string.IsNullOrEmpty(Model.PlaintiffPhone))
+                        {
+                            <tr>
+                                <th>الهاتف:</th>
+                                <td>@Model.PlaintiffPhone</td>
+                            </tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.PlaintiffAddress))
+                        {
+                            <tr>
+                                <th>العنوان:</th>
+                                <td>@Model.PlaintiffAddress</td>
+                            </tr>
+                        }
+                    </table>
+
+                    <hr/>
+
+                    <h6>المدعى عليه:</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th width="30%">الاسم:</th>
+                            <td>@Model.DefendantName</td>
+                        </tr>
+                        @if (!string.IsNullOrEmpty(Model.DefendantPhone))
+                        {
+                            <tr>
+                                <th>الهاتف:</th>
+                                <td>@Model.DefendantPhone</td>
+                            </tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.DefendantAddress))
+                        {
+                            <tr>
+                                <th>العنوان:</th>
+                                <td>@Model.DefendantAddress</td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Status -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> الحالة والمرحلة</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">الحالة:</th>
+                            <td><span class="badge bg-primary">@Model.CaseStatus</span></td>
+                        </tr>
+                        <tr>
+                            <th>المرحلة الحالية:</th>
+                            <td><strong>@Model.CurrentStage</strong></td>
+                        </tr>
+                        @if (Model.LastHearingDate.HasValue)
+                        {
+                            <tr>
+                                <th>آخر جلسة:</th>
+                                <td>@Model.LastHearingDate.Value.ToString("yyyy/MM/dd")</td>
+                            </tr>
+                        }
+                        @if (Model.NextHearingDate.HasValue)
+                        {
+                            var daysUntil = (Model.NextHearingDate.Value - DateTime.Now).Days;
+                            <tr>
+                                <th>الجلسة القادمة:</th>
+                                <td>
+                                    <strong class="@(daysUntil <= 7 ? "text-warning" : "")">
+                                        @Model.NextHearingDate.Value.ToString("yyyy/MM/dd")
+                                    </strong>
+                                    @if (daysUntil > 0)
+                                    {
+                                        <br/><small class="text-muted">بعد @daysUntil يوم</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.LastProcedure))
+                        {
+                            <tr>
+                                <th>آخر إجراء:</th>
+                                <td>@Model.LastProcedure</td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+
+            <!-- Lawyer -->
+            @if (!string.IsNullOrEmpty(Model.LawyerName))
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-tie"></i> المحامي</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">الاسم:</th>
+                                <td>@Model.LawyerName</td>
+                            </tr>
+                            @if (!string.IsNullOrEmpty(Model.LawyerPhone))
+                            {
+                                <tr>
+                                    <th>الهاتف:</th>
+                                    <td>@Model.LawyerPhone</td>
+                                </tr>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.LawyerLicenseNumber))
+                            {
+                                <tr>
+                                    <th>رقم الإجازة:</th>
+                                    <td>@Model.LawyerLicenseNumber</td>
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <!-- Verdict -->
+            @if (Model.HasVerdict)
+            {
+                <div class="card mb-4 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-gavel"></i> الحكم</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">تاريخ الحكم:</th>
+                                <td>@Model.VerdictDate?.ToString("yyyy/MM/dd")</td>
+                            </tr>
+                            <tr>
+                                <th>النتيجة:</th>
+                                <td>
+                                    <span class="badge bg-@(Model.VerdictResult == "لصالح الوقف" ? "success" : "danger")">
+                                        @Model.VerdictResult
+                                    </span>
+                                </td>
+                            </tr>
+                            @if (!string.IsNullOrEmpty(Model.VerdictSummary))
+                            {
+                                <tr>
+                                    <th>ملخص الحكم:</th>
+                                    <td>@Model.VerdictSummary</td>
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Update Stage Modal -->
+<div class="modal fade" id="updateStageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تحديث مرحلة الدعوى</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateStageForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">المرحلة</label>
+                        <select class="form-select" id="stage" required>
+                            <option value="ابتدائية">ابتدائية</option>
+                            <option value="استئنافية">استئنافية</option>
+                            <option value="تمييزية">تمييزية</option>
+                            <option value="تنفيذية">تنفيذية</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">تاريخ الجلسة القادمة</label>
+                        <input type="date" class="form-control" id="hearingDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الإجراء</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Verdict Modal -->
+<div class="modal fade" id="addVerdictModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">إضافة حكم</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addVerdictForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">تاريخ الحكم</label>
+                        <input type="date" class="form-control" id="verdictDate" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملخص الحكم</label>
+                        <textarea class="form-control" id="verdictSummary" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">النتيجة</label>
+                        <select class="form-select" id="verdictResult" required>
+                            <option value="لصالح الوقف">لصالح الوقف</option>
+                            <option value="ضد الوقف">ضد الوقف</option>
+                            <option value="جزئي">جزئي</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#updateStageForm').submit(function(e) {
+            e.preventDefault();
+            
+            $.post('@Url.Action("UpdateStage", "Disputes")', {
+                id: @Model.Id,
+                stage: $('#stage').val(),
+                hearingDate: $('#hearingDate').val(),
+                notes: $('#notes').val(),
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            });
+        });
+
+        $('#addVerdictForm').submit(function(e) {
+            e.preventDefault();
+            
+            $.post('@Url.Action("AddVerdict", "Disputes")', {
+                id: @Model.Id,
+                verdictDate: $('#verdictDate').val(),
+                verdictSummary: $('#verdictSummary').val(),
+                verdictResult: $('#verdictResult').val(),
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            });
+        });
+    </script>
+}

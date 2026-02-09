@@ -1,0 +1,336 @@
+@model IEnumerable<WaqfGIS.Core.Entities.PropertyPricing>
+
+@{
+    ViewData["Title"] = "تحليل الأسعار";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line"></i> تحليل أسعار العقارات</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">أعلى سعر</h6>
+                    <h3 class="text-danger">@ViewBag.MaxPrice.ToString("N0")</h3>
+                    <small>دينار/م²</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">المتوسط</h6>
+                    <h3 class="text-primary">@ViewBag.AveragePrice.ToString("N0")</h3>
+                    <small>دينار/م²</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">أقل سعر</h6>
+                    <h3 class="text-success">@ViewBag.MinPrice.ToString("N0")</h3>
+                    <small>دينار/م²</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">عدد السجلات</h6>
+                    <h3 class="text-info">@ViewBag.TotalRecords</h3>
+                    <small>سجل</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> تصفية</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">المحافظة</label>
+                    <select name="provinceId" class="form-select" id="provinceSelect">
+                        <option value="">الكل</option>
+                        <!-- سيتم ملؤها من قاعدة البيانات -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">القضاء</label>
+                    <select name="districtId" class="form-select" id="districtSelect">
+                        <option value="">الكل</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">نوع العقار</label>
+                    <select name="propertyTypeId" class="form-select">
+                        <option value="">الكل</option>
+                        <!-- سيتم ملؤها من قاعدة البيانات -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <!-- Price Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-area"></i> تطور الأسعار</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="pricesTrendChart" height="80"></canvas>
+            </div>
+        </div>
+
+        <!-- Price Distribution by Type -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> توزيع الأسعار حسب النوع</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="pricesByTypeChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-map-marked-alt"></i> توزيع الأسعار حسب المنطقة</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="pricesByLocationChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-table"></i> جدول الأسعار</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>المنطقة</th>
+                                <th>نوع العقار</th>
+                                <th>سعر المتر</th>
+                                <th>النطاق السعري</th>
+                                <th>التاريخ</th>
+                                <th>المصدر</th>
+                                <th>الاتجاه</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pricing in Model)
+                            {
+                                var priceClass = pricing.PricePerSqm > ViewBag.AveragePrice ? "text-danger" : 
+                                               pricing.PricePerSqm < ViewBag.AveragePrice ? "text-success" : "";
+                                <tr>
+                                    <td>
+                                        <strong>@pricing.Province?.NameAr</strong>
+                                        @if (pricing.District != null)
+                                        {
+                                            <br/><small class="text-muted">@pricing.District.NameAr</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@pricing.PropertyType?.NameAr</span>
+                                        @if (!string.IsNullOrEmpty(pricing.PropertySubType))
+                                        {
+                                            <br/><small>@pricing.PropertySubType</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="@priceClass">@pricing.PricePerSqm.ToString("N0")</strong>
+                                        <small>@pricing.Currency</small>
+                                    </td>
+                                    <td>
+                                        @if (pricing.MinPricePerSqm.HasValue && pricing.MaxPricePerSqm.HasValue)
+                                        {
+                                            <small class="text-muted">
+                                                @pricing.MinPricePerSqm.Value.ToString("N0") - 
+                                                @pricing.MaxPricePerSqm.Value.ToString("N0")
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@pricing.PriceDate.ToString("yyyy/MM/dd")</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@pricing.PriceSource</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(pricing.MarketTrend))
+                                        {
+                                            var trendIcon = pricing.MarketTrend == "صاعد" ? "arrow-up text-danger" :
+                                                          pricing.MarketTrend == "نازل" ? "arrow-down text-success" : 
+                                                          "minus text-secondary";
+                                            <i class="fas fa-@trendIcon"></i>
+                                            <small>@pricing.MarketTrend</small>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+                <h4>لا توجد بيانات أسعار</h4>
+                <p class="text-muted">لم يتم العثور على بيانات أسعار للمعايير المحددة</p>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        @if (Model.Any())
+        {
+            var pricingData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Select(p => new {
+                date = p.PriceDate.ToString("yyyy-MM-dd"),
+                price = p.PricePerSqm,
+                type = p.PropertyType?.NameAr,
+                location = p.Province?.NameAr
+            })));
+
+            // Price Trend Chart
+            var trendCtx = document.getElementById('pricesTrendChart').getContext('2d');
+            var sortedData = pricingData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedData.map(d => d.date),
+                    datasets: [{
+                        label: 'سعر المتر',
+                        data: sortedData.map(d => d.price),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' د';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Prices by Type Chart
+            var typeCtx = document.getElementById('pricesByTypeChart').getContext('2d');
+            var typeGroups = {};
+            pricingData.forEach(d => {
+                if (!typeGroups[d.type]) typeGroups[d.type] = [];
+                typeGroups[d.type].push(d.price);
+            });
+            var typeLabels = Object.keys(typeGroups);
+            var typeAvgs = typeLabels.map(t => typeGroups[t].reduce((a,b) => a+b, 0) / typeGroups[t].length);
+
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: typeLabels,
+                    datasets: [{
+                        data: typeAvgs,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true
+                }
+            });
+
+            // Prices by Location Chart
+            var locCtx = document.getElementById('pricesByLocationChart').getContext('2d');
+            var locGroups = {};
+            pricingData.forEach(d => {
+                if (!locGroups[d.location]) locGroups[d.location] = [];
+                locGroups[d.location].push(d.price);
+            });
+            var locLabels = Object.keys(locGroups);
+            var locAvgs = locLabels.map(l => locGroups[l].reduce((a,b) => a+b, 0) / locGroups[l].length);
+
+            new Chart(locCtx, {
+                type: 'bar',
+                data: {
+                    labels: locLabels,
+                    datasets: [{
+                        label: 'متوسط السعر',
+                        data: locAvgs,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' د';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

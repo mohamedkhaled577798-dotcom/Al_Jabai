@@ -1,0 +1,284 @@
+@model WaqfGIS.Core.Entities.PropertyComparison
+
+@{
+    ViewData["Title"] = "تفاصيل المقارنة - " + Model.ComparisonName;
+    var items = ViewBag.Items as List<WaqfGIS.Core.Entities.PropertyComparisonItem>;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-balance-scale"></i> تفاصيل المقارنة</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <!-- Comparison Info -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">@Model.ComparisonName</h4>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <p>@Model.Description</p>
+            }
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> تاريخ المقارنة: @Model.ComparisonDate.ToString("yyyy/MM/dd HH:mm")
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> بواسطة: @Model.CreatedBy
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (items != null && items.Any())
+    {
+        <!-- Comparison Table -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>البيان</th>
+                                @foreach (var item in items)
+                                {
+                                    <th class="text-center">@item.EntityName</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>المساحة (م²)</th>
+                                @foreach (var item in items)
+                                {
+                                    <td class="text-center">@item.AreaSqm.ToString("N2")</td>
+                                }
+                            </tr>
+                            <tr>
+                                <th>سعر المتر (دينار)</th>
+                                @foreach (var item in items)
+                                {
+                                    <td class="text-center">
+                                        <strong class="text-primary">@item.PricePerSqm.ToString("N0")</strong>
+                                    </td>
+                                }
+                            </tr>
+                            <tr>
+                                <th>السعر الإجمالي</th>
+                                @foreach (var item in items)
+                                {
+                                    <td class="text-center">
+                                        <strong class="text-success">@item.TotalPrice.ToString("N0")</strong>
+                                    </td>
+                                }
+                            </tr>
+                            <tr>
+                                <th>الموقع</th>
+                                @foreach (var item in items)
+                                {
+                                    <td class="text-center">@item.Location</td>
+                                }
+                            </tr>
+                            <tr>
+                                <th>نوع العقار</th>
+                                @foreach (var item in items)
+                                {
+                                    <td class="text-center">
+                                        <span class="badge bg-info">@item.PropertyType</span>
+                                    </td>
+                                }
+                            </tr>
+                            @if (items.Any(i => i.LocationScore.HasValue))
+                            {
+                                <tr>
+                                    <th>تقييم الموقع</th>
+                                    @foreach (var item in items)
+                                    {
+                                        <td class="text-center">
+                                            @if (item.LocationScore.HasValue)
+                                            {
+                                                <span class="badge bg-warning">@item.LocationScore/10</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                            @if (items.Any(i => i.ServicesScore.HasValue))
+                            {
+                                <tr>
+                                    <th>تقييم الخدمات</th>
+                                    @foreach (var item in items)
+                                    {
+                                        <td class="text-center">
+                                            @if (item.ServicesScore.HasValue)
+                                            {
+                                                <span class="badge bg-success">@item.ServicesScore/10</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                            @if (items.Any(i => i.OverallScore.HasValue))
+                            {
+                                <tr class="table-primary">
+                                    <th>التقييم الإجمالي</th>
+                                    @foreach (var item in items)
+                                    {
+                                        <td class="text-center">
+                                            @if (item.OverallScore.HasValue)
+                                            {
+                                                <strong class="text-primary">@item.OverallScore/10</strong>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> مقارنة الأسعار</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="priceComparisonChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> التحليل</h5>
+            </div>
+            <div class="card-body">
+                @{
+                    var maxPrice = items.Max(i => i.PricePerSqm);
+                    var minPrice = items.Min(i => i.PricePerSqm);
+                    var avgPrice = items.Average(i => i.PricePerSqm);
+                    var maxPriceItem = items.First(i => i.PricePerSqm == maxPrice);
+                    var minPriceItem = items.First(i => i.PricePerSqm == minPrice);
+                }
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-danger">
+                            <div class="card-body text-center">
+                                <h6 class="text-danger">الأعلى سعراً</h6>
+                                <h4>@maxPrice.ToString("N0")</h4>
+                                <small>@maxPriceItem.EntityName</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="text-primary">المتوسط</h6>
+                                <h4>@avgPrice.ToString("N0")</h4>
+                                <small>دينار/م²</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <h6 class="text-success">الأقل سعراً</h6>
+                                <h4>@minPrice.ToString("N0")</h4>
+                                <small>@minPriceItem.EntityName</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4"/>
+
+                <h6>الملاحظات:</h6>
+                <ul>
+                    <li>الفرق بين أعلى وأقل سعر: <strong>@((maxPrice - minPrice).ToString("N0")) دينار/م²</strong></li>
+                    <li>نسبة الفرق: <strong>@(((maxPrice - minPrice) / minPrice * 100).ToString("N1"))%</strong></li>
+                    @if (items.Any(i => i.LocationScore.HasValue && i.LocationScore >= 8))
+                    {
+                        <li class="text-success">عقارات ذات موقع ممتاز متوفرة</li>
+                    }
+                    @if (items.Any(i => i.ServicesScore.HasValue && i.ServicesScore >= 8))
+                    {
+                        <li class="text-success">عقارات بخدمات ممتازة متوفرة</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> لا توجد عقارات في هذه المقارنة
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        @if (items != null && items.Any())
+        {
+            <text>
+            var ctx = document.getElementById('priceComparisonChart').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", items.Select(i => "'" + i.EntityName + "'")))],
+                    datasets: [{
+                        label: 'سعر المتر (دينار)',
+                        data: [@Html.Raw(string.Join(",", items.Select(i => i.PricePerSqm)))],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' د';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}

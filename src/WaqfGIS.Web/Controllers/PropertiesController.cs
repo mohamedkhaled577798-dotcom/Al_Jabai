@@ -382,3 +382,29 @@ public class PropertiesController : Controller
         ViewBag.Districts = new SelectList(await _unitOfWork.Districts.GetAllAsync(), "Id", "NameAr");
     }
 }
+
+    // API endpoint للحصول على قائمة العقارات للمقارنة
+    [HttpGet]
+    public async Task<IActionResult> GetPropertiesList()
+    {
+        try
+        {
+            var properties = await _unitOfWork.Repository<WaqfProperty>().GetAllAsync();
+            
+            var result = properties.Select(p => new
+            {
+                id = p.Id,
+                name = p.NameAr,
+                area = p.AreaSqm ?? 0,
+                pricePerSqm = p.PricePerSqm ?? 0,
+                location = $"{p.Province?.NameAr} - {p.District?.NameAr}"
+            }).ToList();
+
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting properties list");
+            return Json(new List<object>());
+        }
+    }

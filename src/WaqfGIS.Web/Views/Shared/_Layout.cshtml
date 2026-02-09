@@ -64,6 +64,31 @@
                        asp-controller="Reports" asp-action="Index">
                         <i class="fas fa-chart-bar me-2"></i> التقارير
                     </a>
+                    <hr class="border-secondary">
+                    <!-- قسم العقود والدعاوى -->
+                    <div class="nav-section-title text-muted small px-3 mt-2 mb-1">الإدارة القانونية</div>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Contracts" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Contracts" asp-action="Index">
+                        <i class="fas fa-file-contract me-2"></i> العقود الاستثمارية
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Disputes" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Disputes" asp-action="Index">
+                        <i class="fas fa-gavel me-2"></i> الدعاوى القضائية
+                    </a>
+                    <hr class="border-secondary">
+                    <!-- قسم الخدمات والتحليل -->
+                    <div class="nav-section-title text-muted small px-3 mt-2 mb-1">التحليل والخدمات</div>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "ServiceFacilities" ? "active bg-primary rounded" : "")" 
+                       asp-controller="ServiceFacilities" asp-action="Index">
+                        <i class="fas fa-building me-2"></i> المرافق الخدمية
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "PropertyComparison" ? "active bg-primary rounded" : "")" 
+                       asp-controller="PropertyComparison" asp-action="Index">
+                        <i class="fas fa-balance-scale me-2"></i> مقارنة الأسعار
+                    </a>
+                    <hr class="border-secondary">
+                    <!-- نظام GIS -->
+                    <div class="nav-section-title text-muted small px-3 mt-2 mb-1">نظام GIS المتقدم</div>
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["action"]?.ToString() == "GisViewer" ? "active bg-primary rounded" : "")" 
                        asp-controller="Map" asp-action="GisViewer">
                         <i class="fas fa-map-marked-alt me-2"></i> نظام GIS

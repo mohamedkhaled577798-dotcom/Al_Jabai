@@ -58,6 +58,10 @@ builder.Services.AddScoped<WaqfGIS.Services.GIS.LayerService>();
 builder.Services.AddScoped<WaqfGIS.Services.WaqfLandService>();
 builder.Services.AddScoped<WaqfGIS.Services.RoadService>();
 
+// Advanced Services - Phase 3
+builder.Services.AddScoped<ContractService>();
+builder.Services.AddScoped<ServiceAssessmentService>();
+
 // Add MVC
 builder.Services.AddControllersWithViews();
 

@@ -139,7 +139,13 @@ public class WaqfLand : BaseEntity
     
     // Financial
     public decimal? EstimatedValue { get; set; }
+    public decimal? PricePerSqm { get; set; } // سعر المتر المربع
     public decimal? AnnualRevenue { get; set; }
+    
+    // النزاعات والعقود
+    public bool IsDisputed { get; set; } = false;
+    public bool HasLegalCase { get; set; } = false;
+    public bool HasInvestmentContract { get; set; } = false;
     
     // Address
     public string? Address { get; set; }
@@ -151,6 +157,8 @@ public class WaqfLand : BaseEntity
     public virtual WaqfOffice? WaqfOffice { get; set; }
     public virtual Province Province { get; set; } = null!;
     public virtual District? District { get; set; }
+    public virtual ICollection<InvestmentContract> Contracts { get; set; } = new List<InvestmentContract>();
+    public virtual ICollection<LegalDispute> Disputes { get; set; } = new List<LegalDispute>();
 }
 
 /// <summary>

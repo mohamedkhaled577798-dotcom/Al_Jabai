@@ -1,0 +1,194 @@
+@model IEnumerable<WaqfGIS.Core.Entities.InvestmentContract>
+
+@{
+    ViewData["Title"] = "إدارة العقود الاستثمارية";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-contract"></i> إدارة العقود الاستثمارية</h2>
+        <div>
+            <a asp-action="Notifications" class="btn btn-warning">
+                <i class="fas fa-bell"></i> التنبيهات
+                @{
+                    var expiring = Model.Count(c => c.IsActive && c.EndDate <= DateTime.Now.AddMonths(3));
+                    if (expiring > 0)
+                    {
+                        <span class="badge bg-danger">@expiring</span>
+                    }
+                }
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus"></i> عقد جديد
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">الحالة</label>
+                    <select name="status" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="نشط" selected="@(ViewBag.Status == "نشط")">نشط</option>
+                        <option value="منتهي" selected="@(ViewBag.Status == "منتهي")">منتهي</option>
+                        <option value="ملغي" selected="@(ViewBag.Status == "ملغي")">ملغي</option>
+                        <option value="قيد التجديد" selected="@(ViewBag.Status == "قيد التجديد")">قيد التجديد</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">نوع الكيان</label>
+                    <select name="entityType" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="Mosque" selected="@(ViewBag.EntityType == "Mosque")">مسجد</option>
+                        <option value="WaqfProperty" selected="@(ViewBag.EntityType == "WaqfProperty")">عقار</option>
+                        <option value="WaqfLand" selected="@(ViewBag.EntityType == "WaqfLand")">أرض</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contracts Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>رقم العقد</th>
+                            <th>الكيان</th>
+                            <th>المستثمر</th>
+                            <th>تاريخ البداية</th>
+                            <th>تاريخ النهاية</th>
+                            <th>الإيجار الشهري</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var contract in Model)
+                            {
+                                var daysRemaining = (contract.EndDate - DateTime.Now).Days;
+                                var statusClass = contract.IsActive ? 
+                                    (daysRemaining <= 30 ? "danger" : daysRemaining <= 90 ? "warning" : "success") : 
+                                    "secondary";
+                                
+                                <tr>
+                                    <td>
+                                        <strong>@contract.ContractNumber</strong><br/>
+                                        <small class="text-muted">@contract.ContractType</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@contract.EntityType</span><br/>
+                                        <small>@contract.EntityName</small>
+                                    </td>
+                                    <td>
+                                        <strong>@contract.InvestorName</strong><br/>
+                                        <small class="text-muted">@contract.InvestorPhone</small>
+                                    </td>
+                                    <td>@contract.StartDate.ToString("yyyy/MM/dd")</td>
+                                    <td>
+                                        @contract.EndDate.ToString("yyyy/MM/dd")
+                                        @if (contract.IsActive && daysRemaining > 0 && daysRemaining <= 90)
+                                        {
+                                            <br/><small class="text-@statusClass">
+                                                <i class="fas fa-clock"></i> متبقي @daysRemaining يوم
+                                            </small>
+                                        }
+                                        @if (contract.IsActive && daysRemaining < 0)
+                                        {
+                                            <br/><small class="text-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> منتهي
+                                            </small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@contract.MonthlyRent.ToString("N0") @contract.Currency</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@statusClass">@contract.Status</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@contract.Id" 
+                                               class="btn btn-sm btn-info" title="التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@contract.Id" 
+                                               class="btn btn-sm btn-warning" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">لا توجد عقود</p>
+                                    <a asp-action="Create" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> إضافة عقد جديد
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (ViewBag.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@i" 
+                                   asp-route-status="@ViewBag.Status" asp-route-entityType="@ViewBag.EntityType">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh every 5 minutes to update contract status
+        setTimeout(function() {
+            location.reload();
+        }, 300000);
+    </script>
+}

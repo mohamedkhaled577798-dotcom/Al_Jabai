@@ -44,6 +44,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<NearbyProject> NearbyProjects => Set<NearbyProject>();
     public DbSet<GeometryAuditLog> GeometryAuditLogs => Set<GeometryAuditLog>();
 
+    // Phase 3 - Advanced Features
+    public DbSet<LegalDispute> LegalDisputes => Set<LegalDispute>();
+    public DbSet<DisputeDocument> DisputeDocuments => Set<DisputeDocument>();
+    public DbSet<InvestmentContract> InvestmentContracts => Set<InvestmentContract>();
+    public DbSet<ContractDocument> ContractDocuments => Set<ContractDocument>();
+    public DbSet<ContractPayment> ContractPayments => Set<ContractPayment>();
+    public DbSet<ServiceFacility> ServiceFacilities => Set<ServiceFacility>();
+    public DbSet<ServiceImage> ServiceImages => Set<ServiceImage>();
+    public DbSet<PropertyPricing> PropertyPricings => Set<PropertyPricing>();
+    public DbSet<PropertyComparison> PropertyComparisons => Set<PropertyComparison>();
+    public DbSet<PropertyComparisonItem> PropertyComparisonItems => Set<PropertyComparisonItem>();
+    public DbSet<PropertyServiceAssessment> PropertyServiceAssessments => Set<PropertyServiceAssessment>();
+    public DbSet<ServiceProximity> ServiceProximities => Set<ServiceProximity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -133,6 +147,117 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(b => b.PropertyId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ========== Phase 3 Configurations ==========
+        
+        // LegalDispute
+        modelBuilder.Entity<LegalDispute>(entity =>
+        {
+            entity.HasIndex(e => e.CaseNumber).IsUnique();
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // DisputeDocument
+        modelBuilder.Entity<DisputeDocument>(entity =>
+        {
+            entity.HasOne(e => e.Dispute)
+                  .WithMany(d => d.Documents)
+                  .HasForeignKey(e => e.DisputeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // InvestmentContract
+        modelBuilder.Entity<InvestmentContract>(entity =>
+        {
+            entity.HasIndex(e => e.ContractNumber).IsUnique();
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.EndDate);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // ContractDocument
+        modelBuilder.Entity<ContractDocument>(entity =>
+        {
+            entity.HasOne(e => e.Contract)
+                  .WithMany(c => c.Documents)
+                  .HasForeignKey(e => e.ContractId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ContractPayment
+        modelBuilder.Entity<ContractPayment>(entity =>
+        {
+            entity.HasOne(e => e.Contract)
+                  .WithMany(c => c.Payments)
+                  .HasForeignKey(e => e.ContractId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.DueDate);
+            entity.HasIndex(e => e.Status);
+        });
+
+        // ServiceFacility
+        modelBuilder.Entity<ServiceFacility>(entity =>
+        {
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.Location).HasColumnType("geometry");
+            entity.Property(e => e.Boundary).HasColumnType("geometry");
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // ServiceImage
+        modelBuilder.Entity<ServiceImage>(entity =>
+        {
+            entity.HasOne(e => e.ServiceFacility)
+                  .WithMany(s => s.Images)
+                  .HasForeignKey(e => e.ServiceFacilityId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PropertyPricing
+        modelBuilder.Entity<PropertyPricing>(entity =>
+        {
+            entity.HasIndex(e => new { e.ProvinceId, e.DistrictId, e.PropertyTypeId });
+            entity.HasIndex(e => e.PriceDate);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // PropertyComparison
+        modelBuilder.Entity<PropertyComparison>(entity =>
+        {
+            entity.HasIndex(e => e.ComparisonDate);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // PropertyComparisonItem
+        modelBuilder.Entity<PropertyComparisonItem>(entity =>
+        {
+            entity.HasOne(e => e.Comparison)
+                  .WithMany(c => c.Items)
+                  .HasForeignKey(e => e.ComparisonId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PropertyServiceAssessment
+        modelBuilder.Entity<PropertyServiceAssessment>(entity =>
+        {
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.AssessmentDate);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // ServiceProximity
+        modelBuilder.Entity<ServiceProximity>(entity =>
+        {
+            entity.HasOne(e => e.Assessment)
+                  .WithMany(a => a.NearbyServices)
+                  .HasForeignKey(e => e.AssessmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ServiceFacility)
+                  .WithMany()
+                  .HasForeignKey(e => e.ServiceFacilityId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

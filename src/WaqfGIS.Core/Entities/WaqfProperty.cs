@@ -33,6 +33,7 @@ public class WaqfProperty : BaseEntity
     public int? FloorsCount { get; set; }
     public int? RoomsCount { get; set; }
     public decimal? EstimatedValue { get; set; }
+    public decimal? PricePerSqm { get; set; } // سعر المتر المربع
     public string Currency { get; set; } = "IQD";
 
     // الملكية والتسجيل
@@ -58,6 +59,17 @@ public class WaqfProperty : BaseEntity
     public string Status { get; set; } = "Active";
     public string? Notes { get; set; }
 
+    // النزاعات القانونية
+    public bool IsDisputed { get; set; } = false;
+    public bool HasLegalCase { get; set; } = false;
+
+    // الشوارع المحيطة (تم تحديدها تلقائياً من الخريطة)
+    public string? NorthStreet { get; set; }
+    public string? SouthStreet { get; set; }
+    public string? EastStreet { get; set; }
+    public string? WestStreet { get; set; }
+    public string? MainAccessRoad { get; set; }
+
 
     // التحقق
     public bool IsVerified { get; set; } = false;
@@ -72,4 +84,7 @@ public class WaqfProperty : BaseEntity
     public virtual District? District { get; set; }
     public virtual SubDistrict? SubDistrict { get; set; }
     public virtual ICollection<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
+    public virtual ICollection<PropertyImage> Images { get; set; } = new List<PropertyImage>();
+    public virtual ICollection<InvestmentContract> Contracts { get; set; } = new List<InvestmentContract>();
+    public virtual ICollection<LegalDispute> Disputes { get; set; } = new List<LegalDispute>();
 }

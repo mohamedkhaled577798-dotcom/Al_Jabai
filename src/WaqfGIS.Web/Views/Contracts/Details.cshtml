@@ -1,0 +1,338 @@
+@model WaqfGIS.Core.Entities.InvestmentContract
+
+@{
+    ViewData["Title"] = "تفاصيل العقد - " + Model.ContractNumber;
+    var documents = ViewBag.Documents as List<WaqfGIS.Core.Entities.ContractDocument>;
+    var payments = ViewBag.Payments as List<WaqfGIS.Core.Entities.ContractPayment>;
+    var daysRemaining = (Model.EndDate - DateTime.Now).Days;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-contract"></i> تفاصيل العقد</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="fas fa-edit"></i> تعديل
+            </a>
+            @if (Model.IsActive && Model.IsRenewable)
+            {
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#renewModal">
+                    <i class="fas fa-redo"></i> تجديد
+                </button>
+            }
+            @if (Model.IsActive)
+            {
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#terminateModal">
+                    <i class="fas fa-times"></i> إنهاء العقد
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Status Alert -->
+    @if (Model.IsActive && daysRemaining > 0 && daysRemaining <= 90)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>تنبيه:</strong> هذا العقد سينتهي خلال @daysRemaining يوم (@Model.EndDate.ToString("yyyy/MM/dd"))
+        </div>
+    }
+    @if (Model.IsActive && daysRemaining < 0)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-times-circle"></i>
+            <strong>تحذير:</strong> هذا العقد منتهي منذ @Math.Abs(daysRemaining) يوم!
+        </div>
+    }
+
+    <div class="row">
+        <!-- Basic Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> المعلومات الأساسية</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">رقم العقد:</th>
+                            <td><strong>@Model.ContractNumber</strong></td>
+                        </tr>
+                        <tr>
+                            <th>تاريخ العقد:</th>
+                            <td>@Model.ContractDate.ToString("yyyy/MM/dd")</td>
+                        </tr>
+                        <tr>
+                            <th>نوع العقد:</th>
+                            <td><span class="badge bg-info">@Model.ContractType</span></td>
+                        </tr>
+                        <tr>
+                            <th>الكيان:</th>
+                            <td>
+                                <span class="badge bg-secondary">@Model.EntityType</span><br/>
+                                @Model.EntityName
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>الحالة:</th>
+                            <td>
+                                <span class="badge bg-@(Model.IsActive ? "success" : "secondary")">
+                                    @Model.Status
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Duration & Dates -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> المدة والتواريخ</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">تاريخ البداية:</th>
+                            <td>@Model.StartDate.ToString("yyyy/MM/dd")</td>
+                        </tr>
+                        <tr>
+                            <th>تاريخ النهاية:</th>
+                            <td>
+                                @Model.EndDate.ToString("yyyy/MM/dd")
+                                @if (Model.IsActive && daysRemaining > 0)
+                                {
+                                    <br/><small class="text-muted">متبقي @daysRemaining يوم</small>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>المدة:</th>
+                            <td>@Model.DurationYears سنة و @(Model.DurationMonths % 12) شهر</td>
+                        </tr>
+                        <tr>
+                            <th>قابل للتجديد:</th>
+                            <td>
+                                @if (Model.IsRenewable)
+                                {
+                                    <i class="fas fa-check text-success"></i> نعم
+                                    <br/><small class="text-muted">إشعار قبل @Model.RenewalNoticeDays يوم</small>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-times text-danger"></i> لا
+                                }
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investor Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-tie"></i> بيانات المستثمر</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">الاسم:</th>
+                            <td><strong>@Model.InvestorName</strong></td>
+                        </tr>
+                        <tr>
+                            <th>النوع:</th>
+                            <td>@Model.InvestorType</td>
+                        </tr>
+                        <tr>
+                            <th>رقم الهوية:</th>
+                            <td>@Model.InvestorIdNumber</td>
+                        </tr>
+                        <tr>
+                            <th>الهاتف:</th>
+                            <td>@Model.InvestorPhone</td>
+                        </tr>
+                        <tr>
+                            <th>الموبايل:</th>
+                            <td>@Model.InvestorMobile</td>
+                        </tr>
+                        <tr>
+                            <th>البريد:</th>
+                            <td>@Model.InvestorEmail</td>
+                        </tr>
+                        <tr>
+                            <th>العنوان:</th>
+                            <td>@Model.InvestorAddress</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> المعلومات المالية</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">الإيجار الشهري:</th>
+                            <td><strong class="text-success">@Model.MonthlyRent.ToString("N0") @Model.Currency</strong></td>
+                        </tr>
+                        <tr>
+                            <th>الإيجار السنوي:</th>
+                            <td><strong>@Model.AnnualRent.ToString("N0") @Model.Currency</strong></td>
+                        </tr>
+                        <tr>
+                            <th>القيمة الإجمالية:</th>
+                            <td><strong class="text-primary">@Model.TotalContractValue.ToString("N0") @Model.Currency</strong></td>
+                        </tr>
+                        <tr>
+                            <th>طريقة الدفع:</th>
+                            <td>@Model.PaymentMethod</td>
+                        </tr>
+                        @if (Model.SecurityDeposit.HasValue)
+                        {
+                            <tr>
+                                <th>التأمين:</th>
+                                <td>@Model.SecurityDeposit.Value.ToString("N0") @Model.Currency</td>
+                            </tr>
+                        }
+                        @if (Model.HasAnnualIncrease)
+                        {
+                            <tr>
+                                <th>الزيادة السنوية:</th>
+                                <td>
+                                    @if (Model.AnnualIncreasePercentage.HasValue)
+                                    {
+                                        @Model.AnnualIncreasePercentage.Value%
+                                    }
+                                    @if (Model.AnnualIncreaseAmount.HasValue)
+                                    {
+                                        @Model.AnnualIncreaseAmount.Value.ToString("N0") @Model.Currency
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Notes) || !string.IsNullOrEmpty(Model.SpecialTerms))
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-sticky-note"></i> ملاحظات وشروط</h5>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <h6>الملاحظات:</h6>
+                    <p>@Model.Notes</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.SpecialTerms))
+                {
+                    <h6>الشروط الخاصة:</h6>
+                    <p>@Model.SpecialTerms</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Renew Modal -->
+<div class="modal fade" id="renewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تجديد العقد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renewForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">تاريخ النهاية الجديد</label>
+                        <input type="date" class="form-control" id="newEndDate" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">تجديد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Terminate Modal -->
+<div class="modal fade" id="terminateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">إنهاء العقد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="terminateForm">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> هل أنت متأكد من إنهاء هذا العقد؟
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">سبب الإنهاء</label>
+                        <textarea class="form-control" id="terminationReason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">إنهاء العقد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#renewForm').submit(function(e) {
+            e.preventDefault();
+            const newEndDate = $('#newEndDate').val();
+            
+            $.post('@Url.Action("Renew", "Contracts")', {
+                id: @Model.Id,
+                newEndDate: newEndDate,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            });
+        });
+
+        $('#terminateForm').submit(function(e) {
+            e.preventDefault();
+            const reason = $('#terminationReason').val();
+            
+            $.post('@Url.Action("Terminate", "Contracts")', {
+                id: @Model.Id,
+                reason: reason,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.href = '@Url.Action("Index", "Contracts")';
+                } else {
+                    alert(response.message);
+                }
+            });
+        });
+    </script>
+}
