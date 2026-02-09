@@ -22,6 +22,7 @@ public class PropertiesController : Controller
     private readonly ImageUploadService _imageUploadService;
     private readonly PermissionService _permissionService;
     private readonly GeometryService _geometryService;
+    private readonly ILogger<PropertiesController> _logger;
 
     public PropertiesController(
         PropertyService propertyService, 
@@ -30,7 +31,8 @@ public class PropertiesController : Controller
         AuditLogService auditLogService,
         ImageUploadService imageUploadService,
         PermissionService permissionService,
-        GeometryService geometryService)
+        GeometryService geometryService,
+        ILogger<PropertiesController> logger)
     {
         _propertyService = propertyService;
         _unitOfWork = unitOfWork;
@@ -39,6 +41,7 @@ public class PropertiesController : Controller
         _imageUploadService = imageUploadService;
         _permissionService = permissionService;
         _geometryService = geometryService;
+        _logger = logger;
     }
 
     public async Task<IActionResult> Index(int? provinceId, int? typeId, string? search)
@@ -381,7 +384,6 @@ public class PropertiesController : Controller
         ViewBag.UsageTypes = new SelectList(await _unitOfWork.UsageTypes.GetAllAsync(), "Id", "NameAr");
         ViewBag.Districts = new SelectList(await _unitOfWork.Districts.GetAllAsync(), "Id", "NameAr");
     }
-}
 
     // API endpoint للحصول على قائمة العقارات للمقارنة
     [HttpGet]
@@ -408,3 +410,4 @@ public class PropertiesController : Controller
             return Json(new List<object>());
         }
     }
+}

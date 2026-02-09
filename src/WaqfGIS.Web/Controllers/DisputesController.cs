@@ -117,7 +117,7 @@ public class DisputesController : Controller
             }
 
             dispute.UpdatedBy = User.Identity?.Name ?? "System";
-            _unitOfWork.Repository<LegalDispute>().Update(dispute);
+            await _unitOfWork.Repository<LegalDispute>().UpdateAsync(dispute);
             await _unitOfWork.SaveChangesAsync();
 
             return Json(new { success = true, message = "تم تحديث مرحلة الدعوى بنجاح" });
@@ -149,7 +149,7 @@ public class DisputesController : Controller
             dispute.CaseStatus = "منتهية";
             dispute.UpdatedBy = User.Identity?.Name ?? "System";
 
-            _unitOfWork.Repository<LegalDispute>().Update(dispute);
+            await _unitOfWork.Repository<LegalDispute>().UpdateAsync(dispute);
             await _unitOfWork.SaveChangesAsync();
 
             return Json(new { success = true, message = "تم إضافة الحكم بنجاح" });
@@ -161,3 +161,71 @@ public class DisputesController : Controller
         }
     }
 }
+
+    // GET: Disputes/Create
+    [HttpGet]
+    public IActionResult Create()
+    {
+        return View(new DisputeViewModel { CaseDate = DateTime.Now, CaseStatus = "جارية", CurrentStage = "ابتدائية" });
+    }
+
+    // POST: Disputes/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(DisputeViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var dispute = new LegalDispute
+            {
+                CaseNumber = model.CaseNumber,
+                CaseDate = model.CaseDate,
+                CourtName = model.CourtName,
+                CourtType = model.CourtType,
+                EntityType = model.EntityType,
+                EntityId = model.EntityId,
+                
+                DisputeType = model.DisputeType,
+                DisputeSubject = model.DisputeSubject,
+                DisputeDescription = model.DisputeDescription,
+                ClaimAmount = model.ClaimAmount,
+                
+                PlaintiffName = model.PlaintiffName,
+                PlaintiffPhone = model.PlaintiffPhone,
+                PlaintiffAddress = model.PlaintiffAddress,
+                
+                DefendantName = model.DefendantName,
+                DefendantPhone = model.DefendantPhone,
+                DefendantAddress = model.DefendantAddress,
+                
+                LawyerName = model.LawyerName,
+                LawyerPhone = model.LawyerPhone,
+                LawyerLicenseNumber = model.LawyerLicenseNumber,
+                LegalCosts = model.LegalCosts,
+                
+                CaseStatus = model.CaseStatus,
+                CurrentStage = model.CurrentStage,
+                NextHearingDate = model.NextHearingDate,
+                
+                HasVerdict = false,
+                CreatedBy = User.Identity?.Name ?? "System"
+            };
+
+            await _unitOfWork.Repository<LegalDispute>().AddAsync(dispute);
+            await _unitOfWork.SaveChangesAsync();
+
+            TempData["Success"] = "تم إضافة الدعوى بنجاح";
+            return RedirectToAction(nameof(Details), new { id = dispute.Id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating dispute");
+            ModelState.AddModelError("", "حدث خطأ أثناء إضافة الدعوى");
+            return View(model);
+        }
+    }

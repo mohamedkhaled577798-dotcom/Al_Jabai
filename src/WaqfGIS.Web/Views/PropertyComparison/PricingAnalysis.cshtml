@@ -219,9 +219,9 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        @if (Model.Any())
-        {
+    @if (Model.Any())
+    {
+        <script>
             var pricingData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Select(p => new {
                 date = p.PriceDate.ToString("yyyy-MM-dd"),
                 price = p.PricePerSqm,
@@ -331,6 +331,6 @@
                     }
                 }
             });
-        }
-    </script>
+        </script>
+    }
 }

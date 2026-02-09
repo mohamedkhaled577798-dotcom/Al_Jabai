@@ -118,12 +118,12 @@
                             <td>
                                 @if (Model.IsRenewable)
                                 {
-                                    <i class="fas fa-check text-success"></i> نعم
+                                    <text><i class="fas fa-check text-success"></i> نعم</text>
                                     <br/><small class="text-muted">إشعار قبل @Model.RenewalNoticeDays يوم</small>
                                 }
                                 else
                                 {
-                                    <i class="fas fa-times text-danger"></i> لا
+                                    <text><i class="fas fa-times text-danger"></i> لا</text>
                                 }
                             </td>
                         </tr>
@@ -209,11 +209,11 @@
                                 <td>
                                     @if (Model.AnnualIncreasePercentage.HasValue)
                                     {
-                                        @Model.AnnualIncreasePercentage.Value%
+                                        <text>@Model.AnnualIncreasePercentage.Value%</text>
                                     }
                                     @if (Model.AnnualIncreaseAmount.HasValue)
                                     {
-                                        @Model.AnnualIncreaseAmount.Value.ToString("N0") @Model.Currency
+                                        <text>@Model.AnnualIncreaseAmount.Value.ToString("N0") @Model.Currency</text>
                                     }
                                 </td>
                             </tr>

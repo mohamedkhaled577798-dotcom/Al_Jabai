@@ -1,0 +1,329 @@
+@model WaqfGIS.Web.Models.ContractViewModel
+
+@{
+    ViewData["Title"] = "إضافة عقد جديد";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-contract"></i> إضافة عقد استثماري جديد</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <form asp-action="Create" method="post">
+        <div class="row">
+            <!-- معلومات العقد الأساسية -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">معلومات العقد</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ContractNumber" class="form-label">رقم العقد</label>
+                            <input asp-for="ContractNumber" class="form-control" />
+                            <span asp-validation-for="ContractNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ContractDate" class="form-label">تاريخ العقد</label>
+                            <input asp-for="ContractDate" type="date" class="form-control" />
+                            <span asp-validation-for="ContractDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ContractType" class="form-label">نوع العقد</label>
+                            <select asp-for="ContractType" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="استثمار">استثمار</option>
+                                <option value="إيجار">إيجار</option>
+                                <option value="تطوير">تطوير</option>
+                                <option value="مشاركة">مشاركة</option>
+                            </select>
+                            <span asp-validation-for="ContractType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ContractPurpose" class="form-label">غرض العقد</label>
+                            <textarea asp-for="ContractPurpose" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ContractPurpose" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EntityType" class="form-label">نوع الكيان</label>
+                            <select asp-for="EntityType" class="form-select" id="entityTypeSelect">
+                                <option value="">-- اختر --</option>
+                                <option value="Mosque">مسجد</option>
+                                <option value="WaqfProperty">عقار وقفي</option>
+                                <option value="WaqfLand">أرض وقفية</option>
+                            </select>
+                            <span asp-validation-for="EntityType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EntityId" class="form-label">الكيان</label>
+                            <select asp-for="EntityId" class="form-select" id="entitySelect">
+                                <option value="">-- اختر نوع الكيان أولاً --</option>
+                            </select>
+                            <span asp-validation-for="EntityId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- معلومات المستثمر -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">بيانات المستثمر</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="InvestorName" class="form-label">اسم المستثمر</label>
+                            <input asp-for="InvestorName" class="form-control" />
+                            <span asp-validation-for="InvestorName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="InvestorType" class="form-label">نوع المستثمر</label>
+                            <select asp-for="InvestorType" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="فرد">فرد</option>
+                                <option value="شركة">شركة</option>
+                                <option value="مؤسسة">مؤسسة</option>
+                            </select>
+                            <span asp-validation-for="InvestorType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="InvestorIdNumber" class="form-label">رقم الهوية</label>
+                            <input asp-for="InvestorIdNumber" class="form-control" />
+                            <span asp-validation-for="InvestorIdNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="InvestorPhone" class="form-label">الهاتف</label>
+                                <input asp-for="InvestorPhone" class="form-control" />
+                                <span asp-validation-for="InvestorPhone" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="InvestorMobile" class="form-label">الموبايل</label>
+                                <input asp-for="InvestorMobile" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="InvestorEmail" class="form-label">البريد الإلكتروني</label>
+                            <input asp-for="InvestorEmail" type="email" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="InvestorAddress" class="form-label">العنوان</label>
+                            <textarea asp-for="InvestorAddress" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- المدة والتواريخ -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">المدة والتواريخ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="StartDate" class="form-label">تاريخ البداية</label>
+                        <input asp-for="StartDate" type="date" class="form-control" id="startDate" />
+                        <span asp-validation-for="StartDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="EndDate" class="form-label">تاريخ النهاية</label>
+                        <input asp-for="EndDate" type="date" class="form-control" id="endDate" />
+                        <span asp-validation-for="EndDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">المدة المحسوبة</label>
+                        <input type="text" class="form-control" id="calculatedDuration" readonly />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsRenewable" class="form-check-input" id="isRenewable" />
+                            <label asp-for="IsRenewable" class="form-check-label">
+                                قابل للتجديد
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3" id="renewalNoticeGroup" style="display:none;">
+                        <label asp-for="RenewalNoticeDays" class="form-label">أيام الإشعار قبل التجديد</label>
+                        <input asp-for="RenewalNoticeDays" type="number" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الشروط المالية -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">الشروط المالية</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="MonthlyRent" class="form-label">الإيجار الشهري</label>
+                        <input asp-for="MonthlyRent" type="number" step="0.01" class="form-control" id="monthlyRent" />
+                        <span asp-validation-for="MonthlyRent" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">الإيجار السنوي (محسوب)</label>
+                        <input type="text" class="form-control" id="annualRent" readonly />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Currency" class="form-label">العملة</label>
+                        <select asp-for="Currency" class="form-select">
+                            <option value="IQD">دينار عراقي</option>
+                            <option value="USD">دولار أمريكي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PaymentMethod" class="form-label">طريقة الدفع</label>
+                        <select asp-for="PaymentMethod" class="form-select">
+                            <option value="نقدي">نقدي</option>
+                            <option value="شيك">شيك</option>
+                            <option value="تحويل بنكي">تحويل بنكي</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="SecurityDeposit" class="form-label">مبلغ التأمين</label>
+                        <input asp-for="SecurityDeposit" type="number" step="0.01" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input asp-for="HasBankGuarantee" class="form-check-input" />
+                    <label asp-for="HasBankGuarantee" class="form-check-label">
+                        يوجد ضمان بنكي
+                    </label>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input asp-for="HasAnnualIncrease" class="form-check-input" id="hasAnnualIncrease" />
+                    <label asp-for="HasAnnualIncrease" class="form-check-label">
+                        زيادة سنوية
+                    </label>
+                </div>
+
+                <div id="increaseGroup" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AnnualIncreasePercentage" class="form-label">نسبة الزيادة السنوية (%)</label>
+                            <input asp-for="AnnualIncreasePercentage" type="number" step="0.01" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AnnualIncreaseAmount" class="form-label">أو مبلغ الزيادة السنوية</label>
+                            <input asp-for="AnnualIncreaseAmount" type="number" step="0.01" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ملاحظات -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">ملاحظات وشروط</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="SpecialTerms" class="form-label">الشروط الخاصة</label>
+                    <textarea asp-for="SpecialTerms" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Notes" class="form-label">ملاحظات</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> حفظ العقد
+            </button>
+            <a asp-action="Index" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> إلغاء
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // حساب المدة
+        $('#startDate, #endDate').change(function() {
+            const start = new Date($('#startDate').val());
+            const end = new Date($('#endDate').val());
+            
+            if (start && end && end > start) {
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const years = Math.floor(diffDays / 365);
+                const months = Math.floor((diffDays % 365) / 30);
+                
+                $('#calculatedDuration').val(years + ' سنة و ' + months + ' شهر');
+            }
+        });
+
+        // حساب الإيجار السنوي
+        $('#monthlyRent').on('input', function() {
+            const monthly = parseFloat($(this).val()) || 0;
+            const annual = monthly * 12;
+            $('#annualRent').val(annual.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        });
+
+        // إظهار/إخفاء حقول التجديد
+        $('#isRenewable').change(function() {
+            if($(this).is(':checked')) {
+                $('#renewalNoticeGroup').show();
+            } else {
+                $('#renewalNoticeGroup').hide();
+            }
+        });
+
+        // إظهار/إخفاء حقول الزيادة السنوية
+        $('#hasAnnualIncrease').change(function() {
+            if($(this).is(':checked')) {
+                $('#increaseGroup').show();
+            } else {
+                $('#increaseGroup').hide();
+            }
+        });
+
+        // تحميل الكيانات حسب النوع
+        $('#entityTypeSelect').change(function() {
+            const entityType = $(this).val();
+            if (!entityType) {
+                $('#entitySelect').html('<option value="">-- اختر نوع الكيان أولاً --</option>');
+                return;
+            }
+
+            $.get('/Contracts/GetEntitiesByType', { entityType: entityType }, function(data) {
+                let options = '<option value="">-- اختر --</option>';
+                data.forEach(function(item) {
+                    options += '<option value="' + item.id + '">' + item.name + '</option>';
+                });
+                $('#entitySelect').html(options);
+            });
+        });
+    </script>
+}

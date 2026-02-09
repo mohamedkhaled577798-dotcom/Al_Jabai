@@ -143,7 +143,7 @@ public class ContractsController : Controller
             contract.IsActive = true;
             contract.UpdatedBy = User.Identity?.Name ?? "System";
 
-            _unitOfWork.Repository<InvestmentContract>().Update(contract);
+            await _unitOfWork.Repository<InvestmentContract>().UpdateAsync(contract);
             await _unitOfWork.SaveChangesAsync();
 
             return Json(new { success = true, message = "تم تجديد العقد بنجاح" });
@@ -174,7 +174,7 @@ public class ContractsController : Controller
             contract.TerminationReason = reason;
             contract.UpdatedBy = User.Identity?.Name ?? "System";
 
-            _unitOfWork.Repository<InvestmentContract>().Update(contract);
+            await _unitOfWork.Repository<InvestmentContract>().UpdateAsync(contract);
             await _unitOfWork.SaveChangesAsync();
 
             return Json(new { success = true, message = "تم إنهاء العقد بنجاح" });
@@ -209,3 +209,119 @@ public class ContractsController : Controller
         });
     }
 }
+
+    // GET: Contracts/Create
+    [HttpGet]
+    public async Task<IActionResult> Create()
+    {
+        await LoadSelectListsAsync();
+        return View(new ContractViewModel());
+    }
+
+    // POST: Contracts/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(ContractViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            await LoadSelectListsAsync();
+            return View(model);
+        }
+
+        try
+        {
+            var contract = new InvestmentContract
+            {
+                ContractNumber = model.ContractNumber,
+                ContractDate = model.ContractDate,
+                ContractType = model.ContractType,
+                ContractPurpose = model.ContractPurpose,
+                EntityType = model.EntityType,
+                EntityId = model.EntityId,
+                
+                InvestorName = model.InvestorName,
+                InvestorType = model.InvestorType,
+                InvestorIdNumber = model.InvestorIdNumber,
+                InvestorPhone = model.InvestorPhone,
+                InvestorMobile = model.InvestorMobile,
+                InvestorEmail = model.InvestorEmail,
+                InvestorAddress = model.InvestorAddress,
+                
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
+                MonthlyRent = model.MonthlyRent,
+                Currency = model.Currency,
+                PaymentMethod = model.PaymentMethod,
+                SecurityDeposit = model.SecurityDeposit,
+                HasBankGuarantee = model.HasBankGuarantee,
+                
+                IsRenewable = model.IsRenewable,
+                RenewalNoticeDays = model.RenewalNoticeDays,
+                HasAnnualIncrease = model.HasAnnualIncrease,
+                AnnualIncreasePercentage = model.AnnualIncreasePercentage,
+                AnnualIncreaseAmount = model.AnnualIncreaseAmount,
+                
+                SpecialTerms = model.SpecialTerms,
+                Notes = model.Notes,
+                
+                IsActive = true,
+                Status = "نشط",
+                CreatedBy = User.Identity?.Name ?? "System"
+            };
+
+            // حساب القيم
+            contract.DurationMonths = (int)((contract.EndDate - contract.StartDate).TotalDays / 30);
+            contract.DurationYears = contract.DurationMonths / 12;
+            contract.AnnualRent = contract.MonthlyRent * 12;
+            contract.TotalContractValue = contract.MonthlyRent * contract.DurationMonths;
+
+            await _unitOfWork.Repository<InvestmentContract>().AddAsync(contract);
+            await _unitOfWork.SaveChangesAsync();
+
+            TempData["Success"] = "تم إضافة العقد بنجاح";
+            return RedirectToAction(nameof(Details), new { id = contract.Id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating contract");
+            ModelState.AddModelError("", "حدث خطأ أثناء إضافة العقد");
+            await LoadSelectListsAsync();
+            return View(model);
+        }
+    }
+
+    // API: Get entities by type
+    [HttpGet]
+    public async Task<IActionResult> GetEntitiesByType(string entityType)
+    {
+        try
+        {
+            var entities = new List<object>();
+
+            switch (entityType)
+            {
+                case "Mosque":
+                    var mosques = await _unitOfWork.Repository<Mosque>().GetAllAsync();
+                    entities = mosques.Select(m => new { id = m.Id, name = m.NameAr }).ToList<object>();
+                    break;
+
+                case "WaqfProperty":
+                    var properties = await _unitOfWork.Repository<WaqfProperty>().GetAllAsync();
+                    entities = properties.Select(p => new { id = p.Id, name = p.NameAr }).ToList<object>();
+                    break;
+
+                case "WaqfLand":
+                    var lands = await _unitOfWork.Repository<WaqfLand>().GetAllAsync();
+                    entities = lands.Select(l => new { id = l.Id, name = l.NameAr }).ToList<object>();
+                    break;
+            }
+
+            return Json(entities);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting entities by type: {EntityType}", entityType);
+            return Json(new List<object>());
+        }
+    }

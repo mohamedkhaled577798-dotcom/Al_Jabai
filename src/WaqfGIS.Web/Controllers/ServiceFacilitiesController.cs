@@ -133,3 +133,40 @@ public class ServiceFacilitiesController : Controller
         }
     }
 }
+
+    // GET: ServiceFacilities/Create
+    [HttpGet]
+    public IActionResult Create()
+    {
+        return View();
+    }
+
+    // POST: ServiceFacilities/Create
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] ServiceFacility model)
+    {
+        try
+        {
+            if (model.Latitude == 0 || model.Longitude == 0)
+            {
+                return Json(new { success = false, message = "يرجى تحديد الموقع على الخريطة" });
+            }
+
+            // إنشاء النقطة الجغرافية
+            var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            model.Location = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(model.Longitude, model.Latitude));
+
+            model.CreatedBy = User.Identity?.Name ?? "System";
+            model.CreatedAt = DateTime.Now;
+
+            await _unitOfWork.Repository<ServiceFacility>().AddAsync(model);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Json(new { success = true, message = "تم إضافة المرفق بنجاح", id = model.Id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating service facility");
+            return Json(new { success = false, message = "حدث خطأ أثناء الحفظ" });
+        }
+    }

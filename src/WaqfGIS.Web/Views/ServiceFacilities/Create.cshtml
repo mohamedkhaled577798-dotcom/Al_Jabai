@@ -1,0 +1,232 @@
+@{
+    ViewData["Title"] = "إضافة مرفق خدمي";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-building"></i> إضافة مرفق خدمي جديد</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- النموذج -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">معلومات المرفق</h5>
+                </div>
+                <div class="card-body">
+                    <form id="facilityForm">
+                        <div class="mb-3">
+                            <label class="form-label">الاسم بالعربية</label>
+                            <input type="text" class="form-control" id="nameAr" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">الاسم بالإنجليزية</label>
+                            <input type="text" class="form-control" id="nameEn" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">التصنيف</label>
+                            <select class="form-select" id="categorySelect" required>
+                                <option value="">-- اختر --</option>
+                                <option value="المرافق">المرافق الأساسية</option>
+                                <option value="الخدمات الصحية">الخدمات الصحية</option>
+                                <option value="الخدمات التعليمية">الخدمات التعليمية</option>
+                                <option value="الخدمات الأمنية">الخدمات الأمنية</option>
+                                <option value="المواصلات">المواصلات</option>
+                                <option value="الخدمات التجارية">الخدمات التجارية</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">النوع</label>
+                            <select class="form-select" id="typeSelect" required>
+                                <option value="">-- اختر التصنيف أولاً --</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">اسم المالك/المشغل</label>
+                            <input type="text" class="form-control" id="ownerName" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="phone" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">العنوان</label>
+                            <textarea class="form-control" id="address" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isOperational" checked />
+                                <label class="form-check-label" for="isOperational">
+                                    المرفق نشط وقيد التشغيل
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">التقييم (1-5 نجوم)</label>
+                            <select class="form-select" id="rating">
+                                <option value="">-- اختياري --</option>
+                                <option value="1">⭐ نجمة واحدة</option>
+                                <option value="2">⭐⭐ نجمتان</option>
+                                <option value="3">⭐⭐⭐ ثلاث نجوم</option>
+                                <option value="4">⭐⭐⭐⭐ أربع نجوم</option>
+                                <option value="5">⭐⭐⭐⭐⭐ خمس نجوم</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">الإحداثيات</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" step="0.000001" class="form-control" id="latitude" placeholder="Latitude" readonly required />
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" step="0.000001" class="form-control" id="longitude" placeholder="Longitude" readonly required />
+                                </div>
+                            </div>
+                            <small class="text-muted">انقر على الخريطة لتحديد الموقع</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" rows="3"></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> حفظ المرفق
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- الخريطة -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">تحديد الموقع على الخريطة</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" style="height: 600px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // أنواع المرافق حسب التصنيف
+        const serviceTypes = {
+            'المرافق': ['محطة كهرباء', 'محطة ماء', 'محطة غاز', 'محطة صرف صحي'],
+            'الخدمات الصحية': ['مستشفى', 'مركز صحي', 'عيادة', 'صيدلية'],
+            'الخدمات التعليمية': ['مدرسة ابتدائية', 'مدرسة متوسطة', 'مدرسة ثانوية', 'جامعة', 'معهد'],
+            'الخدمات الأمنية': ['مركز شرطة', 'محطة إطفاء', 'دفاع مدني'],
+            'المواصلات': ['محطة وقود', 'موقف سيارات', 'محطة حافلات'],
+            'الخدمات التجارية': ['سوق', 'مركز تجاري', 'بنك', 'صراف آلي']
+        };
+
+        // تحديث قائمة الأنواع عند تغيير التصنيف
+        $('#categorySelect').change(function() {
+            const category = $(this).val();
+            const types = serviceTypes[category] || [];
+            
+            let options = '<option value="">-- اختر --</option>';
+            types.forEach(type => {
+                options += `<option value="${type}">${type}</option>`;
+            });
+            $('#typeSelect').html(options);
+        });
+
+        // إعداد الخريطة
+        const map = L.map('map').setView([33.3152, 44.3661], 6); // بغداد
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+
+        // عند النقر على الخريطة
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            // تحديث الحقول
+            $('#latitude').val(lat.toFixed(6));
+            $('#longitude').val(lng.toFixed(6));
+
+            // إضافة/تحديث العلامة
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng, {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map);
+            }
+        });
+
+        // حفظ المرفق
+        $('#facilityForm').submit(function(e) {
+            e.preventDefault();
+
+            const data = {
+                NameAr: $('#nameAr').val(),
+                NameEn: $('#nameEn').val(),
+                ServiceCategory: $('#categorySelect').val(),
+                ServiceType: $('#typeSelect').val(),
+                OwnerName: $('#ownerName').val(),
+                ContactPhone: $('#phone').val(),
+                Address: $('#address').val(),
+                Latitude: parseFloat($('#latitude').val()),
+                Longitude: parseFloat($('#longitude').val()),
+                IsOperational: $('#isOperational').is(':checked'),
+                QualityRating: $('#rating').val() ? parseFloat($('#rating').val()) : null,
+                Notes: $('#notes').val()
+            };
+
+            $.ajax({
+                url: '/ServiceFacilities/Create',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('تم إضافة المرفق بنجاح');
+                        window.location.href = '/ServiceFacilities';
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('حدث خطأ أثناء الحفظ');
+                }
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
+}

@@ -101,7 +101,7 @@ public class ContractService
         
         return new ContractStatistics
         {
-            TotalContracts = allContracts.Count,
+            TotalContracts = allContracts.Count(),
             ActiveContracts = allContracts.Count(c => c.IsActive),
             ExpiredContracts = allContracts.Count(c => c.EndDate < DateTime.Now && c.IsActive),
             ExpiringIn30Days = allContracts.Count(c => c.IsActive && c.EndDate <= DateTime.Now.AddDays(30) && c.EndDate >= DateTime.Now),

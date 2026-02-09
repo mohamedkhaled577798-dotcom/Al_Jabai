@@ -1,0 +1,252 @@
+@model WaqfGIS.Web.Models.DisputeViewModel
+
+@{
+    ViewData["Title"] = "إضافة دعوى قضائية";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-gavel"></i> إضافة دعوى قضائية جديدة</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <form asp-action="Create" method="post">
+        <div class="row">
+            <!-- معلومات الدعوى -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">معلومات الدعوى</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="CaseNumber" class="form-label">رقم الدعوى</label>
+                            <input asp-for="CaseNumber" class="form-control" />
+                            <span asp-validation-for="CaseNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CaseDate" class="form-label">تاريخ الدعوى</label>
+                            <input asp-for="CaseDate" type="date" class="form-control" />
+                            <span asp-validation-for="CaseDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CourtName" class="form-label">اسم المحكمة</label>
+                            <input asp-for="CourtName" class="form-control" />
+                            <span asp-validation-for="CourtName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CourtType" class="form-label">نوع المحكمة</label>
+                            <select asp-for="CourtType" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="بداءة">بداءة</option>
+                                <option value="استئناف">استئناف</option>
+                                <option value="تمييز">تمييز</option>
+                            </select>
+                            <span asp-validation-for="CourtType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EntityType" class="form-label">نوع الكيان المتنازع عليه</label>
+                            <select asp-for="EntityType" class="form-select" id="disputeEntityTypeSelect">
+                                <option value="">-- اختر --</option>
+                                <option value="Mosque">مسجد</option>
+                                <option value="WaqfProperty">عقار وقفي</option>
+                                <option value="WaqfLand">أرض وقفية</option>
+                            </select>
+                            <span asp-validation-for="EntityType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EntityId" class="form-label">الكيان</label>
+                            <select asp-for="EntityId" class="form-select" id="disputeEntitySelect">
+                                <option value="">-- اختر نوع الكيان أولاً --</option>
+                            </select>
+                            <span asp-validation-for="EntityId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- النزاع -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">تفاصيل النزاع</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="DisputeType" class="form-label">نوع النزاع</label>
+                            <select asp-for="DisputeType" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="ملكية">نزاع ملكية</option>
+                                <option value="حدود">نزاع حدود</option>
+                                <option value="استثمار">نزاع استثماري</option>
+                                <option value="إزالة تجاوز">إزالة تجاوز</option>
+                                <option value="تعويضات">تعويضات</option>
+                            </select>
+                            <span asp-validation-for="DisputeType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DisputeSubject" class="form-label">موضوع النزاع</label>
+                            <input asp-for="DisputeSubject" class="form-control" />
+                            <span asp-validation-for="DisputeSubject" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DisputeDescription" class="form-label">وصف النزاع</label>
+                            <textarea asp-for="DisputeDescription" class="form-control" rows="4"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ClaimAmount" class="form-label">قيمة المطالبة (إن وجدت)</label>
+                            <input asp-for="ClaimAmount" type="number" step="0.01" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الأطراف -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">أطراف الدعوى</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="text-success">المدعي:</h6>
+                        <div class="mb-3">
+                            <label asp-for="PlaintiffName" class="form-label">الاسم</label>
+                            <input asp-for="PlaintiffName" class="form-control" />
+                            <span asp-validation-for="PlaintiffName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PlaintiffPhone" class="form-label">الهاتف</label>
+                            <input asp-for="PlaintiffPhone" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PlaintiffAddress" class="form-label">العنوان</label>
+                            <textarea asp-for="PlaintiffAddress" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <hr class="my-4"/>
+
+                        <h6 class="text-danger">المدعى عليه:</h6>
+                        <div class="mb-3">
+                            <label asp-for="DefendantName" class="form-label">الاسم</label>
+                            <input asp-for="DefendantName" class="form-control" />
+                            <span asp-validation-for="DefendantName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DefendantPhone" class="form-label">الهاتف</label>
+                            <input asp-for="DefendantPhone" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DefendantAddress" class="form-label">العنوان</label>
+                            <textarea asp-for="DefendantAddress" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المحامي -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">بيانات المحامي (اختياري)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="LawyerName" class="form-label">اسم المحامي</label>
+                            <input asp-for="LawyerName" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LawyerPhone" class="form-label">هاتف المحامي</label>
+                            <input asp-for="LawyerPhone" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LawyerLicenseNumber" class="form-label">رقم إجازة المحامي</label>
+                            <input asp-for="LawyerLicenseNumber" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LegalCosts" class="form-label">التكاليف القانونية</label>
+                            <input asp-for="LegalCosts" type="number" step="0.01" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الحالة والجلسات -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">الحالة والجلسات</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="CaseStatus" class="form-label">حالة الدعوى</label>
+                        <select asp-for="CaseStatus" class="form-select">
+                            <option value="جارية">جارية</option>
+                            <option value="متوقفة">متوقفة</option>
+                            <option value="منتهية">منتهية</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="CurrentStage" class="form-label">المرحلة الحالية</label>
+                        <select asp-for="CurrentStage" class="form-select">
+                            <option value="ابتدائية">ابتدائية</option>
+                            <option value="استئنافية">استئنافية</option>
+                            <option value="تمييزية">تمييزية</option>
+                            <option value="تنفيذية">تنفيذية</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="NextHearingDate" class="form-label">تاريخ الجلسة القادمة</label>
+                        <input asp-for="NextHearingDate" type="date" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> حفظ الدعوى
+            </button>
+            <a asp-action="Index" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> إلغاء
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // تحميل الكيانات حسب النوع
+        $('#disputeEntityTypeSelect').change(function() {
+            const entityType = $(this).val();
+            if (!entityType) {
+                $('#disputeEntitySelect').html('<option value="">-- اختر نوع الكيان أولاً --</option>');
+                return;
+            }
+
+            $.get('/Contracts/GetEntitiesByType', { entityType: entityType }, function(data) {
+                let options = '<option value="">-- اختر --</option>';
+                data.forEach(function(item) {
+                    options += '<option value="' + item.id + '">' + item.name + '</option>';
+                });
+                $('#disputeEntitySelect').html(options);
+            });
+        });
+    </script>
+}
