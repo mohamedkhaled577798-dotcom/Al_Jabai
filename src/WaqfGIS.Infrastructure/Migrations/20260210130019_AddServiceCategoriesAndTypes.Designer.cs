@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Infrastructure.Data;
@@ -12,9 +13,11 @@ using WaqfGIS.Infrastructure.Data;
 namespace WaqfGIS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260210130019_AddServiceCategoriesAndTypes")]
+    partial class AddServiceCategoriesAndTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -334,7 +337,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AuditLogs", (string)null);
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ContractDocument", b =>
@@ -391,7 +394,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ContractId");
 
-                    b.ToTable("ContractDocuments", (string)null);
+                    b.ToTable("ContractDocuments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ContractPayment", b =>
@@ -463,7 +466,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("ContractPayments", (string)null);
+                    b.ToTable("ContractPayments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.DisputeDocument", b =>
@@ -520,7 +523,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("DisputeId");
 
-                    b.ToTable("DisputeDocuments", (string)null);
+                    b.ToTable("DisputeDocuments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.District", b =>
@@ -655,7 +658,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("GeometryAuditLogs", (string)null);
+                    b.ToTable("GeometryAuditLogs");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.GisLayer", b =>
@@ -740,7 +743,7 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("GisLayers", (string)null);
+                    b.ToTable("GisLayers");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.InvestmentContract", b =>
@@ -978,7 +981,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("InvestmentContracts", (string)null);
+                    b.ToTable("InvestmentContracts");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.LegalDispute", b =>
@@ -1157,7 +1160,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("LegalDisputes", (string)null);
+                    b.ToTable("LegalDisputes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MapIcon", b =>
@@ -1170,7 +1173,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1217,7 +1220,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.Property<string>("NameAr")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NameEn")
                         .IsRequired()
@@ -1235,9 +1238,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Category", "NameAr");
-
-                    b.ToTable("MapIcons", (string)null);
+                    b.ToTable("MapIcon");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.Mosque", b =>
@@ -1466,7 +1467,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("MosqueId");
 
-                    b.ToTable("MosqueBoundaries", (string)null);
+                    b.ToTable("MosqueBoundaries");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueDocument", b =>
@@ -1526,7 +1527,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("MosqueId");
 
-                    b.ToTable("MosqueDocuments", (string)null);
+                    b.ToTable("MosqueDocuments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueImage", b =>
@@ -1596,7 +1597,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("MosqueId");
 
-                    b.ToTable("MosqueImages", (string)null);
+                    b.ToTable("MosqueImages");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueStatus", b =>
@@ -1637,7 +1638,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MosqueStatuses", (string)null);
+                    b.ToTable("MosqueStatuses");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.MosqueType", b =>
@@ -1681,7 +1682,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MosqueTypes", (string)null);
+                    b.ToTable("MosqueTypes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.NearbyProject", b =>
@@ -1770,7 +1771,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ProvinceId");
 
-                    b.ToTable("NearbyProjects", (string)null);
+                    b.ToTable("NearbyProjects");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.OfficeImage", b =>
@@ -1834,7 +1835,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("WaqfOfficeId");
 
-                    b.ToTable("OfficeImages", (string)null);
+                    b.ToTable("OfficeImages");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.OfficeType", b =>
@@ -1878,7 +1879,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OfficeTypes", (string)null);
+                    b.ToTable("OfficeTypes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyBoundary", b =>
@@ -1927,7 +1928,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("PropertyId");
 
-                    b.ToTable("PropertyBoundaries", (string)null);
+                    b.ToTable("PropertyBoundaries");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyComparison", b =>
@@ -1971,7 +1972,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ComparisonDate");
 
-                    b.ToTable("PropertyComparisons", (string)null);
+                    b.ToTable("PropertyComparisons");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyComparisonItem", b =>
@@ -2046,7 +2047,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ComparisonId");
 
-                    b.ToTable("PropertyComparisonItems", (string)null);
+                    b.ToTable("PropertyComparisonItems");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyDocument", b =>
@@ -2106,7 +2107,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("PropertyId");
 
-                    b.ToTable("PropertyDocuments", (string)null);
+                    b.ToTable("PropertyDocuments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyImage", b =>
@@ -2170,7 +2171,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("WaqfPropertyId");
 
-                    b.ToTable("PropertyImages", (string)null);
+                    b.ToTable("PropertyImages");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyPricing", b =>
@@ -2279,7 +2280,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ProvinceId", "DistrictId", "PropertyTypeId");
 
-                    b.ToTable("PropertyPricings", (string)null);
+                    b.ToTable("PropertyPricings");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyServiceAssessment", b =>
@@ -2460,7 +2461,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("PropertyServiceAssessments", (string)null);
+                    b.ToTable("PropertyServiceAssessments");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.PropertyType", b =>
@@ -2501,7 +2502,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PropertyTypes", (string)null);
+                    b.ToTable("PropertyTypes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.Province", b =>
@@ -2635,61 +2636,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ProvinceId");
 
-                    b.ToTable("Roads", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceCategory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DefaultIconClass")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DefaultIconColor")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("NameEn")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NameAr")
-                        .IsUnique();
-
-                    b.ToTable("ServiceCategories", (string)null);
+                    b.ToTable("Roads");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceFacility", b =>
@@ -2844,7 +2791,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("SubDistrictId");
 
-                    b.ToTable("ServiceFacilities", (string)null);
+                    b.ToTable("ServiceFacilities");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceImage", b =>
@@ -2900,7 +2847,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ServiceFacilityId");
 
-                    b.ToTable("ServiceImages", (string)null);
+                    b.ToTable("ServiceImages");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceProximity", b =>
@@ -2948,69 +2895,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("ServiceFacilityId");
 
-                    b.ToTable("ServiceProximities", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomIconClass")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomIconColor")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("MapIconId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("NameEn")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ServiceCategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MapIconId");
-
-                    b.HasIndex("ServiceCategoryId", "NameAr")
-                        .IsUnique();
-
-                    b.ToTable("ServiceTypes", (string)null);
+                    b.ToTable("ServiceProximities");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.SubDistrict", b =>
@@ -3062,7 +2947,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("DistrictId");
 
-                    b.ToTable("SubDistricts", (string)null);
+                    b.ToTable("SubDistricts");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.UsageType", b =>
@@ -3100,7 +2985,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UsageTypes", (string)null);
+                    b.ToTable("UsageTypes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfLand", b =>
@@ -3231,7 +3116,7 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.HasIndex("WaqfOfficeId");
 
-                    b.ToTable("WaqfLands", (string)null);
+                    b.ToTable("WaqfLands");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.WaqfOffice", b =>
@@ -3942,24 +3827,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Navigation("ServiceFacility");
                 });
 
-            modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceType", b =>
-                {
-                    b.HasOne("WaqfGIS.Core.Entities.MapIcon", "MapIcon")
-                        .WithMany()
-                        .HasForeignKey("MapIconId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("WaqfGIS.Core.Entities.ServiceCategory", "ServiceCategory")
-                        .WithMany("ServiceTypes")
-                        .HasForeignKey("ServiceCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("MapIcon");
-
-                    b.Navigation("ServiceCategory");
-                });
-
             modelBuilder.Entity("WaqfGIS.Core.Entities.SubDistrict", b =>
                 {
                     b.HasOne("WaqfGIS.Core.Entities.District", "District")
@@ -4139,11 +4006,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Navigation("WaqfOffices");
 
                     b.Navigation("WaqfProperties");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceCategory", b =>
-                {
-                    b.Navigation("ServiceTypes");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.ServiceFacility", b =>

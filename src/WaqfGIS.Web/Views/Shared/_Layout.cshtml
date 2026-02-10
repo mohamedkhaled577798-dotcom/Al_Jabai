@@ -99,6 +99,10 @@
                     </a>
                     
                     <div class="nav-section-title text-muted small px-3 mt-3 mb-1">إعدادات النظام</div>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "ServiceCategories" ? "active bg-primary rounded" : "")" 
+                       asp-controller="ServiceCategories" asp-action="Index">
+                        <i class="fas fa-list me-2"></i> إدارة تصنيفات المرافق
+                    </a>
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "MapIcons" ? "active bg-primary rounded" : "")" 
                        asp-controller="MapIcons" asp-action="Index">
                         <i class="fas fa-icons me-2"></i> إدارة رموز الخرائط

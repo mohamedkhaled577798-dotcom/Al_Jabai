@@ -32,13 +32,7 @@
                         <div class="mb-3">
                             <label class="form-label">التصنيف</label>
                             <select class="form-select" id="categorySelect" required>
-                                <option value="">-- اختر --</option>
-                                <option value="المرافق">المرافق الأساسية</option>
-                                <option value="الخدمات الصحية">الخدمات الصحية</option>
-                                <option value="الخدمات التعليمية">الخدمات التعليمية</option>
-                                <option value="الخدمات الأمنية">الخدمات الأمنية</option>
-                                <option value="المواصلات">المواصلات</option>
-                                <option value="الخدمات التجارية">الخدمات التجارية</option>
+                                <option value="">جاري التحميل...</option>
                             </select>
                         </div>
 
@@ -142,29 +136,54 @@
 @section Scripts {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // أنواع المرافق حسب التصنيف
-        const serviceTypes = {
-            'المرافق': ['محطة كهرباء', 'محطة ماء', 'محطة غاز', 'محطة صرف صحي'],
-            'الخدمات الصحية': ['مستشفى', 'مركز صحي', 'عيادة', 'صيدلية'],
-            'الخدمات التعليمية': ['مدرسة ابتدائية', 'مدرسة متوسطة', 'مدرسة ثانوية', 'جامعة', 'معهد'],
-            'الخدمات الأمنية': ['مركز شرطة', 'محطة إطفاء', 'دفاع مدني'],
-            'المواصلات': ['محطة وقود', 'موقف سيارات', 'محطة حافلات'],
-            'الخدمات التجارية': ['سوق', 'مركز تجاري', 'بنك', 'صراف آلي']
-        };
+        // تحميل التصنيفات عند تحميل الصفحة
+        $(document).ready(function() {
+            loadCategories();
+        });
+
+        // تحميل التصنيفات من API
+        function loadCategories() {
+            $.get('/ServiceCategories/GetAll', function(categories) {
+                if (categories.length === 0) {
+                    $('#categorySelect').html('<option value="">لا توجد تصنيفات - يرجى إضافتها من إعدادات النظام</option>');
+                    return;
+                }
+                
+                let options = '<option value="">-- اختر --</option>';
+                categories.forEach(cat => {
+                    options += `<option value="${cat.id}" data-name="${cat.nameAr}">${cat.nameAr}</option>`;
+                });
+                $('#categorySelect').html(options);
+            });
+        }
 
         // تحديث قائمة الأنواع عند تغيير التصنيف
         $('#categorySelect').change(function() {
-            const category = $(this).val();
-            const types = serviceTypes[category] || [];
+            const categoryId = $(this).val();
+            const categoryName = $(this).find(':selected').data('name');
             
-            let options = '<option value="">-- اختر --</option>';
-            types.forEach(type => {
-                options += `<option value="${type}">${type}</option>`;
+            if (!categoryId) {
+                $('#typeSelect').html('<option value="">-- اختر التصنيف أولاً --</option>');
+                return;
+            }
+
+            $('#typeSelect').html('<option value="">جاري التحميل...</option>');
+
+            $.get('/ServiceCategories/GetTypesByCategory', { categoryId: categoryId }, function(types) {
+                if (types.length === 0) {
+                    $('#typeSelect').html(`<option value="">لا توجد أنواع في ${categoryName} - يرجى إضافتها</option>`);
+                    return;
+                }
+                
+                let options = '<option value="">-- اختر --</option>';
+                types.forEach(type => {
+                    options += `<option value="${type.nameAr}">${type.nameAr}</option>`;
+                });
+                $('#typeSelect').html(options);
+                
+                // تحميل الرموز المناسبة
+                loadIcons(categoryName);
             });
-            $('#typeSelect').html(options);
-            
-            // تحميل الرموز المناسبة
-            loadIcons(category);
         });
 
         // تحميل الرموز

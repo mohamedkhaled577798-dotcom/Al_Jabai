@@ -1,0 +1,423 @@
+@model IEnumerable<WaqfGIS.Core.Entities.ServiceCategory>
+
+@{
+    ViewData["Title"] = "إدارة تصنيفات وأنواع المرافق";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-list"></i> إدارة تصنيفات وأنواع المرافق الخدمية</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus"></i> إضافة تصنيف جديد
+        </button>
+    </div>
+
+    <div class="row">
+        @foreach(var category in Model)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="@category.DefaultIconClass me-2" style="color: @category.DefaultIconColor"></i>
+                            <strong>@category.NameAr</strong>
+                            @if(!string.IsNullOrEmpty(category.NameEn))
+                            {
+                                <small class="ms-2">(@category.NameEn)</small>
+                            }
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-light" onclick="addType(@category.Id, '@category.NameAr')">
+                                <i class="fas fa-plus"></i> إضافة نوع
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(@category.Id)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if(category.ServiceTypes.Any())
+                        {
+                            <div class="list-group">
+                                @foreach(var type in category.ServiceTypes.OrderBy(t => t.DisplayOrder))
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            @if(!string.IsNullOrEmpty(type.CustomIconClass))
+                                            {
+                                                <i class="@type.CustomIconClass me-2" style="color: @type.CustomIconColor"></i>
+                                            }
+                                            @type.NameAr
+                                            @if(!string.IsNullOrEmpty(type.NameEn))
+                                            {
+                                                <small class="text-muted">(@type.NameEn)</small>
+                                            }
+                                        </div>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteType(@type.Id)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center mb-0">لا توجد أنواع في هذا التصنيف</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal إضافة تصنيف -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة تصنيف جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <div class="mb-3">
+                        <label class="form-label">الاسم بالعربية</label>
+                        <input type="text" class="form-control" id="catNameAr" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الاسم بالإنجليزية</label>
+                        <input type="text" class="form-control" id="catNameEn" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">اختر رمز من المكتبة</label>
+                        <select class="form-select" id="catIconSelect">
+                            <option value="">جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">أو أدخل رمز مخصص</label>
+                        <input type="text" class="form-control" id="catIcon" placeholder="fas fa-building" />
+                        <small class="text-muted">اترك فارغاً لاستخدام الرمز المختار أعلاه</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">اللون</label>
+                        <input type="color" class="form-control" id="catColor" value="#3B82F6" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">معاينة الرمز</label>
+                        <div class="border rounded p-3 text-center" id="catIconPreview">
+                            <i class="fas fa-building" style="font-size: 48px; color: #3B82F6"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">ترتيب العرض</label>
+                        <input type="number" class="form-control" id="catOrder" value="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الوصف</label>
+                        <textarea class="form-control" id="catDescription" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveCategory()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة نوع -->
+<div class="modal fade" id="addTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="typeModalTitle">إضافة نوع جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="typeForm">
+                    <input type="hidden" id="typeCategoryId" />
+                    <div class="mb-3">
+                        <label class="form-label">الاسم بالعربية</label>
+                        <input type="text" class="form-control" id="typeNameAr" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الاسم بالإنجليزية</label>
+                        <input type="text" class="form-control" id="typeNameEn" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">اختر رمز من المكتبة (اختياري)</label>
+                        <select class="form-select" id="typeMapIconSelect">
+                            <option value="">-- بدون رمز (سيستخدم رمز التصنيف) --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">أو أدخل رمز مخصص</label>
+                        <input type="text" class="form-control" id="typeIcon" placeholder="fas fa-hospital" />
+                        <small class="text-muted">اترك فارغاً لاستخدام الرمز المختار أعلاه</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">اللون (اختياري)</label>
+                        <input type="color" class="form-control" id="typeColor" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">معاينة الرمز</label>
+                        <div class="border rounded p-3 text-center" id="typeIconPreview">
+                            <i class="fas fa-question" style="font-size: 48px; color: #6B7280"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">ترتيب العرض</label>
+                        <input type="number" class="form-control" id="typeOrder" value="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الوصف</label>
+                        <textarea class="form-control" id="typeDescription" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveType()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allIcons = [];
+
+        // تحميل الرموز عند فتح الصفحة
+        $(document).ready(function() {
+            loadAllIcons();
+        });
+
+        // تحميل جميع الرموز من API
+        function loadAllIcons() {
+            $.get('/MapIcons/GetIconsByCategory', { category: '', usedFor: 'All' }, function(icons) {
+                allIcons = icons;
+                populateIconSelects();
+            });
+        }
+
+        // ملء قوائم الرموز
+        function populateIconSelects() {
+            // للتصنيف
+            let catOptions = '<option value="">-- اختر رمزاً --</option>';
+            allIcons.forEach(icon => {
+                catOptions += `<option value="${icon.id}" data-class="${icon.iconClass}" data-color="${icon.iconColor}">${icon.nameAr} (${icon.category})</option>`;
+            });
+            $('#catIconSelect').html(catOptions);
+
+            // للنوع
+            let typeOptions = '<option value="">-- بدون رمز (سيستخدم رمز التصنيف) --</option>';
+            allIcons.forEach(icon => {
+                typeOptions += `<option value="${icon.id}" data-class="${icon.iconClass}" data-color="${icon.iconColor}">${icon.nameAr} (${icon.category})</option>`;
+            });
+            $('#typeMapIconSelect').html(typeOptions);
+        }
+
+        // معاينة رمز التصنيف
+        $('#catIconSelect, #catIcon, #catColor').on('change input', function() {
+            updateCategoryPreview();
+        });
+
+        function updateCategoryPreview() {
+            let iconClass = $('#catIcon').val();
+            let iconColor = $('#catColor').val();
+
+            // إذا لم يدخل رمز مخصص، استخدم المختار
+            if (!iconClass) {
+                const selected = $('#catIconSelect option:selected');
+                iconClass = selected.data('class') || 'fas fa-building';
+                iconColor = selected.data('color') || iconColor;
+                $('#catColor').val(iconColor);
+            }
+
+            $('#catIconPreview').html(`<i class="${iconClass}" style="font-size: 48px; color: ${iconColor}"></i>`);
+        }
+
+        // معاينة رمز النوع
+        $('#typeMapIconSelect, #typeIcon, #typeColor').on('change input', function() {
+            updateTypePreview();
+        });
+
+        function updateTypePreview() {
+            let iconClass = $('#typeIcon').val();
+            let iconColor = $('#typeColor').val() || '#6B7280';
+
+            // إذا لم يدخل رمز مخصص، استخدم المختار
+            if (!iconClass) {
+                const selected = $('#typeMapIconSelect option:selected');
+                if (selected.val()) {
+                    iconClass = selected.data('class') || 'fas fa-question';
+                    iconColor = selected.data('color') || iconColor;
+                    $('#typeColor').val(iconColor);
+                } else {
+                    iconClass = 'fas fa-question';
+                }
+            }
+
+            $('#typeIconPreview').html(`<i class="${iconClass}" style="font-size: 48px; color: ${iconColor}"></i>`);
+        }
+
+        function saveCategory() {
+            let iconClass = $('#catIcon').val();
+            
+            // إذا لم يدخل رمز مخصص، خذ من المختار
+            if (!iconClass) {
+                const selected = $('#catIconSelect option:selected');
+                iconClass = selected.data('class') || 'fas fa-building';
+            }
+
+            const data = {
+                NameAr: $('#catNameAr').val(),
+                NameEn: $('#catNameEn').val(),
+                DefaultIconClass: iconClass,
+                DefaultIconColor: $('#catColor').val(),
+                DisplayOrder: parseInt($('#catOrder').val()),
+                Description: $('#catDescription').val(),
+                IsActive: true
+            };
+
+            $.ajax({
+                url: '/ServiceCategories/CreateCategory',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response) {
+                    if (response.success) {
+                        alert('تم إضافة التصنيف بنجاح');
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    alert('حدث خطأ: ' + (xhr.responseJSON?.message || 'خطأ غير معروف'));
+                }
+            });
+        }
+
+        function addType(categoryId, categoryName) {
+            $('#typeCategoryId').val(categoryId);
+            $('#typeModalTitle').text('إضافة نوع جديد إلى: ' + categoryName);
+            $('#typeForm')[0].reset();
+            $('#typeIconPreview').html('<i class="fas fa-question" style="font-size: 48px; color: #6B7280"></i>');
+            $('#addTypeModal').modal('show');
+        }
+
+        function saveType() {
+            let iconClass = $('#typeIcon').val();
+            let mapIconId = $('#typeMapIconSelect').val();
+
+            // إذا لم يدخل رمز مخصص، خذ من المختار
+            if (!iconClass && mapIconId) {
+                const selected = $('#typeMapIconSelect option:selected');
+                iconClass = selected.data('class');
+            }
+
+            const data = {
+                ServiceCategoryId: parseInt($('#typeCategoryId').val()),
+                NameAr: $('#typeNameAr').val(),
+                NameEn: $('#typeNameEn').val(),
+                CustomIconClass: $('#typeIcon').val(),
+                CustomIconColor: $('#typeColor').val(),
+                DisplayOrder: parseInt($('#typeOrder').val()),
+                Description: $('#typeDescription').val(),
+                IsActive: true
+            };
+
+            $.ajax({
+                url: '/ServiceCategories/CreateType',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response) {
+                    if (response.success) {
+                        alert('تم إضافة النوع بنجاح');
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    alert('حدث خطأ: ' + (xhr.responseJSON?.message || 'خطأ غير معروف'));
+                }
+            });
+        }
+
+        function deleteCategory(id) {
+            if (confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
+                $.post('/ServiceCategories/DeleteCategory', { id: id }, function(response) {
+                    if (response.success) {
+                        location.reload();
+            const data = {
+                ServiceCategoryId: parseInt($('#typeCategoryId').val()),
+                NameAr: $('#typeNameAr').val(),
+                NameEn: $('#typeNameEn').val(),
+                MapIconId: mapIconId ? parseInt(mapIconId) : null,
+                CustomIconClass: iconClass,
+                CustomIconColor: $('#typeColor').val(),
+                DisplayOrder: parseInt($('#typeOrder').val()),
+                Description: $('#typeDescription').val(),
+                IsActive: true
+            };
+
+            $.ajax({
+                url: '/ServiceCategories/CreateType',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response) {
+                    if (response.success) {
+                        alert('تم إضافة النوع بنجاح');
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    alert('حدث خطأ: ' + (xhr.responseJSON?.message || 'خطأ غير معروف'));
+                }
+            });
+        }
+
+        function deleteCategory(id) {
+            if (confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
+                $.post('/ServiceCategories/DeleteCategory', { id: id }, function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                });
+            }
+        }
+
+        function deleteType(id) {
+            if (confirm('هل أنت متأكد من حذف هذا النوع؟')) {
+                $.post('/ServiceCategories/DeleteType', { id: id }, function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                });
+            }
+        }
+    </script>
+}

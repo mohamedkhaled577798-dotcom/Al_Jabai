@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 
@@ -26,7 +27,7 @@ public class MapIconsController : Controller
 
     // GET: MapIcons/GetIconsByCategory
     [HttpGet]
-    public async Task<IActionResult> GetIconsByCategory(string category, string usedFor = "")
+    public async Task<IActionResult> GetIconsByCategory(string category = "", string usedFor = "")
     {
         try
         {
@@ -36,20 +37,21 @@ public class MapIconsController : Controller
             if (!string.IsNullOrEmpty(category))
                 query = query.Where(i => i.Category == category);
 
-            if (!string.IsNullOrEmpty(usedFor))
+            if (!string.IsNullOrEmpty(usedFor) && usedFor != "All")
                 query = query.Where(i => i.UsedFor == usedFor || i.UsedFor == "All");
 
-            var icons = query.Select(i => new
+            var icons = await query.Select(i => new
             {
                 id = i.Id,
                 nameAr = i.NameAr,
+                category = i.Category,
                 iconClass = i.IconClass,
                 iconColor = i.IconColor,
                 iconShape = i.IconShape,
                 iconSize = i.IconSize,
                 customSvg = i.CustomSvg,
                 isDefault = i.IsDefault
-            }).ToList();
+            }).ToListAsync();
 
             return Json(icons);
         }

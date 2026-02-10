@@ -52,6 +52,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ContractPayment> ContractPayments => Set<ContractPayment>();
     public DbSet<ServiceFacility> ServiceFacilities => Set<ServiceFacility>();
     public DbSet<ServiceImage> ServiceImages => Set<ServiceImage>();
+    public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
+    public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
+    public DbSet<MapIcon> MapIcons => Set<MapIcon>();
     public DbSet<PropertyPricing> PropertyPricings => Set<PropertyPricing>();
     public DbSet<PropertyComparison> PropertyComparisons => Set<PropertyComparison>();
     public DbSet<PropertyComparisonItem> PropertyComparisonItems => Set<PropertyComparisonItem>();
@@ -257,6 +260,35 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(e => e.ServiceFacilityId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ServiceCategory
+        modelBuilder.Entity<ServiceCategory>(entity =>
+        {
+            entity.HasIndex(e => e.NameAr).IsUnique();
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // ServiceType
+        modelBuilder.Entity<ServiceType>(entity =>
+        {
+            entity.HasIndex(e => new { e.ServiceCategoryId, e.NameAr }).IsUnique();
+            entity.HasOne(e => e.ServiceCategory)
+                  .WithMany(c => c.ServiceTypes)
+                  .HasForeignKey(e => e.ServiceCategoryId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.MapIcon)
+                  .WithMany()
+                  .HasForeignKey(e => e.MapIconId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // MapIcon
+        modelBuilder.Entity<MapIcon>(entity =>
+        {
+            entity.HasIndex(e => new { e.Category, e.NameAr });
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
     }
 
