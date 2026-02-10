@@ -312,18 +312,48 @@
         // تحميل الكيانات حسب النوع
         $('#entityTypeSelect').change(function() {
             const entityType = $(this).val();
+            console.log('Selected entity type:', entityType);
+            
             if (!entityType) {
                 $('#entitySelect').html('<option value="">-- اختر نوع الكيان أولاً --</option>');
                 return;
             }
 
-            $.get('/Contracts/GetEntitiesByType', { entityType: entityType }, function(data) {
-                let options = '<option value="">-- اختر --</option>';
-                data.forEach(function(item) {
-                    options += '<option value="' + item.id + '">' + item.name + '</option>';
-                });
-                $('#entitySelect').html(options);
+            // إظهار مؤشر تحميل
+            $('#entitySelect').html('<option value="">جاري التحميل...</option>');
+
+            $.ajax({
+                url: '/Contracts/GetEntitiesByType',
+                type: 'GET',
+                data: { entityType: entityType },
+                success: function(data) {
+                    console.log('Received data:', data);
+                    
+                    if (!data || data.length === 0) {
+                        $('#entitySelect').html('<option value="">لا توجد بيانات - يرجى إضافة ' + getEntityNameAr(entityType) + ' أولاً</option>');
+                        return;
+                    }
+                    
+                    let options = '<option value="">-- اختر --</option>';
+                    data.forEach(function(item) {
+                        options += '<option value="' + item.id + '">' + item.name + '</option>';
+                    });
+                    $('#entitySelect').html(options);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    $('#entitySelect').html('<option value="">خطأ في التحميل</option>');
+                }
             });
         });
+
+        function getEntityNameAr(entityType) {
+            switch(entityType) {
+                case 'Mosque': return 'مساجد';
+                case 'WaqfProperty': return 'عقارات وقفية';
+                case 'WaqfLand': return 'أراضي وقفية';
+                default: return 'كيانات';
+            }
+        }
     </script>
 }

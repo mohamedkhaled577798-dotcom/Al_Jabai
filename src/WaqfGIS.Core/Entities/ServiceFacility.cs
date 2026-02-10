@@ -43,6 +43,11 @@ public class ServiceFacility : BaseEntity
     public string? ContactEmail { get; set; }
     public DateTime? EstablishedDate { get; set; }
 
+    // الرمز على الخريطة
+    public int? MapIconId { get; set; }
+    public string? CustomIconClass { get; set; } // fas fa-hospital
+    public string? CustomIconColor { get; set; } // #ff0000
+    
     // المواصفات (حسب النوع)
     public decimal? Capacity { get; set; } // سعة المحطة، عدد الأسرة، عدد الطلاب، إلخ
     public string? CapacityUnit { get; set; }
@@ -69,6 +74,7 @@ public class ServiceFacility : BaseEntity
     public virtual Province? Province { get; set; }
     public virtual District? District { get; set; }
     public virtual SubDistrict? SubDistrict { get; set; }
+    public virtual MapIcon? MapIcon { get; set; }
     public virtual ICollection<ServiceImage> Images { get; set; } = new List<ServiceImage>();
 }
 

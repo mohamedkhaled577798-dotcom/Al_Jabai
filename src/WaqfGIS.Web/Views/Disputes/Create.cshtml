@@ -235,17 +235,41 @@
         // تحميل الكيانات حسب النوع
         $('#disputeEntityTypeSelect').change(function() {
             const entityType = $(this).val();
+            console.log('Selected entity type:', entityType);
+            
             if (!entityType) {
                 $('#disputeEntitySelect').html('<option value="">-- اختر نوع الكيان أولاً --</option>');
                 return;
             }
 
-            $.get('/Contracts/GetEntitiesByType', { entityType: entityType }, function(data) {
-                let options = '<option value="">-- اختر --</option>';
-                data.forEach(function(item) {
-                    options += '<option value="' + item.id + '">' + item.name + '</option>';
-                });
-                $('#disputeEntitySelect').html(options);
+            // إظهار مؤشر تحميل
+            $('#disputeEntitySelect').html('<option value="">جاري التحميل...</option>');
+
+            $.ajax({
+                url: '/Contracts/GetEntitiesByType',
+                type: 'GET',
+                data: { entityType: entityType },
+                success: function(data) {
+                    console.log('Received data:', data);
+                    
+                    if (!data || data.length === 0) {
+                        $('#disputeEntitySelect').html('<option value="">لا توجد بيانات</option>');
+                        return;
+                    }
+                    
+                    let options = '<option value="">-- اختر --</option>';
+                    data.forEach(function(item) {
+                        options += '<option value="' + item.id + '">' + item.name + '</option>';
+                    });
+                    $('#disputeEntitySelect').html(options);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading entities:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    $('#disputeEntitySelect').html('<option value="">خطأ في التحميل</option>');
+                    alert('حدث خطأ أثناء تحميل البيانات. الرجاء المحاولة مرة أخرى.');
+                }
             });
         });
     </script>

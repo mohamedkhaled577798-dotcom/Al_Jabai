@@ -86,6 +86,18 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">رمز الخريطة</label>
+                            <div id="iconSelector" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
+                                </div>
+                            </div>
+                            <input type="hidden" id="selectedIconId" />
+                            <input type="hidden" id="selectedIconClass" />
+                            <input type="hidden" id="selectedIconColor" />
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">الإحداثيات</label>
                             <div class="row">
                                 <div class="col-6">
@@ -139,6 +151,82 @@
             'المواصلات': ['محطة وقود', 'موقف سيارات', 'محطة حافلات'],
             'الخدمات التجارية': ['سوق', 'مركز تجاري', 'بنك', 'صراف آلي']
         };
+
+        // تحديث قائمة الأنواع عند تغيير التصنيف
+        $('#categorySelect').change(function() {
+            const category = $(this).val();
+            const types = serviceTypes[category] || [];
+            
+            let options = '<option value="">-- اختر --</option>';
+            types.forEach(type => {
+                options += `<option value="${type}">${type}</option>`;
+            });
+            $('#typeSelect').html(options);
+            
+            // تحميل الرموز المناسبة
+            loadIcons(category);
+        });
+
+        // تحميل الرموز
+        function loadIcons(category) {
+            $.get('/MapIcons/GetIconsByCategory', { category: category, usedFor: 'ServiceFacility' }, function(icons) {
+                if (icons.length === 0) {
+                    $('#iconSelector').html('<div class="text-center text-muted p-3">لا توجد رموز متاحة</div>');
+                    return;
+                }
+                
+                let html = '<div class="row g-2">';
+                icons.forEach(icon => {
+                    const isDefault = icon.isDefault ? 'border-primary' : '';
+                    html += `
+                        <div class="col-3 text-center">
+                            <div class="icon-item p-2 border rounded ${isDefault}" style="cursor: pointer;" 
+                                 data-icon-id="${icon.id}"
+                                 data-icon-class="${icon.iconClass}"
+                                 data-icon-color="${icon.iconColor}">
+                                <i class="${icon.iconClass}" style="font-size: 24px; color: ${icon.iconColor}"></i>
+                                <div class="small mt-1">${icon.nameAr}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                $('#iconSelector').html(html);
+                
+                // اختيار الافتراضي تلقائياً
+                const defaultIcon = icons.find(i => i.isDefault);
+                if (defaultIcon) {
+                    selectIcon(defaultIcon.id, defaultIcon.iconClass, defaultIcon.iconColor);
+                }
+                
+                // عند النقر على رمز
+                $('.icon-item').click(function() {
+                    $('.icon-item').removeClass('border-primary');
+                    $(this).addClass('border-primary');
+                    selectIcon(
+                        $(this).data('icon-id'),
+                        $(this).data('icon-class'),
+                        $(this).data('icon-color')
+                    );
+                });
+            });
+        }
+
+        function selectIcon(id, iconClass, iconColor) {
+            $('#selectedIconId').val(id);
+            $('#selectedIconClass').val(iconClass);
+            $('#selectedIconColor').val(iconColor);
+            
+            // تحديث الرمز على الخريطة
+            if (marker) {
+                marker.setIcon(L.divIcon({
+                    html: `<i class="${iconClass}" style="font-size: 32px; color: ${iconColor}"></i>`,
+                    className: 'custom-div-icon',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                }));
+            }
+        }
 
         // تحديث قائمة الأنواع عند تغيير التصنيف
         $('#categorySelect').change(function() {

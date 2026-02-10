@@ -67,6 +67,13 @@ public class DisputeViewModel
     [Display(Name = "قيمة المطالبة")]
     public decimal? ClaimValue { get; set; }
 
+    [Display(Name = "قيمة المطالبة")]
+    public decimal? ClaimAmount 
+    { 
+        get => ClaimValue; 
+        set => ClaimValue = value; 
+    }
+
     [Required(ErrorMessage = "حالة الدعوى مطلوبة")]
     [Display(Name = "حالة الدعوى")]
     public string CaseStatus { get; set; } = "جارية";

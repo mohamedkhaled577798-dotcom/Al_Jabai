@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Infrastructure.Data;
@@ -12,9 +13,11 @@ using WaqfGIS.Infrastructure.Data;
 namespace WaqfGIS.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260210052537_Hasbank")]
+    partial class Hasbank
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1158,84 +1161,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.HasIndex("EntityType", "EntityId");
 
                     b.ToTable("LegalDisputes");
-                });
-
-            modelBuilder.Entity("WaqfGIS.Core.Entities.MapIcon", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomSvg")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IconClass")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IconColor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IconShape")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("IconSize")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IconUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSystemIcon")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("NameAr")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NameEn")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UsedFor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MapIcon");
                 });
 
             modelBuilder.Entity("WaqfGIS.Core.Entities.Mosque", b =>
@@ -2675,12 +2600,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CustomIconClass")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomIconColor")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -2711,9 +2630,6 @@ namespace WaqfGIS.Infrastructure.Migrations
 
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
-
-                    b.Property<int?>("MapIconId")
-                        .HasColumnType("int");
 
                     b.Property<string>("NameAr")
                         .IsRequired()
@@ -2781,8 +2697,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("DistrictId");
-
-                    b.HasIndex("MapIconId");
 
                     b.HasIndex("ProvinceId");
 
@@ -3773,10 +3687,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("DistrictId");
 
-                    b.HasOne("WaqfGIS.Core.Entities.MapIcon", "MapIcon")
-                        .WithMany()
-                        .HasForeignKey("MapIconId");
-
                     b.HasOne("WaqfGIS.Core.Entities.Province", "Province")
                         .WithMany()
                         .HasForeignKey("ProvinceId");
@@ -3786,8 +3696,6 @@ namespace WaqfGIS.Infrastructure.Migrations
                         .HasForeignKey("SubDistrictId");
 
                     b.Navigation("District");
-
-                    b.Navigation("MapIcon");
 
                     b.Navigation("Province");
 

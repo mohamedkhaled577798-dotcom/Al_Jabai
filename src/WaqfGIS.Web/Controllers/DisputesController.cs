@@ -160,7 +160,6 @@ public class DisputesController : Controller
             return Json(new { success = false, message = "حدث خطأ أثناء إضافة الحكم" });
         }
     }
-}
 
     // GET: Disputes/Create
     [HttpGet]
@@ -229,3 +228,4 @@ public class DisputesController : Controller
             return View(model);
         }
     }
+}

@@ -132,7 +132,6 @@ public class ServiceFacilitiesController : Controller
             return Json(new { success = false, message = "حدث خطأ أثناء البحث عن المرافق" });
         }
     }
-}
 
     // GET: ServiceFacilities/Create
     [HttpGet]
@@ -170,3 +169,4 @@ public class ServiceFacilitiesController : Controller
             return Json(new { success = false, message = "حدث خطأ أثناء الحفظ" });
         }
     }
+}

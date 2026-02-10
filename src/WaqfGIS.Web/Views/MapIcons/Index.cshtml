@@ -1,0 +1,273 @@
+@model IEnumerable<WaqfGIS.Core.Entities.MapIcon>
+
+@{
+    ViewData["Title"] = "إدارة رموز الخرائط";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-icons"></i> إدارة رموز الخرائط</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addIconModal">
+            <i class="fas fa-plus"></i> إضافة رمز جديد
+        </button>
+    </div>
+
+    <!-- الرموز المجمعة حسب التصنيف -->
+    @foreach(var category in Model.GroupBy(i => i.Category))
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">@category.Key</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach(var icon in category)
+                    {
+                        <div class="col-md-2 col-sm-3 col-4 mb-3">
+                            <div class="card text-center h-100 @(icon.IsDefault ? "border-success" : "")">
+                                <div class="card-body">
+                                    <i class="@icon.IconClass" style="font-size: 48px; color: @icon.IconColor"></i>
+                                    <h6 class="mt-2">@icon.NameAr</h6>
+                                    @if(!string.IsNullOrEmpty(icon.NameEn))
+                                    {
+                                        <small class="text-muted">@icon.NameEn</small>
+                                    }
+                                    @if(icon.IsDefault)
+                                    {
+                                        <div class="badge bg-success mt-2">افتراضي</div>
+                                    }
+                                    @if(icon.IsSystemIcon)
+                                    {
+                                        <div class="badge bg-secondary mt-2">نظام</div>
+                                    }
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group btn-group-sm w-100">
+                                        @if(!icon.IsDefault)
+                                        {
+                                            <button class="btn btn-success" onclick="setDefault(@icon.Id, '@icon.UsedFor')">
+                                                <i class="fas fa-check"></i> افتراضي
+                                            </button>
+                                        }
+                                        <button class="btn btn-info" onclick="editIcon(@icon.Id)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        @if(!icon.IsSystemIcon)
+                                        {
+                                            <button class="btn btn-danger" onclick="deleteIcon(@icon.Id)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal إضافة رمز -->
+<div class="modal fade" id="addIconModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة رمز جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="iconForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الاسم بالعربية</label>
+                                <input type="text" class="form-control" id="nameAr" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الاسم بالإنجليزية</label>
+                                <input type="text" class="form-control" id="nameEn" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">التصنيف</label>
+                                <select class="form-select" id="category" required>
+                                    <option value="مساجد">مساجد</option>
+                                    <option value="عقارات">عقارات وقفية</option>
+                                    <option value="أراضي">أراضي وقفية</option>
+                                    <option value="خدمات صحية">خدمات صحية</option>
+                                    <option value="خدمات تعليمية">خدمات تعليمية</option>
+                                    <option value="مرافق">مرافق أساسية</option>
+                                    <option value="مواصلات">مواصلات</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">يستخدم لـ</label>
+                                <select class="form-select" id="usedFor" required>
+                                    <option value="All">الكل</option>
+                                    <option value="Mosque">مسجد</option>
+                                    <option value="WaqfProperty">عقار وقفي</option>
+                                    <option value="WaqfLand">أرض وقفية</option>
+                                    <option value="ServiceFacility">مرفق خدمي</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">رمز Font Awesome</label>
+                        <input type="text" class="form-control" id="iconClass" placeholder="fas fa-mosque" required />
+                        <small class="text-muted">
+                            <a href="https://fontawesome.com/icons" target="_blank">تصفح الرموز</a>
+                        </small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">اللون</label>
+                                <input type="color" class="form-control" id="iconColor" value="#3388ff" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">الشكل</label>
+                                <select class="form-select" id="iconShape">
+                                    <option value="circle">دائرة</option>
+                                    <option value="square">مربع</option>
+                                    <option value="marker">علامة</option>
+                                    <option value="star">نجمة</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">الحجم</label>
+                                <input type="number" class="form-control" id="iconSize" value="32" min="16" max="64" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">معاينة</label>
+                        <div class="border rounded p-3 text-center" id="iconPreview">
+                            <i class="fas fa-mosque" style="font-size: 48px; color: #3388ff"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الوصف</label>
+                        <textarea class="form-control" id="description" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveIcon()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // معاينة الرمز
+        $('#iconClass, #iconColor').on('input', function() {
+            const iconClass = $('#iconClass').val() || 'fas fa-question';
+            const iconColor = $('#iconColor').val();
+            $('#iconPreview').html(`<i class="${iconClass}" style="font-size: 48px; color: ${iconColor}"></i>`);
+        });
+
+        // حفظ رمز جديد
+        function saveIcon() {
+            const data = {
+                NameAr: $('#nameAr').val(),
+                NameEn: $('#nameEn').val(),
+                Category: $('#category').val(),
+                UsedFor: $('#usedFor').val(),
+                IconClass: $('#iconClass').val(),
+                IconColor: $('#iconColor').val(),
+                IconShape: $('#iconShape').val(),
+                IconSize: parseInt($('#iconSize').val()),
+                Description: $('#description').val(),
+                IsActive: true,
+                IsSystemIcon: false
+            };
+
+            $.ajax({
+                url: '/MapIcons/Create',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('تم إضافة الرمز بنجاح');
+                        $('#addIconModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', xhr.responseText);
+                    alert('حدث خطأ أثناء الحفظ: ' + (xhr.responseJSON?.message || error));
+                }
+            });
+        }
+
+        // تعيين كافتراضي
+        function setDefault(id, usedFor) {
+            $.ajax({
+                url: '/MapIcons/SetDefault',
+                type: 'POST',
+                data: { id: id, usedFor: usedFor },
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('خطأ: ' + response.message);
+                    }
+                }
+            });
+        }
+
+        // حذف رمز
+        function deleteIcon(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الرمز؟')) {
+                $.ajax({
+                    url: '/MapIcons/Delete',
+                    type: 'POST',
+                    data: { id: id },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('خطأ: ' + response.message);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+}

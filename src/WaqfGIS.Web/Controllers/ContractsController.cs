@@ -208,7 +208,6 @@ public class ContractsController : Controller
             "نشط", "منتهي", "ملغي", "متوقف", "قيد التجديد"
         });
     }
-}
 
     // GET: Contracts/Create
     [HttpGet]
@@ -325,3 +324,4 @@ public class ContractsController : Controller
             return Json(new List<object>());
         }
     }
+}

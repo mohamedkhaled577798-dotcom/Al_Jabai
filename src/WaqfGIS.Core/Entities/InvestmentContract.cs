@@ -52,6 +52,7 @@ public class InvestmentContract : BaseEntity
 
     // التأمينات
     public decimal? SecurityDeposit { get; set; }
+    public bool HasBankGuarantee { get; set; } = false;
     public string? GuaranteeType { get; set; } // شيك، كفالة بنكية، سند لأمر
     public string? GuaranteeNumber { get; set; }
 

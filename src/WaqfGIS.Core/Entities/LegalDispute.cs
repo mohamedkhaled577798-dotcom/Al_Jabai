@@ -34,7 +34,7 @@ public class LegalDispute : BaseEntity
     public string? DisputeDescription { get; set; }
 
     // المطالبة
-    public string? ClaimAmount { get; set; }
+    public decimal? ClaimAmount { get; set; }
     public decimal? ClaimValue { get; set; }
 
     // حالة الدعوى

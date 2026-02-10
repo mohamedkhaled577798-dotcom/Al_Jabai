@@ -97,6 +97,9 @@ public class ContractViewModel
     [Display(Name = "التأمين")]
     public decimal? SecurityDeposit { get; set; }
 
+    [Display(Name = "يوجد ضمان بنكي")]
+    public bool HasBankGuarantee { get; set; }
+
     [Display(Name = "نوع الضمان")]
     public string? GuaranteeType { get; set; }
 
