@@ -79,6 +79,8 @@ public class PropertiesController : Controller
             return Forbid();
         
         ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<PropertyRegistrationFile>().Query()
+            .Where(f => f.PropertyId == id).OrderByDescending(f => f.UploadedAt).ToListAsync();
         ViewBag.AuditLogs = await _auditLogService.GetLogsAsync("Property", id);
         ViewBag.CanEdit = await _permissionService.CanEditAsync(User);
         
@@ -144,6 +146,13 @@ public class PropertiesController : Controller
             TenantPhone = model.TenantPhone,
             ConditionStatus = model.ConditionStatus,
             Notes = model.Notes,
+            WaqfNature = model.WaqfNature,
+            IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null,
+            WaqfCondition = model.WaqfCondition,
+            HasEncroachment = model.HasEncroachment,
+            EncroachmentNotes = model.EncroachmentNotes,
+            OccupantEmployeeName = model.OccupantEmployeeName,
+            IsOccupantRetired = model.OccupantEmployeeName != null ? model.IsOccupantRetired : null,
             CreatedBy = User.Identity?.Name
         };
 
@@ -155,6 +164,8 @@ public class PropertiesController : Controller
 
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadPropertyImagesAsync(property.Id, images, User.Identity?.Name);
+
+        await UploadPropertyRegistrationFilesAsync(property.Id, Request.Form.Files, "regFiles");
 
         TempData["Success"] = "تم إضافة العقار بنجاح";
         return RedirectToAction(nameof(Index));
@@ -197,10 +208,19 @@ public class PropertiesController : Controller
             TenantName = property.TenantName,
             TenantPhone = property.TenantPhone,
             ConditionStatus = property.ConditionStatus,
-            Notes = property.Notes
+            Notes = property.Notes,
+            WaqfNature = property.WaqfNature,
+            IsAdminReceived = property.IsAdminReceived,
+            WaqfCondition = property.WaqfCondition,
+            HasEncroachment = property.HasEncroachment,
+            EncroachmentNotes = property.EncroachmentNotes,
+            OccupantEmployeeName = property.OccupantEmployeeName,
+            IsOccupantRetired = property.IsOccupantRetired
         };
 
         ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<PropertyRegistrationFile>().Query()
+            .Where(f => f.PropertyId == id).ToListAsync();
         
         // Load boundary if exists
         var boundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
@@ -250,6 +270,13 @@ public class PropertiesController : Controller
         property.MonthlyRent = model.MonthlyRent;
         property.TenantName = model.TenantName;
         property.Notes = model.Notes;
+        property.WaqfNature = model.WaqfNature;
+        property.IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null;
+        property.WaqfCondition = model.WaqfCondition;
+        property.HasEncroachment = model.HasEncroachment;
+        property.EncroachmentNotes = model.EncroachmentNotes;
+        property.OccupantEmployeeName = model.OccupantEmployeeName;
+        property.IsOccupantRetired = model.OccupantEmployeeName != null ? model.IsOccupantRetired : null;
         property.UpdatedBy = User.Identity?.Name;
 
         await _propertyService.UpdateAsync(property);
@@ -261,6 +288,8 @@ public class PropertiesController : Controller
 
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadPropertyImagesAsync(property.Id, images, User.Identity?.Name);
+
+        await UploadPropertyRegistrationFilesAsync(id, Request.Form.Files, "regFiles");
 
         // حفظ الحدود إذا وجدت
         if (!string.IsNullOrEmpty(BoundaryGeoJson))
@@ -370,6 +399,53 @@ public class PropertiesController : Controller
         await _imageUploadService.DeletePropertyImageAsync(imageId);
         TempData["Success"] = "تم حذف الصورة بنجاح";
         return RedirectToAction(nameof(Edit), new { id = propertyId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteRegistrationFile(int fileId, int propertyId)
+    {
+        var file = await _unitOfWork.Repository<PropertyRegistrationFile>().GetByIdAsync(fileId);
+        if (file != null && file.PropertyId == propertyId)
+        {
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            await _unitOfWork.Repository<PropertyRegistrationFile>().DeleteAsync(file);
+            await _unitOfWork.SaveChangesAsync();
+            TempData["Success"] = "تم حذف الملف";
+        }
+        return RedirectToAction(nameof(Edit), new { id = propertyId });
+    }
+
+    private async Task UploadPropertyRegistrationFilesAsync(int propertyId, IFormFileCollection files, string inputName)
+    {
+        var regFiles = files.Where(f => f.Name == inputName).ToList();
+        if (!regFiles.Any()) return;
+
+        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "property-docs", propertyId.ToString());
+        Directory.CreateDirectory(uploadDir);
+
+        foreach (var file in regFiles)
+        {
+            if (file.Length == 0) continue;
+            var ext = Path.GetExtension(file.FileName);
+            var savedName = $"{Guid.NewGuid()}{ext}";
+            var fullPath = Path.Combine(uploadDir, savedName);
+            using var stream = System.IO.File.Create(fullPath);
+            await file.CopyToAsync(stream);
+
+            var regFile = new PropertyRegistrationFile
+            {
+                PropertyId = propertyId,
+                DocumentType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة",
+                FileName = file.FileName,
+                FilePath = $"/uploads/property-docs/{propertyId}/{savedName}",
+                FileSize = file.Length,
+                MimeType = file.ContentType,
+                UploadedBy = User.Identity?.Name
+            };
+            await _unitOfWork.Repository<PropertyRegistrationFile>().AddAsync(regFile);
+        }
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private async Task LoadViewDataAsync()

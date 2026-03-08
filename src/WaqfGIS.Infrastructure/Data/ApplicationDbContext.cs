@@ -31,6 +31,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MosqueImage> MosqueImages => Set<MosqueImage>();
     public DbSet<WaqfProperty> WaqfProperties => Set<WaqfProperty>();
     public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
+    public DbSet<PropertyRegistrationFile> PropertyRegistrationFiles => Set<PropertyRegistrationFile>();
+    public DbSet<MosqueRegistrationFile> MosqueRegistrationFiles => Set<MosqueRegistrationFile>();
+    public DbSet<WaqfLandRegistrationFile> WaqfLandRegistrationFiles => Set<WaqfLandRegistrationFile>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
     public DbSet<OfficeImage> OfficeImages => Set<OfficeImage>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

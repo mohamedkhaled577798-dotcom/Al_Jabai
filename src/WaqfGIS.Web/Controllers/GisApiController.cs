@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using WaqfGIS.Core.Entities;
+using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services.GIS;
 
@@ -17,17 +19,45 @@ public class GisApiController : ControllerBase
     private readonly SpatialAnalysisService _spatialAnalysisService;
     private readonly LayerService _layerService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public GisApiController(
         GeometryService geometryService,
         SpatialAnalysisService spatialAnalysisService,
         LayerService layerService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        UserManager<ApplicationUser> userManager)
     {
         _geometryService = geometryService;
         _spatialAnalysisService = spatialAnalysisService;
         _layerService = layerService;
         _unitOfWork = unitOfWork;
+        _userManager = userManager;
+    }
+
+    /// <summary>
+    /// يحدد معرف المحافظة للمستخدم بناءً على صلاحيته
+    /// إذا كان SuperAdmin/Admin يرى كل شيء، غيره يرى محافظته فقط
+    /// </summary>
+    private async Task<int?> GetEffectiveProvinceFilter(int? requestedProvinceId)
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser == null) return requestedProvinceId;
+
+        // SuperAdmin و Admin يرون كل شيء
+        if (currentUser.PermissionLevel == PermissionLevel.SuperAdmin ||
+            currentUser.PermissionLevel == PermissionLevel.Admin)
+        {
+            return requestedProvinceId; // بدون قيود
+        }
+
+        // مدير محافظة أو مستخدم محافظة - مقيّد بمحافظته دائماً
+        if (currentUser.ProvinceId.HasValue)
+        {
+            return currentUser.ProvinceId.Value;
+        }
+
+        return requestedProvinceId;
     }
 
     #region Layer Endpoints
@@ -42,16 +72,19 @@ public class GisApiController : ControllerBase
     [HttpGet("layers/{layerCode}/geojson")]
     public async Task<IActionResult> GetLayerGeoJson(string layerCode, [FromQuery] int? provinceId)
     {
+        // تطبيق فلتر الصلاحيات: المستخدم العادي محدود بمحافظته تلقائياً
+        var effectiveProvinceId = await GetEffectiveProvinceFilter(provinceId);
+
         object? result = layerCode.ToLower() switch
         {
-            "mosques" => await _layerService.GetMosquesGeoJson(provinceId),
-            "mosqueboundaries" => await _layerService.GetMosqueBoundariesGeoJson(provinceId),
-            "properties" => await _layerService.GetPropertiesGeoJson(provinceId),
-            "propertyboundaries" => await _layerService.GetPropertyBoundariesGeoJson(provinceId),
-            "waqflands" or "lands" => await _layerService.GetWaqfLandsGeoJson(provinceId),
-            "roads" => await _layerService.GetRoadsGeoJson(provinceId),
-            "projects" => await _layerService.GetNearbyProjectsGeoJson(provinceId),
-            "all" => await _layerService.GetAllLayersGeoJson(provinceId),
+            "mosques" => await _layerService.GetMosquesGeoJson(effectiveProvinceId),
+            "mosqueboundaries" => await _layerService.GetMosqueBoundariesGeoJson(effectiveProvinceId),
+            "properties" => await _layerService.GetPropertiesGeoJson(effectiveProvinceId),
+            "propertyboundaries" => await _layerService.GetPropertyBoundariesGeoJson(effectiveProvinceId),
+            "waqflands" or "lands" => await _layerService.GetWaqfLandsGeoJson(effectiveProvinceId),
+            "roads" => await _layerService.GetRoadsGeoJson(effectiveProvinceId),
+            "projects" => await _layerService.GetNearbyProjectsGeoJson(effectiveProvinceId),
+            "all" => await _layerService.GetAllLayersGeoJson(effectiveProvinceId),
             _ => null
         };
 

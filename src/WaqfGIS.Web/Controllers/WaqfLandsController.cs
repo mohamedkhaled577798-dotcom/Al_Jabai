@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
@@ -68,6 +69,9 @@ public class WaqfLandsController : Controller
         var viewModel = MapToViewModel(land);
         viewModel.BoundaryGeoJson = _landService.GetBoundaryGeoJson(land);
 
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<WaqfLandRegistrationFile>().Query()
+            .Where(f => f.WaqfLandId == id).OrderByDescending(f => f.UploadedAt).ToListAsync();
+
         return View(viewModel);
     }
 
@@ -94,6 +98,8 @@ public class WaqfLandsController : Controller
             var land = MapToEntity(viewModel);
             
             await _landService.CreateAsync(land, viewModel.BoundaryGeoJson, User.Identity?.Name);
+
+            await UploadLandRegistrationFilesAsync(land.Id, Request.Form.Files, "regFiles");
             
             await _auditLogService.LogAsync("Create", "WaqfLand", land.Id, land.NameAr, 
                 User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
@@ -110,16 +116,30 @@ public class WaqfLandsController : Controller
     // GET: WaqfLands/Edit/5
     public async Task<IActionResult> Edit(int id)
     {
+        if (!CanEditWaqfLand())
+        {
+            TempData["Error"] = "تعديل الأراضي الوقفية محجوز للمديرين فقط";
+            return RedirectToAction(nameof(Index));
+        }
+
         var land = await _landService.GetByIdAsync(id);
         if (land == null)
             return NotFound();
 
         var viewModel = MapToViewModel(land);
         viewModel.BoundaryGeoJson = _landService.GetBoundaryGeoJson(land);
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<WaqfLandRegistrationFile>().Query()
+            .Where(f => f.WaqfLandId == id).ToListAsync();
         
         await LoadDropdownsAsync(viewModel);
         return View(viewModel);
     }
+
+    // GET: WaqfLands/Edit/5
+    // تعديل الأراضي الوقفية محجوز لـ Admin وProvinceAdmin ومدير الدائرة فقط
+    private bool CanEditWaqfLand() =>
+        User.IsInRole("SuperAdmin") || User.IsInRole("Admin") ||
+        User.IsInRole("ProvinceAdmin") || User.IsInRole("OfficeManager");
 
     // POST: WaqfLands/Edit/5
     [HttpPost]
@@ -129,6 +149,12 @@ public class WaqfLandsController : Controller
         if (id != viewModel.Id)
             return NotFound();
 
+        if (!CanEditWaqfLand())
+        {
+            TempData["Error"] = "تعديل الأراضي الوقفية محجوز للمديرين فقط";
+            return RedirectToAction(nameof(Index));
+        }
+
         if (ModelState.IsValid)
         {
             var land = MapToEntity(viewModel);
@@ -136,6 +162,8 @@ public class WaqfLandsController : Controller
             var result = await _landService.UpdateAsync(id, land, viewModel.BoundaryGeoJson, User.Identity?.Name);
             if (result == null)
                 return NotFound();
+
+            await UploadLandRegistrationFilesAsync(id, Request.Form.Files, "regFiles");
 
             await _auditLogService.LogAsync("Update", "WaqfLand", id, land.NameAr, 
                 User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
@@ -157,6 +185,56 @@ public class WaqfLandsController : Controller
             return NotFound();
 
         return View(MapToViewModel(land));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteRegistrationFile(int fileId, int landId)
+    {
+        if (!CanEditWaqfLand())
+            return Forbid();
+
+        var file = await _unitOfWork.Repository<WaqfLandRegistrationFile>().GetByIdAsync(fileId);
+        if (file != null && file.WaqfLandId == landId)
+        {
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            await _unitOfWork.Repository<WaqfLandRegistrationFile>().DeleteAsync(file);
+            await _unitOfWork.SaveChangesAsync();
+            TempData["Success"] = "تم حذف الملف";
+        }
+        return RedirectToAction(nameof(Edit), new { id = landId });
+    }
+
+    private async Task UploadLandRegistrationFilesAsync(int landId, IFormFileCollection files, string inputName)
+    {
+        var regFiles = files.Where(f => f.Name == inputName).ToList();
+        if (!regFiles.Any()) return;
+
+        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "land-docs", landId.ToString());
+        Directory.CreateDirectory(uploadDir);
+
+        foreach (var file in regFiles)
+        {
+            if (file.Length == 0) continue;
+            var ext = Path.GetExtension(file.FileName);
+            var savedName = $"{Guid.NewGuid()}{ext}";
+            var fullPath = Path.Combine(uploadDir, savedName);
+            using var stream = System.IO.File.Create(fullPath);
+            await file.CopyToAsync(stream);
+
+            var regFile = new WaqfLandRegistrationFile
+            {
+                WaqfLandId = landId,
+                DocumentType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة",
+                FileName = file.FileName,
+                FilePath = $"/uploads/land-docs/{landId}/{savedName}",
+                FileSize = file.Length,
+                MimeType = file.ContentType,
+                UploadedBy = User.Identity?.Name
+            };
+            await _unitOfWork.Repository<WaqfLandRegistrationFile>().AddAsync(regFile);
+        }
+        await _unitOfWork.SaveChangesAsync();
     }
 
     // POST: WaqfLands/Delete/5
@@ -251,6 +329,11 @@ public class WaqfLandsController : Controller
             EstimatedValue = land.EstimatedValue,
             AnnualRevenue = land.AnnualRevenue,
             Notes = land.Notes,
+            WaqfNature = land.WaqfNature,
+            IsAdminReceived = land.IsAdminReceived,
+            WaqfCondition = land.WaqfCondition,
+            HasEncroachment = land.HasEncroachment,
+            EncroachmentNotes = land.EncroachmentNotes,
             ProvinceName = land.Province?.NameAr,
             DistrictName = land.District?.NameAr,
             WaqfOfficeName = land.WaqfOffice?.NameAr,
@@ -284,7 +367,12 @@ public class WaqfLandsController : Controller
             OwnershipStatus = viewModel.OwnershipStatus,
             EstimatedValue = viewModel.EstimatedValue,
             AnnualRevenue = viewModel.AnnualRevenue,
-            Notes = viewModel.Notes
+            Notes = viewModel.Notes,
+            WaqfNature = viewModel.WaqfNature,
+            IsAdminReceived = viewModel.WaqfNature == "Ahli" ? viewModel.IsAdminReceived : null,
+            WaqfCondition = viewModel.WaqfCondition,
+            HasEncroachment = viewModel.HasEncroachment,
+            EncroachmentNotes = viewModel.EncroachmentNotes
         };
     }
 

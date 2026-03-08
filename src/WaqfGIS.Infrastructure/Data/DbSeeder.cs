@@ -120,8 +120,11 @@ public static class DbSeeder
                 new PropertyType { NameAr = "مخزن", NameEn = "Warehouse", IconName = "warehouse" },
                 new PropertyType { NameAr = "مزرعة", NameEn = "Farm", IconName = "farm" },
                 new PropertyType { NameAr = "بستان", NameEn = "Orchard", IconName = "orchard" },
-                new PropertyType { NameAr = "بيت", NameEn = "House", IconName = "House" }
-
+                new PropertyType { NameAr = "بيت", NameEn = "House", IconName = "House" },
+                new PropertyType { NameAr = "ضريح", NameEn = "Shrine", IconName = "shrine" },
+                new PropertyType { NameAr = "مقبرة", NameEn = "Cemetery", IconName = "cemetery" },
+                new PropertyType { NameAr = "مدرسة دينية", NameEn = "Religious School", IconName = "religious-school" },
+                new PropertyType { NameAr = "مكتبة", NameEn = "Library", IconName = "library" }
             );
             await context.SaveChangesAsync();
         }

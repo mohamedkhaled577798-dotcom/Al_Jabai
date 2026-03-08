@@ -59,6 +59,30 @@ public class WaqfProperty : BaseEntity
     public string Status { get; set; } = "Active";
     public string? Notes { get; set; }
 
+    // ============ حقول الأهلية والوقف ============
+    /// <summary>أهلية الوقف: أهلي أم خيري</summary>
+    public string WaqfNature { get; set; } = "Khairi";
+
+    /// <summary>هل تمت استلامها إدارياً؟ (فقط للأهلي)</summary>
+    public bool? IsAdminReceived { get; set; }
+
+    /// <summary>شرط الوقف: بشرط أم بدون شرط</summary>
+    public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ============ تجاوزات وتعديات ============
+    /// <summary>ملاحظات التجاوزات على العقار</summary>
+    public string? EncroachmentNotes { get; set; }
+
+    /// <summary>هل يوجد تجاوز على العقار؟</summary>
+    public bool HasEncroachment { get; set; } = false;
+
+    // ============ بيانات الموظف الشاغل للسكن ============
+    /// <summary>اسم الموظف الشاغل للسكن</summary>
+    public string? OccupantEmployeeName { get; set; }
+
+    /// <summary>هل الموظف متقاعد؟</summary>
+    public bool? IsOccupantRetired { get; set; }
+
     // النزاعات القانونية
     public bool IsDisputed { get; set; } = false;
     public bool HasLegalCase { get; set; } = false;
@@ -84,6 +108,7 @@ public class WaqfProperty : BaseEntity
     public virtual District? District { get; set; }
     public virtual SubDistrict? SubDistrict { get; set; }
     public virtual ICollection<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
+    public virtual ICollection<PropertyRegistrationFile> RegistrationFiles { get; set; } = new List<PropertyRegistrationFile>();
     public virtual ICollection<PropertyImage> Images { get; set; } = new List<PropertyImage>();
     public virtual ICollection<InvestmentContract> Contracts { get; set; } = new List<InvestmentContract>();
     public virtual ICollection<LegalDispute> Disputes { get; set; } = new List<LegalDispute>();

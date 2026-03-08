@@ -132,13 +132,34 @@
         <!-- Province Filter -->
         <div class="p-3">
             <h6 class="mb-2"><i class="fas fa-filter me-2"></i>تصفية بالمحافظة</h6>
-            <select id="provinceFilter" class="form-select form-select-sm" onchange="filterByProvince()">
-                <option value="">جميع المحافظات</option>
-                @foreach (var province in ViewBag.Provinces as IEnumerable<WaqfGIS.Core.Entities.Province> ?? new List<WaqfGIS.Core.Entities.Province>())
-                {
-                    <option value="@province.Id">@province.NameAr</option>
-                }
-            </select>
+            @{
+                var restrictedProvinceId = ViewBag.RestrictedProvinceId as int?;
+                var userPermission = ViewBag.UserPermission as string ?? "ViewOnly";
+            }
+            @if (restrictedProvinceId.HasValue)
+            {
+                <!-- مستخدم محدود بمحافظة معينة - لا يرى إلا محافظته -->
+                <select id="provinceFilter" class="form-select form-select-sm" disabled>
+                    @foreach (var province in ViewBag.Provinces as IEnumerable<WaqfGIS.Core.Entities.Province> ?? new List<WaqfGIS.Core.Entities.Province>())
+                    {
+                        if (province.Id == restrictedProvinceId.Value)
+                        {
+                            <option value="@province.Id" selected>@province.NameAr</option>
+                        }
+                    }
+                </select>
+                <small class="text-muted d-block mt-1"><i class="fas fa-lock me-1"></i>محدود بمحافظتك</small>
+            }
+            else
+            {
+                <select id="provinceFilter" class="form-select form-select-sm" onchange="filterByProvince()">
+                    <option value="">جميع المحافظات</option>
+                    @foreach (var province in ViewBag.Provinces as IEnumerable<WaqfGIS.Core.Entities.Province> ?? new List<WaqfGIS.Core.Entities.Province>())
+                    {
+                        <option value="@province.Id">@province.NameAr</option>
+                    }
+                </select>
+            }
             <button class="btn btn-sm btn-outline-danger mt-2 w-100" onclick="zoomToIraq()">
                 <i class="fas fa-compress-arrows-alt me-1"></i>التركيز على العراق
             </button>
@@ -214,6 +235,12 @@ var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/se
 var terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
 var hybridLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png');
 
+// المحافظة المقيد بها المستخدم (إذا كان حسب الرول)
+@{
+    var rpId = ViewBag.RestrictedProvinceId as int?;
+}
+var RESTRICTED_PROVINCE_ID = @(rpId.HasValue ? rpId.Value.ToString() : "null");
+
 // Initialize Map centered on Iraq
 var map = L.map('mainMap', { layers: [osmLayer] }).setView([33.3, 44.4], 6);
 
@@ -232,36 +259,36 @@ var drawnItems = new L.FeatureGroup().addTo(map);
 var currentDrawnLayer = null;
 
 // ===== Iraq Boundary =====
-// حدود العراق الجغرافية الحقيقية (مبسطة)
+// حدود العراق الجغرافية الحقيقية (مبسطة - إحداثيات [lat, lng] صحيحة)
 var iraqCoords = [
-    [37.0, 30.0],[38.0, 29.5],[39.2, 29.1],[40.0, 29.0],[41.2, 29.5],
-    [42.0, 30.0],[43.5, 29.7],[44.7, 29.2],[46.3, 29.1],[47.4, 30.0],
-    [47.9, 30.0],[48.0, 30.4],[48.6, 30.4],[48.9, 30.9],[47.7, 31.0],
-    [47.4, 31.2],[47.8, 32.0],[48.3, 31.7],[48.9, 30.9],[47.4, 32.4],
-    [46.5, 34.0],[45.4, 34.0],[45.6, 35.1],[44.8, 37.1],[44.2, 38.0],
-    [43.9, 37.3],[42.8, 37.4],[42.3, 37.2],[41.2, 37.1],[40.7, 37.1],
-    [39.5, 37.1],[38.8, 36.8],[38.6, 34.0],[37.0, 33.4],[37.0, 30.0]
+    // الحدود مع الكويت والخليج العربي (جنوباً)
+    [29.10, 47.68],[29.35, 47.97],[29.98, 48.57],[30.03, 48.57],
+    // الحدود مع إيران (شرقاً)
+    [30.05, 48.55],[30.38, 48.01],[30.64, 47.73],[31.00, 47.15],
+    [31.34, 47.15],[31.70, 47.50],[32.05, 47.92],[32.46, 47.64],
+    [32.91, 46.91],[33.62, 46.11],[34.15, 45.65],[34.65, 45.50],
+    [35.10, 45.73],[35.76, 45.40],[36.38, 44.13],[37.10, 44.02],
+    // الحدود مع تركيا (شمالاً)
+    [37.38, 42.78],[37.07, 42.35],[37.12, 41.80],[37.44, 41.20],
+    [37.16, 40.68],
+    // الحدود مع سوريا (شمال غرب)
+    [37.06, 41.19],[36.83, 41.35],[36.61, 41.37],
+    // الحدود مع الأردن وسوريا (غرباً)
+    [33.38, 38.98],[32.73, 38.79],[32.34, 39.10],[31.99, 39.00],
+    [30.98, 39.30],[29.53, 38.57],
+    // الحدود مع السعودية (جنوب غرب)
+    [29.10, 40.00],[28.95, 42.08],[29.18, 44.70],[29.10, 47.68]
 ];
 
 function loadIraqBoundary() {
     layers.iraqBoundary.clearLayers();
     
-    // الطبقة الخارجية للتمييز (ظل خارجي)
-    var iraqOuterGlow = L.polygon(iraqCoords, {
-        color: '#c62828',
-        weight: 6,
-        opacity: 0.25,
-        fill: false
-    }).addTo(layers.iraqBoundary);
-    
-    // الحدود الرئيسية
+    // الحدود الرئيسية فقط - بدون خط أحمر
     var iraqPolygon = L.polygon(iraqCoords, {
-        color: '#c62828',
-        weight: 3,
-        opacity: 1.0,
-        dashArray: '8, 5',
-        fillColor: '#fff9c4',
-        fillOpacity: 0.07,
+        color: 'transparent',
+        weight: 0,
+        opacity: 0,
+        fill: false,
         interactive: false
     }).addTo(layers.iraqBoundary);
     
@@ -316,8 +343,26 @@ map.on(L.Draw.Event.EDITED, function(e) {
     e.layers.eachLayer(function(layer) { updateDrawingInfo(layer); });
 });
 
+// الحصول على معرف المحافظة الفعلي للفلتر
+function getProvinceParam() {
+    // إذا المستخدم مقيد بمحافظة، نستخدمها دائماً
+    if (RESTRICTED_PROVINCE_ID !== null) return '?provinceId=' + RESTRICTED_PROVINCE_ID;
+    // إلا نستخدم ما اختاره من الفلتر
+    var provinceEl = document.getElementById('provinceFilter');
+    var provinceVal = provinceEl ? provinceEl.value : '';
+    return provinceVal ? '?provinceId=' + provinceVal : '';
+}
+
+// مخزن مركزي لكل الـ features للبحث السريع
+var allFeaturesIndex = [];
+
+function indexFeature(feature, layer, entityType) {
+    allFeaturesIndex.push({ feature: feature, layer: layer, entityType: entityType });
+}
+
 // Load All Data
 async function loadAllData() {
+    allFeaturesIndex = []; // مسح الفهرس عند كل تحميل
     await Promise.all([
         loadMosques(), loadMosqueBoundaries(),
         loadProperties(), loadPropertyBoundaries(),
@@ -327,14 +372,17 @@ async function loadAllData() {
 
 async function loadMosques() {
     try {
-        var response = await fetch('/api/GisApi/layers/mosques/geojson');
+        var response = await fetch('/api/GisApi/layers/mosques/geojson' + getProvinceParam());
         var data = await response.json();
         layers.mosques.clearLayers();
         L.geoJSON(data, {
             pointToLayer: function(feature, latlng) {
                 return L.circleMarker(latlng, { radius: 8, fillColor: '#1e88e5', color: '#1565c0', fillOpacity: 0.8, weight: 2 });
             },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createMosquePopup(feature.properties)); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createMosquePopup(feature.properties));
+                indexFeature(feature, layer, 'mosque');
+            }
         }).addTo(layers.mosques);
         document.getElementById('statMosques').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading mosques:', e); }
@@ -342,26 +390,32 @@ async function loadMosques() {
 
 async function loadMosqueBoundaries() {
     try {
-        var response = await fetch('/api/GisApi/layers/mosqueboundaries/geojson');
+        var response = await fetch('/api/GisApi/layers/mosqueboundaries/geojson' + getProvinceParam());
         var data = await response.json();
         layers.mosqueBoundaries.clearLayers();
         L.geoJSON(data, {
             style: { color: '#1565c0', fillColor: '#1e88e5', fillOpacity: 0.3, weight: 2 },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createBoundaryPopup(feature.properties, 'mosque')); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createBoundaryPopup(feature.properties, 'mosque'));
+                indexFeature(feature, layer, 'mosqueBoundary');
+            }
         }).addTo(layers.mosqueBoundaries);
     } catch (e) { console.error('Error loading mosque boundaries:', e); }
 }
 
 async function loadProperties() {
     try {
-        var response = await fetch('/api/GisApi/layers/properties/geojson');
+        var response = await fetch('/api/GisApi/layers/properties/geojson' + getProvinceParam());
         var data = await response.json();
         layers.properties.clearLayers();
         L.geoJSON(data, {
             pointToLayer: function(feature, latlng) {
                 return L.circleMarker(latlng, { radius: 7, fillColor: '#43a047', color: '#2e7d32', fillOpacity: 0.8, weight: 2 });
             },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createPropertyPopup(feature.properties)); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createPropertyPopup(feature.properties));
+                indexFeature(feature, layer, 'property');
+            }
         }).addTo(layers.properties);
         document.getElementById('statProperties').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading properties:', e); }
@@ -369,19 +423,22 @@ async function loadProperties() {
 
 async function loadPropertyBoundaries() {
     try {
-        var response = await fetch('/api/GisApi/layers/propertyboundaries/geojson');
+        var response = await fetch('/api/GisApi/layers/propertyboundaries/geojson' + getProvinceParam());
         var data = await response.json();
         layers.propertyBoundaries.clearLayers();
         L.geoJSON(data, {
             style: { color: '#2e7d32', fillColor: '#43a047', fillOpacity: 0.3, weight: 2 },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createBoundaryPopup(feature.properties, 'property')); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createBoundaryPopup(feature.properties, 'property'));
+                indexFeature(feature, layer, 'propertyBoundary');
+            }
         }).addTo(layers.propertyBoundaries);
     } catch (e) { console.error('Error loading property boundaries:', e); }
 }
 
 async function loadLands() {
     try {
-        var response = await fetch('/api/GisApi/layers/waqflands/geojson');
+        var response = await fetch('/api/GisApi/layers/waqflands/geojson' + getProvinceParam());
         var data = await response.json();
         layers.lands.clearLayers();
         L.geoJSON(data, {
@@ -390,7 +447,10 @@ async function loadLands() {
                            feature.properties.landType === 'Leased' ? '#2196f3' : '#9e9e9e';
                 return { color: color, fillColor: color, fillOpacity: 0.3, weight: 2 };
             },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createLandPopup(feature.properties)); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createLandPopup(feature.properties));
+                indexFeature(feature, layer, 'land');
+            }
         }).addTo(layers.lands);
         document.getElementById('statLands').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading lands:', e); }
@@ -398,7 +458,7 @@ async function loadLands() {
 
 async function loadRoads() {
     try {
-        var response = await fetch('/api/GisApi/layers/roads/geojson');
+        var response = await fetch('/api/GisApi/layers/roads/geojson' + getProvinceParam());
         var data = await response.json();
         layers.roads.clearLayers();
         L.geoJSON(data, {
@@ -406,7 +466,10 @@ async function loadRoads() {
                 var width = feature.properties.roadType === 'Highway' ? 5 : feature.properties.roadType === 'Main' ? 4 : 3;
                 return { color: '#795548', weight: width };
             },
-            onEachFeature: function(feature, layer) { layer.bindPopup(createRoadPopup(feature.properties)); }
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(createRoadPopup(feature.properties));
+                indexFeature(feature, layer, 'road');
+            }
         }).addTo(layers.roads);
     } catch (e) { console.error('Error loading roads:', e); }
 }
@@ -579,28 +642,90 @@ async function saveGeometry() {
     } catch (e) { console.error(e); alert('حدث خطأ أثناء الحفظ'); }
 }
 
-// Search
+// Search - بحث ذكي يعمل على الفهرس المركزي
 function searchFeatures() {
-    var term = document.getElementById('searchInput').value.trim();
-    if (!term) { alert('أدخل كلمة البحث'); return; }
+    var term = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!term) return;
+
+    // تجنب التكرار: مسجد يظهر كـ point وكـ boundary - نأخذ الـ point فقط
+    var seen = new Set();
     var results = [];
-    for (var layerName in layers) {
-        if (layerName === 'iraqBoundary') continue;
-        layers[layerName].eachLayer(function(layer) {
-            if (layer.feature && layer.feature.properties) {
-                var p = layer.feature.properties;
-                var name = p.name || p.entityName || '';
-                var code = p.code || p.entityCode || '';
-                if (name.includes(term) || code.includes(term)) results.push({ layer: layer, name: name });
-            }
-        });
+
+    allFeaturesIndex.forEach(function(item) {
+        var p = item.feature.properties;
+        // تجاهل الـ boundaries في البحث (نكتفي بالـ points)
+        if (item.entityType === 'mosqueBoundary' || item.entityType === 'propertyBoundary') return;
+
+        var id = (p.id || '') + '_' + item.entityType;
+        if (seen.has(id)) return;
+        seen.add(id);
+
+        var name = (p.name || p.entityName || '').toLowerCase();
+        var code = (p.code || p.entityCode || '').toLowerCase();
+        var address = (p.address || '').toLowerCase();
+        var neighborhood = (p.neighborhood || '').toLowerCase();
+
+        if (name.includes(term) || code.includes(term) || address.includes(term) || neighborhood.includes(term)) {
+            var typeLabel = item.entityType === 'mosque' ? '🕌' : item.entityType === 'property' ? '🏢' : item.entityType === 'land' ? '🗺️' : '🛣️';
+            results.push({ layer: item.layer, name: typeLabel + ' ' + (p.name || p.entityName || p.code || '') });
+        }
+    });
+
+    // إزالة نتائج البحث السابقة
+    var existingPanel = document.getElementById('searchResultsPanel');
+    if (existingPanel) existingPanel.remove();
+
+    if (results.length === 0) {
+        showSearchNotification('لم يتم العثور على: ' + term, 'warning');
+        return;
     }
-    if (results.length > 0) {
-        var first = results[0];
-        if (first.layer.getBounds) map.fitBounds(first.layer.getBounds(), { maxZoom: 18 });
-        else if (first.layer.getLatLng) map.setView(first.layer.getLatLng(), 18);
-        first.layer.openPopup();
-    } else { alert('لم يتم العثور على: ' + term); }
+
+    if (results.length === 1) {
+        // نتيجة واحدة فقط - اذهب إليها مباشرة
+        zoomToFeature(results[0].layer);
+        return;
+    }
+
+    // أكثر من نتيجة - عرض قائمة
+    var panel = document.createElement('div');
+    panel.id = 'searchResultsPanel';
+    panel.style.cssText = 'position:absolute;top:80px;right:330px;z-index:2000;background:white;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.2);max-width:300px;max-height:400px;overflow-y:auto;direction:rtl;';
+    panel.innerHTML = `
+        <div style="padding:10px 15px;background:#1e88e5;color:white;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <strong><i class="fas fa-search me-2"></i>نتائج البحث (${results.length})</strong>
+            <button onclick="document.getElementById('searchResultsPanel').remove()" style="background:none;border:none;color:white;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="searchResultsList">${results.map((r,i) => `
+            <div style="padding:8px 12px;border-bottom:1px solid #eee;cursor:pointer;" onclick="zoomToFeatureByIndex(${i})" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+                <i class="fas fa-map-marker-alt text-primary me-2"></i>${r.name}
+            </div>`).join('')}
+        </div>`;
+    document.querySelector('.col-lg-9').appendChild(panel);
+
+    // تخزين النتائج للوصول إليها
+    window._searchResults = results;
+    showSearchNotification(`وجد ${results.length} نتيجة`, 'success');
+}
+
+function zoomToFeature(layer) {
+    if (layer.getBounds) map.fitBounds(layer.getBounds(), { maxZoom: 18, padding: [50, 50] });
+    else if (layer.getLatLng) map.setView(layer.getLatLng(), 18);
+    layer.openPopup();
+}
+
+function zoomToFeatureByIndex(index) {
+    if (window._searchResults && window._searchResults[index]) {
+        zoomToFeature(window._searchResults[index].layer);
+    }
+}
+
+function showSearchNotification(msg, type) {
+    var colors = { success: '#28a745', warning: '#ffc107', danger: '#dc3545' };
+    var n = document.createElement('div');
+    n.style.cssText = `position:absolute;bottom:30px;right:50%;transform:translateX(50%);z-index:3000;background:${colors[type]||'#333'};color:white;padding:10px 20px;border-radius:20px;font-weight:bold;box-shadow:0 3px 10px rgba(0,0,0,0.3);`;
+    n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3000);
 }
 
 document.getElementById('searchInput').addEventListener('keypress', function(e) {

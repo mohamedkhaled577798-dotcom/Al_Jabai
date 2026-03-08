@@ -1,8 +1,10 @@
 @model PropertyViewModel
+@using WaqfGIS.Core.Entities
 @{
     ViewData["Title"] = "تعديل عقار";
     var boundaryGeoJson = ViewBag.BoundaryGeoJson as string;
     var images = ViewBag.Images as IEnumerable<PropertyImage> ?? new List<PropertyImage>();
+    var regFiles = ViewBag.RegistrationFiles as IEnumerable<PropertyRegistrationFile> ?? new List<PropertyRegistrationFile>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -80,6 +82,109 @@
                     </div>
                 </div>
             }
+
+            <!-- أهلية الوقف وحقول خاصة -->
+            <div class="card mb-3">
+                <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>أهلية الوقف ومعلومات خاصة</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="WaqfNature" class="form-label fw-bold">طبيعة الوقف</label>
+                            <select asp-for="WaqfNature" class="form-select" id="waqfNatureSelect" onchange="toggleAdminReceived()">
+                                <option value="Khairi">خيري</option>
+                                <option value="Ahli">أهلي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="adminReceivedGroup" style="display:@(Model.WaqfNature=="Ahli"?"block":"none")">
+                            <label class="form-label fw-bold">مستلمة إدارياً</label>
+                            <div class="d-flex gap-3 mt-2">
+                                <div class="form-check"><input class="form-check-input" type="radio" name="IsAdminReceived" value="true" @(Model.IsAdminReceived==true?"checked":"") /><label class="form-check-label">نعم</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" name="IsAdminReceived" value="false" @(Model.IsAdminReceived==false?"checked":"") /><label class="form-check-label">لا</label></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="WaqfCondition" class="form-label fw-bold">شرط الوقف</label>
+                            <select asp-for="WaqfCondition" class="form-select">
+                                <option value="WithoutCondition">بدون شرط</option>
+                                <option value="WithCondition">بشرط</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr class="my-3" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="HasEncroachment" />
+                                <label class="form-check-label text-danger fw-bold" for="HasEncroachment"><i class="fas fa-exclamation-circle me-1"></i>يوجد تجاوز على العقار</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="EncroachmentNotes" class="form-label">ملاحظات التجاوز</label>
+                            <textarea asp-for="EncroachmentNotes" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="OccupantEmployeeName" class="form-label">اسم الموظف الشاغل للسكن</label>
+                            <input asp-for="OccupantEmployeeName" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">حالة الموظف</label>
+                            <div class="d-flex gap-3 mt-2">
+                                <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="true" @(Model.IsOccupantRetired==true?"checked":"") /><label class="form-check-label">متقاعد</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="false" @(Model.IsOccupantRetired==false?"checked":"") /><label class="form-check-label">عامل</label></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- مستندات وملفات التسجيل -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>مستندات وملفات التسجيل</h6></div>
+                <div class="card-body">
+                    @if (regFiles.Any())
+                    {
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light"><tr><th>نوع المستند</th><th>اسم الملف</th><th>تاريخ الرفع</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var rf in regFiles)
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-secondary">@rf.DocumentType</span></td>
+                                            <td><a href="@rf.FilePath" target="_blank" class="text-decoration-none"><i class="fas fa-file me-1"></i>@rf.FileName</a></td>
+                                            <td><small>@rf.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")</small></td>
+                                            <td>
+                                                <form asp-action="DeleteRegistrationFile" method="post" class="d-inline" onsubmit="return confirm('حذف الملف؟')">
+                                                    <input type="hidden" name="fileId" value="@rf.Id" />
+                                                    <input type="hidden" name="propertyId" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label">نوع المستند</label>
+                            <select name="regDocType" class="form-select">
+                                <option value="سند ملكية">سند ملكية</option>
+                                <option value="قرار تخصيص">قرار تخصيص</option>
+                                <option value="عقد إيجار">عقد إيجار</option>
+                                <option value="وثيقة وقف">وثيقة وقف</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label">إضافة ملف جديد</label>
+                            <input type="file" name="regFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx" />
+                            <small class="text-muted">يقبل PDF, Word, صور, Excel</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save me-2"></i>حفظ التعديلات</button>
@@ -280,6 +385,12 @@ function clearBoundary() {
     drawnItems.clearLayers();
     document.getElementById('BoundaryGeoJson').value = '';
     document.getElementById('boundaryInfo').style.display = 'none';
+}
+
+function toggleAdminReceived() {
+    var sel = document.getElementById('waqfNatureSelect');
+    var grp = document.getElementById('adminReceivedGroup');
+    if (sel && grp) grp.style.display = sel.value === 'Ahli' ? 'block' : 'none';
 }
 </script>
 

@@ -1,6 +1,8 @@
 @model WaqfGIS.Web.Models.WaqfLandViewModel
+@using WaqfGIS.Core.Entities
 @{
     ViewData["Title"] = "تعديل أرض الوقف";
+    var regFiles = ViewBag.RegistrationFiles as IEnumerable<WaqfLandRegistrationFile> ?? new List<WaqfLandRegistrationFile>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -18,7 +20,7 @@
     </div>
 </div>
 
-<form asp-action="Edit" method="post" id="landForm">
+<form asp-action="Edit" method="post" id="landForm" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
     <input type="hidden" asp-for="Code" />
     

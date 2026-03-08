@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WaqfGIS.Core.Entities;
+using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 
@@ -13,22 +16,38 @@ public class MapController : Controller
     private readonly PropertyService _propertyService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ExcelExportService _excelExportService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public MapController(
         MosqueService mosqueService, 
         PropertyService propertyService,
         IUnitOfWork unitOfWork,
-        ExcelExportService excelExportService)
+        ExcelExportService excelExportService,
+        UserManager<ApplicationUser> userManager)
     {
         _mosqueService = mosqueService;
         _propertyService = propertyService;
         _unitOfWork = unitOfWork;
         _excelExportService = excelExportService;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index()
     {
-        ViewBag.Provinces = await _unitOfWork.Provinces.GetAllAsync();
+        var currentUser = await _userManager.GetUserAsync(User);
+        var provinces = await _unitOfWork.Provinces.GetAllAsync();
+        ViewBag.Provinces = provinces;
+
+        // تحديد المحافظة المقيّد بها المستخدم حسب صلاحيته
+        int? restrictedProvinceId = null;
+        if (currentUser != null &&
+            currentUser.PermissionLevel != PermissionLevel.SuperAdmin &&
+            currentUser.PermissionLevel != PermissionLevel.Admin)
+        {
+            restrictedProvinceId = currentUser.ProvinceId;
+        }
+        ViewBag.RestrictedProvinceId = restrictedProvinceId;
+        ViewBag.UserPermission = currentUser?.PermissionLevel.ToString() ?? "ViewOnly";
         return View();
     }
 

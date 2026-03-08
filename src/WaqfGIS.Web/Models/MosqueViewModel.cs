@@ -113,7 +113,40 @@ public class MosqueViewModel
     [MaxLength(20)]
     public string? MuezzinPhone { get; set; }
 
+    // ================== الأهلية وشرط الوقف ==================
+    [Display(Name = "طبيعة الوقف")]
+    public string WaqfNature { get; set; } = "Khairi";
+
+    [Display(Name = "مستلمة إدارياً")]
+    public bool? IsAdminReceived { get; set; }
+
+    [Display(Name = "شرط الوقف")]
+    public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ================== حالة الجامع ==================
+    [Display(Name = "مغتصب")]
+    public bool IsUsurped { get; set; } = false;
+
+    [Display(Name = "مغلق")]
+    public bool IsClosed { get; set; } = false;
+
+    [Display(Name = "متنازع عليه")]
+    public bool IsContested { get; set; } = false;
+
     // ================== ملاحظات ==================
     [Display(Name = "ملاحظات")]
     public string? Notes { get; set; }
+
+    // قوائم منسدلة
+    public static List<SelectListItem> WaqfNatures => new()
+    {
+        new SelectListItem("خيري", "Khairi"),
+        new SelectListItem("أهلي", "Ahli")
+    };
+
+    public static List<SelectListItem> WaqfConditions => new()
+    {
+        new SelectListItem("بدون شرط", "WithoutCondition"),
+        new SelectListItem("بشرط", "WithCondition")
+    };
 }

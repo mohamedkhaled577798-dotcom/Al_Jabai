@@ -221,6 +221,87 @@
                 </div>
             </div>
 
+            <!-- أهلية الوقف وحالة الجامع -->
+            <div class="card mb-4">
+                <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-mosque me-2"></i>أهلية الوقف والحالة</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="WaqfNature" class="form-label fw-bold">طبيعة الوقف</label>
+                            <select asp-for="WaqfNature" class="form-select" id="waqfNatureSelect" onchange="toggleAdminReceived()">
+                                <option value="Khairi">خيري</option>
+                                <option value="Ahli">أهلي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="adminReceivedGroup" style="display:none">
+                            <label class="form-label fw-bold">مستلمة إدارياً</label>
+                            <div class="d-flex gap-3 mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="IsAdminReceived" id="adminRecYes" value="true" @(Model.IsAdminReceived == true ? "checked" : "") />
+                                    <label class="form-check-label" for="adminRecYes">نعم</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="IsAdminReceived" id="adminRecNo" value="false" @(Model.IsAdminReceived == false ? "checked" : "") />
+                                    <label class="form-check-label" for="adminRecNo">لا</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="WaqfCondition" class="form-label fw-bold">شرط الوقف</label>
+                            <select asp-for="WaqfCondition" class="form-select">
+                                <option value="WithoutCondition">بدون شرط</option>
+                                <option value="WithCondition">بشرط</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr class="my-3" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsUsurped" id="isUsurped" />
+                                <label class="form-check-label text-danger fw-bold" for="isUsurped"><i class="fas fa-exclamation-triangle me-1"></i>مغتصب</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsClosed" id="isClosed" />
+                                <label class="form-check-label text-warning fw-bold" for="isClosed"><i class="fas fa-lock me-1"></i>مغلق</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsContested" id="isContested" />
+                                <label class="form-check-label text-info fw-bold" for="isContested"><i class="fas fa-gavel me-1"></i>متنازع عليه</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ملفات التسجيل -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>مستندات وملفات التسجيل</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label">نوع المستند</label>
+                            <select name="regDocType" class="form-select">
+                                <option value="سند ملكية">سند ملكية</option>
+                                <option value="قرار تخصيص">قرار تخصيص</option>
+                                <option value="عقد إيجار">عقد إيجار</option>
+                                <option value="وثيقة وقف">وثيقة وقف</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label">اختيار الملف (أو عدة ملفات)</label>
+                            <input type="file" name="regFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx" />
+                            <small class="text-muted">يقبل PDF, Word, صور, Excel</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- صور المسجد -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد</h6></div>
@@ -310,6 +391,14 @@
         document.getElementById('longitude').value = lng.toFixed(6);
         if (flyToMap !== false) map.flyTo([lat, lng], Math.max(map.getZoom(), 16), {duration: 0.8});
     }
+
+    // أهلية الوقف
+    function toggleAdminReceived() {
+        var sel = document.getElementById('waqfNatureSelect');
+        var grp = document.getElementById('adminReceivedGroup');
+        if (sel && grp) grp.style.display = sel.value === 'Ahli' ? 'block' : 'none';
+    }
+    toggleAdminReceived();
 
     // معاينة الصور
     function previewImages(input) {

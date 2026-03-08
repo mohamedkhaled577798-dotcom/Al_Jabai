@@ -80,6 +80,8 @@ public class MosquesController : Controller
         if (mosque == null) return NotFound();
 
         ViewBag.Images = await _imageUploadService.GetMosqueImagesAsync(id);
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<MosqueRegistrationFile>().Query()
+            .Where(f => f.MosqueId == id).OrderByDescending(f => f.UploadedAt).ToListAsync();
         
         // Load boundary
         var boundary = await _unitOfWork.Repository<MosqueBoundary>().Query()
@@ -136,6 +138,12 @@ public class MosquesController : Controller
             EstablishedYear = model.EstablishedYear,
             LastRenovationYear = model.LastRenovationYear,
             Notes = model.Notes,
+            WaqfNature = model.WaqfNature,
+            IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null,
+            WaqfCondition = model.WaqfCondition,
+            IsUsurped = model.IsUsurped,
+            IsClosed = model.IsClosed,
+            IsContested = model.IsContested,
             CreatedBy = User.Identity?.Name
         };
 
@@ -144,6 +152,9 @@ public class MosquesController : Controller
         // رفع الصور إذا وجدت
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadMosqueImagesAsync(mosque.Id, images, User.Identity?.Name);
+
+        // رفع ملفات التسجيل
+        await UploadMosqueRegistrationFilesAsync(mosque.Id, Request.Form.Files, "regFiles");
 
         TempData["Success"] = "تم إضافة المسجد بنجاح";
         return RedirectToAction(nameof(Index));
@@ -184,10 +195,18 @@ public class MosquesController : Controller
             MuezzinPhone = mosque.MuezzinPhone,
             EstablishedYear = mosque.EstablishedYear,
             LastRenovationYear = mosque.LastRenovationYear,
-            Notes = mosque.Notes
+            Notes = mosque.Notes,
+            WaqfNature = mosque.WaqfNature,
+            IsAdminReceived = mosque.IsAdminReceived,
+            WaqfCondition = mosque.WaqfCondition,
+            IsUsurped = mosque.IsUsurped,
+            IsClosed = mosque.IsClosed,
+            IsContested = mosque.IsContested
         };
 
         ViewBag.Images = await _imageUploadService.GetMosqueImagesAsync(id);
+        ViewBag.RegistrationFiles = await _unitOfWork.Repository<MosqueRegistrationFile>().Query()
+            .Where(f => f.MosqueId == id).ToListAsync();
         
         // Load boundary if exists
         var boundary = await _unitOfWork.Repository<MosqueBoundary>().Query()
@@ -242,6 +261,12 @@ public class MosquesController : Controller
         mosque.EstablishedYear = model.EstablishedYear;
         mosque.LastRenovationYear = model.LastRenovationYear;
         mosque.Notes = model.Notes;
+        mosque.WaqfNature = model.WaqfNature;
+        mosque.IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null;
+        mosque.WaqfCondition = model.WaqfCondition;
+        mosque.IsUsurped = model.IsUsurped;
+        mosque.IsClosed = model.IsClosed;
+        mosque.IsContested = model.IsContested;
         mosque.UpdatedBy = User.Identity?.Name;
 
         await _mosqueService.UpdateAsync(mosque);
@@ -249,6 +274,9 @@ public class MosquesController : Controller
         // رفع الصور الجديدة
         if (images != null && images.Count > 0)
             await _imageUploadService.UploadMosqueImagesAsync(mosque.Id, images, User.Identity?.Name);
+
+        // رفع ملفات التسجيل
+        await UploadMosqueRegistrationFilesAsync(id, Request.Form.Files, "regFiles");
 
         // حفظ الحدود إذا وجدت
         if (!string.IsNullOrEmpty(BoundaryGeoJson))
@@ -335,6 +363,53 @@ public class MosquesController : Controller
         await _imageUploadService.SetMainMosqueImageAsync(mosqueId, imageId);
         TempData["Success"] = "تم تعيين الصورة الرئيسية";
         return RedirectToAction(nameof(Edit), new { id = mosqueId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteRegistrationFile(int fileId, int mosqueId)
+    {
+        var file = await _unitOfWork.Repository<MosqueRegistrationFile>().GetByIdAsync(fileId);
+        if (file != null && file.MosqueId == mosqueId)
+        {
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            await _unitOfWork.Repository<MosqueRegistrationFile>().DeleteAsync(file);
+            await _unitOfWork.SaveChangesAsync();
+            TempData["Success"] = "تم حذف الملف";
+        }
+        return RedirectToAction(nameof(Edit), new { id = mosqueId });
+    }
+
+    private async Task UploadMosqueRegistrationFilesAsync(int mosqueId, IFormFileCollection files, string inputName)
+    {
+        var regFiles = files.Where(f => f.Name == inputName).ToList();
+        if (!regFiles.Any()) return;
+
+        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "mosque-docs", mosqueId.ToString());
+        Directory.CreateDirectory(uploadDir);
+
+        foreach (var file in regFiles)
+        {
+            if (file.Length == 0) continue;
+            var ext = Path.GetExtension(file.FileName);
+            var savedName = $"{Guid.NewGuid()}{ext}";
+            var fullPath = Path.Combine(uploadDir, savedName);
+            using var stream = System.IO.File.Create(fullPath);
+            await file.CopyToAsync(stream);
+
+            var regFile = new MosqueRegistrationFile
+            {
+                MosqueId = mosqueId,
+                DocumentType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة",
+                FileName = file.FileName,
+                FilePath = $"/uploads/mosque-docs/{mosqueId}/{savedName}",
+                FileSize = file.Length,
+                MimeType = file.ContentType,
+                UploadedBy = User.Identity?.Name
+            };
+            await _unitOfWork.Repository<MosqueRegistrationFile>().AddAsync(regFile);
+        }
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private async Task LoadViewDataAsync()

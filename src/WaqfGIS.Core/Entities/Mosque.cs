@@ -54,6 +54,26 @@ public class Mosque : BaseEntity
     public string? RegistrationNumber { get; set; }
     public DateTime? RegistrationDate { get; set; }
 
+    // ============ حقول الأهلية والوقف ============
+    /// <summary>أهلية الوقف: أهلي أم خيري</summary>
+    public string WaqfNature { get; set; } = "Khairi"; // Khairi=خيري, Ahli=أهلي
+
+    /// <summary>هل تمت استلامها إدارياً؟ (فقط للأهلي)</summary>
+    public bool? IsAdminReceived { get; set; }
+
+    /// <summary>شرط الوقف: بشرط أم بدون شرط</summary>
+    public string WaqfCondition { get; set; } = "WithoutCondition"; // WithCondition=بشرط, WithoutCondition=بدون شرط
+
+    // ============ حالة الجامع الخاصة ============
+    /// <summary>هل الجامع مغتصب؟</summary>
+    public bool IsUsurped { get; set; } = false;
+
+    /// <summary>هل الجامع مغلق؟</summary>
+    public bool IsClosed { get; set; } = false;
+
+    /// <summary>هل الجامع متنازع عليه؟</summary>
+    public bool IsContested { get; set; } = false;
+
     // ملاحظات
     public string? Notes { get; set; }
     public bool IsVerified { get; set; } = false;
@@ -69,6 +89,7 @@ public class Mosque : BaseEntity
     public virtual District? District { get; set; }
     public virtual SubDistrict? SubDistrict { get; set; }
     public virtual ICollection<MosqueDocument> Documents { get; set; } = new List<MosqueDocument>();
+    public virtual ICollection<MosqueRegistrationFile> RegistrationFiles { get; set; } = new List<MosqueRegistrationFile>();
     public virtual ICollection<MosqueImage> Images { get; set; } = new List<MosqueImage>();
     public virtual ICollection<MosqueBoundary> Boundaries { get; set; } = new List<MosqueBoundary>();
 }

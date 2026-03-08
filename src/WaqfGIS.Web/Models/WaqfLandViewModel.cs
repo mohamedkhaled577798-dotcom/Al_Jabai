@@ -108,7 +108,24 @@ public class WaqfLandViewModel
     [Display(Name = "ملاحظات")]
     [StringLength(2000)]
     public string? Notes { get; set; }
-    
+
+    // ================== الأهلية وشرط الوقف ==================
+    [Display(Name = "طبيعة الوقف")]
+
+    [Display(Name = "مستلمة إدارياً")]
+    public bool? IsAdminReceived { get; set; }
+
+    [Display(Name = "شرط الوقف")]
+    public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ================== تجاوزات ==================
+    [Display(Name = "يوجد تجاوز")]
+    public bool HasEncroachment { get; set; } = false;
+
+    [Display(Name = "ملاحظات التجاوزات")]
+    [StringLength(2000)]
+    public string? EncroachmentNotes { get; set; }
+
     // For Display
     public string? ProvinceName { get; set; }
     public string? DistrictName { get; set; }
@@ -153,6 +170,18 @@ public class WaqfLandViewModel
         new SelectListItem("قيد التسجيل", "Pending"),
         new SelectListItem("متنازع عليه", "Disputed"),
         new SelectListItem("موروث", "Inherited")
+    };
+
+    public static List<SelectListItem> WaqfNaturesList => new()
+    {
+        new SelectListItem("خيري", "Khairi"),
+        new SelectListItem("أهلي", "Ahli")
+    };
+
+    public static List<SelectListItem> WaqfConditionsList => new()
+    {
+        new SelectListItem("بدون شرط", "WithoutCondition"),
+        new SelectListItem("بشرط", "WithCondition")
     };
 }
 

@@ -83,4 +83,41 @@ public class PropertyViewModel
 
     [Display(Name = "ملاحظات")]
     public string? Notes { get; set; }
+
+    // ================== الأهلية وشرط الوقف ==================
+    [Display(Name = "طبيعة الوقف")]
+    public string WaqfNature { get; set; } = "Khairi";
+
+    [Display(Name = "مستلمة إدارياً")]
+    public bool? IsAdminReceived { get; set; }
+
+    [Display(Name = "شرط الوقف")]
+    public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ================== تجاوزات ==================
+    [Display(Name = "يوجد تجاوز")]
+    public bool HasEncroachment { get; set; } = false;
+
+    [Display(Name = "ملاحظات التجاوزات")]
+    public string? EncroachmentNotes { get; set; }
+
+    // ================== بيانات الموظف الشاغل للسكن ==================
+    [Display(Name = "اسم الموظف الشاغل للسكن")]
+    public string? OccupantEmployeeName { get; set; }
+
+    [Display(Name = "الموظف متقاعد")]
+    public bool? IsOccupantRetired { get; set; }
+
+    // قوائم منسدلة
+    public static List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> WaqfNaturesList => new()
+    {
+        new() { Text = "خيري", Value = "Khairi" },
+        new() { Text = "أهلي", Value = "Ahli" }
+    };
+
+    public static List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> WaqfConditionsList => new()
+    {
+        new() { Text = "بدون شرط", Value = "WithoutCondition" },
+        new() { Text = "بشرط", Value = "WithCondition" }
+    };
 }

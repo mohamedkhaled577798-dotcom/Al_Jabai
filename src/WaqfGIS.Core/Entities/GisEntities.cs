@@ -142,6 +142,23 @@ public class WaqfLand : BaseEntity
     public decimal? PricePerSqm { get; set; } // سعر المتر المربع
     public decimal? AnnualRevenue { get; set; }
     
+    // ============ حقول الأهلية والوقف ============
+    /// <summary>أهلية الوقف: أهلي أم خيري</summary>
+    public string WaqfNature { get; set; } = "Khairi";
+
+    /// <summary>هل تمت استلامها إدارياً؟ (فقط للأهلي)</summary>
+    public bool? IsAdminReceived { get; set; }
+
+    /// <summary>شرط الوقف: بشرط أم بدون شرط</summary>
+    public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ============ تجاوزات ============
+    /// <summary>ملاحظات التجاوزات على الأرض</summary>
+    public string? EncroachmentNotes { get; set; }
+
+    /// <summary>هل يوجد تجاوز على الأرض؟</summary>
+    public bool HasEncroachment { get; set; } = false;
+
     // النزاعات والعقود
     public bool IsDisputed { get; set; } = false;
     public bool HasLegalCase { get; set; } = false;
@@ -159,6 +176,7 @@ public class WaqfLand : BaseEntity
     public virtual District? District { get; set; }
     public virtual ICollection<InvestmentContract> Contracts { get; set; } = new List<InvestmentContract>();
     public virtual ICollection<LegalDispute> Disputes { get; set; } = new List<LegalDispute>();
+    public virtual ICollection<WaqfLandRegistrationFile> RegistrationFiles { get; set; } = new List<WaqfLandRegistrationFile>();
 }
 
 /// <summary>
