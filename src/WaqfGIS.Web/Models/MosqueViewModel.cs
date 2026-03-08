@@ -123,6 +123,22 @@ public class MosqueViewModel
     [Display(Name = "شرط الوقف")]
     public string WaqfCondition { get; set; } = "WithoutCondition";
 
+    // ================== بيانات الواقف الأصلي ==================
+    [Display(Name = "اسم الواقف")]
+    [MaxLength(200)]
+    public string? WaqifName { get; set; }
+
+    [Display(Name = "تاريخ وثيقة الوقف")]
+    [DataType(DataType.Date)]
+    public DateTime? WaqfDocumentDate { get; set; }
+
+    [Display(Name = "رقم وثيقة الوقف")]
+    [MaxLength(100)]
+    public string? WaqfDocumentNumber { get; set; }
+
+    [Display(Name = "نص شرط الواقف")]
+    public string? WaqfConditionText { get; set; }
+
     // ================== حالة الجامع ==================
     [Display(Name = "مغتصب")]
     public bool IsUsurped { get; set; } = false;

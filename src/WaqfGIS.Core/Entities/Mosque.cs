@@ -64,6 +64,19 @@ public class Mosque : BaseEntity
     /// <summary>شرط الوقف: بشرط أم بدون شرط</summary>
     public string WaqfCondition { get; set; } = "WithoutCondition"; // WithCondition=بشرط, WithoutCondition=بدون شرط
 
+    // ============ بيانات الواقف الأصلي ============
+    /// <summary>اسم الواقف</summary>
+    public string? WaqifName { get; set; }
+
+    /// <summary>تاريخ وثيقة الوقف الأصلية</summary>
+    public DateTime? WaqfDocumentDate { get; set; }
+
+    /// <summary>رقم وثيقة الوقف</summary>
+    public string? WaqfDocumentNumber { get; set; }
+
+    /// <summary>نص شرط الواقف كاملاً</summary>
+    public string? WaqfConditionText { get; set; }
+
     // ============ حالة الجامع الخاصة ============
     /// <summary>هل الجامع مغتصب؟</summary>
     public bool IsUsurped { get; set; } = false;

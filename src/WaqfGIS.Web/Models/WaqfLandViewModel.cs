@@ -111,12 +111,30 @@ public class WaqfLandViewModel
 
     // ================== الأهلية وشرط الوقف ==================
     [Display(Name = "طبيعة الوقف")]
+    public string WaqfNature { get; set; } = "Khairi";
 
     [Display(Name = "مستلمة إدارياً")]
     public bool? IsAdminReceived { get; set; }
 
     [Display(Name = "شرط الوقف")]
     public string WaqfCondition { get; set; } = "WithoutCondition";
+
+    // ================== بيانات الواقف الأصلي ==================
+    [Display(Name = "اسم الواقف")]
+    [StringLength(200)]
+    public string? WaqifName { get; set; }
+
+    [Display(Name = "تاريخ وثيقة الوقف")]
+    [DataType(DataType.Date)]
+    public DateTime? WaqfDocumentDate { get; set; }
+
+    [Display(Name = "رقم وثيقة الوقف")]
+    [StringLength(100)]
+    public string? WaqfDocumentNumber { get; set; }
+
+    [Display(Name = "نص شرط الواقف")]
+    [StringLength(4000)]
+    public string? WaqfConditionText { get; set; }
 
     // ================== تجاوزات ==================
     [Display(Name = "يوجد تجاوز")]

@@ -94,6 +94,20 @@ public class PropertyViewModel
     [Display(Name = "شرط الوقف")]
     public string WaqfCondition { get; set; } = "WithoutCondition";
 
+    // ================== بيانات الواقف الأصلي ==================
+    [Display(Name = "اسم الواقف")]
+    public string? WaqifName { get; set; }
+
+    [Display(Name = "تاريخ وثيقة الوقف")]
+    [DataType(DataType.Date)]
+    public DateTime? WaqfDocumentDate { get; set; }
+
+    [Display(Name = "رقم وثيقة الوقف")]
+    public string? WaqfDocumentNumber { get; set; }
+
+    [Display(Name = "نص شرط الواقف")]
+    public string? WaqfConditionText { get; set; }
+
     // ================== تجاوزات ==================
     [Display(Name = "يوجد تجاوز")]
     public bool HasEncroachment { get; set; } = false;

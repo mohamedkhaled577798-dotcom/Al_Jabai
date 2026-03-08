@@ -1,6 +1,8 @@
 @model WaqfGIS.Web.Models.WaqfLandViewModel
+@using WaqfGIS.Core.Entities
 @{
     ViewData["Title"] = "تفاصيل أرض الوقف";
+    var regFiles = ViewBag.RegistrationFiles as IEnumerable<WaqfLandRegistrationFile> ?? new List<WaqfLandRegistrationFile>();
     var typeName = WaqfGIS.Web.Models.WaqfLandViewModel.LandTypes.FirstOrDefault(t => t.Value == Model.LandType)?.Text ?? Model.LandType;
     var useName = WaqfGIS.Web.Models.WaqfLandViewModel.LandUses.FirstOrDefault(u => u.Value == Model.LandUse)?.Text ?? Model.LandUse;
     var typeClass = Model.LandType switch { "Waqf" => "bg-success", "Leased" => "bg-info", "Disputed" => "bg-danger", "Reserved" => "bg-warning", _ => "bg-secondary" };
@@ -138,6 +140,55 @@
                 </div>
             </div>
         }
+
+        <!-- مستندات وملفات التسجيل -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>مستندات وملفات التسجيل</h6>
+                <span class="badge bg-dark">@regFiles.Count()</span>
+            </div>
+            <div class="card-body">
+                @if (regFiles.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var rf in regFiles)
+                        {
+                            var icon = rf.MimeType != null && rf.MimeType.Contains("pdf") ? "fa-file-pdf text-danger" :
+                                       rf.MimeType != null && (rf.MimeType.Contains("word") || rf.MimeType.Contains("doc")) ? "fa-file-word text-primary" :
+                                       rf.MimeType != null && rf.MimeType.Contains("image") ? "fa-file-image text-success" :
+                                       rf.MimeType != null && rf.MimeType.Contains("sheet") ? "fa-file-excel text-success" : "fa-file text-secondary";
+                            var sizeKb = rf.FileSize.HasValue ? (rf.FileSize.Value / 1024.0).ToString("F1") + " KB" : "";
+                            <div class="list-group-item px-0 py-2">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <i class="fas @icon me-2"></i>
+                                        <a href="@rf.FilePath" target="_blank" class="text-decoration-none fw-bold">@rf.FileName</a><br/>
+                                        <small class="text-muted ms-4">
+                                            <span class="badge bg-secondary me-1">@rf.DocumentType</span>
+                                            @rf.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                            @if (!string.IsNullOrEmpty(sizeKb)) { <text> · @sizeKb</text> }
+                                        </small>
+                                    </div>
+                                    <a href="@rf.FilePath" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-download"></i></a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-folder-open fa-2x mb-2 d-block"></i>
+                        <small>لا توجد مستندات مرفقة</small>
+                    </div>
+                }
+                <div class="mt-2 text-end">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-paperclip me-1"></i>إضافة مستندات
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <div class="card">
             <div class="card-body">
