@@ -60,7 +60,12 @@
         <!-- Layers Panel -->
         <div class="p-3 border-bottom">
             <h6 class="mb-2"><i class="fas fa-layer-group me-2"></i>الطبقات</h6>
-            <div class="sidebar-panel" style="max-height:200px;">
+            <div class="sidebar-panel" style="max-height:220px;">
+                <div class="layer-item">
+                    <input type="checkbox" id="layerIraqBoundary" checked onchange="toggleLayer('iraqBoundary')">
+                    <span class="layer-color" style="background:#c62828;border:2px solid #c62828;"></span>
+                    <label for="layerIraqBoundary">🇮🇶 حدود العراق</label>
+                </div>
                 <div class="layer-item">
                     <input type="checkbox" id="layerMosques" checked onchange="toggleLayer('mosques')">
                     <span class="layer-color" style="background:#1e88e5;"></span>
@@ -98,24 +103,12 @@
         <div class="p-3 border-bottom">
             <h6 class="mb-2"><i class="fas fa-pencil-alt me-2"></i>أدوات الرسم</h6>
             <div class="drawing-tools">
-                <button class="btn btn-sm btn-outline-primary" onclick="startDrawPolygon()" title="رسم مضلع">
-                    <i class="fas fa-draw-polygon"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-info" onclick="startDrawLine()" title="رسم خط">
-                    <i class="fas fa-route"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-success" onclick="startDrawMarker()" title="إضافة نقطة">
-                    <i class="fas fa-map-marker-alt"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-warning" onclick="enableEdit()" title="تعديل">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSelected()" title="حذف">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="clearDrawings()" title="مسح الكل">
-                    <i class="fas fa-eraser"></i>
-                </button>
+                <button class="btn btn-sm btn-outline-primary" onclick="startDrawPolygon()" title="رسم مضلع"><i class="fas fa-draw-polygon"></i></button>
+                <button class="btn btn-sm btn-outline-info" onclick="startDrawLine()" title="رسم خط"><i class="fas fa-route"></i></button>
+                <button class="btn btn-sm btn-outline-success" onclick="startDrawMarker()" title="إضافة نقطة"><i class="fas fa-map-marker-alt"></i></button>
+                <button class="btn btn-sm btn-outline-warning" onclick="enableEdit()" title="تعديل"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSelected()" title="حذف"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-secondary" onclick="clearDrawings()" title="مسح الكل"><i class="fas fa-eraser"></i></button>
             </div>
             <div id="drawingInfo" class="mt-2 p-2 bg-light rounded small" style="display:none;">
                 <div class="row">
@@ -128,11 +121,11 @@
         <!-- Base Maps -->
         <div class="p-3 border-bottom">
             <h6 class="mb-2"><i class="fas fa-globe me-2"></i>الخريطة الأساسية</h6>
-            <div class="btn-group btn-group-sm w-100">
-                <button class="btn btn-outline-secondary active" onclick="setBaseMap('osm')">عادية</button>
-                <button class="btn btn-outline-secondary" onclick="setBaseMap('satellite')">فضائية</button>
-                <button class="btn btn-outline-secondary" onclick="setBaseMap('hybrid')">هجين</button>
-                <button class="btn btn-outline-secondary" onclick="setBaseMap('terrain')">تضاريس</button>
+            <div class="btn-group btn-group-sm w-100" id="baseMapBtns">
+                <button class="btn btn-outline-secondary active" onclick="setBaseMap('osm',this)">عادية</button>
+                <button class="btn btn-outline-secondary" onclick="setBaseMap('satellite',this)">فضائية</button>
+                <button class="btn btn-outline-secondary" onclick="setBaseMap('hybrid',this)">هجين</button>
+                <button class="btn btn-outline-secondary" onclick="setBaseMap('terrain',this)">تضاريس</button>
             </div>
         </div>
 
@@ -146,6 +139,9 @@
                     <option value="@province.Id">@province.NameAr</option>
                 }
             </select>
+            <button class="btn btn-sm btn-outline-danger mt-2 w-100" onclick="zoomToIraq()">
+                <i class="fas fa-compress-arrows-alt me-1"></i>التركيز على العراق
+            </button>
         </div>
     </div>
 
@@ -218,11 +214,12 @@ var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/se
 var terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
 var hybridLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png');
 
-// Initialize Map
-var map = L.map('mainMap', { layers: [osmLayer] }).setView([33.3, 44.4], 7);
+// Initialize Map centered on Iraq
+var map = L.map('mainMap', { layers: [osmLayer] }).setView([33.3, 44.4], 6);
 
 // Layer Groups
 var layers = {
+    iraqBoundary: L.layerGroup().addTo(map),
     mosques: L.layerGroup().addTo(map),
     mosqueBoundaries: L.layerGroup().addTo(map),
     properties: L.layerGroup().addTo(map),
@@ -233,6 +230,63 @@ var layers = {
 
 var drawnItems = new L.FeatureGroup().addTo(map);
 var currentDrawnLayer = null;
+
+// ===== Iraq Boundary =====
+// حدود العراق الجغرافية الحقيقية (مبسطة)
+var iraqCoords = [
+    [37.0, 30.0],[38.0, 29.5],[39.2, 29.1],[40.0, 29.0],[41.2, 29.5],
+    [42.0, 30.0],[43.5, 29.7],[44.7, 29.2],[46.3, 29.1],[47.4, 30.0],
+    [47.9, 30.0],[48.0, 30.4],[48.6, 30.4],[48.9, 30.9],[47.7, 31.0],
+    [47.4, 31.2],[47.8, 32.0],[48.3, 31.7],[48.9, 30.9],[47.4, 32.4],
+    [46.5, 34.0],[45.4, 34.0],[45.6, 35.1],[44.8, 37.1],[44.2, 38.0],
+    [43.9, 37.3],[42.8, 37.4],[42.3, 37.2],[41.2, 37.1],[40.7, 37.1],
+    [39.5, 37.1],[38.8, 36.8],[38.6, 34.0],[37.0, 33.4],[37.0, 30.0]
+];
+
+function loadIraqBoundary() {
+    layers.iraqBoundary.clearLayers();
+    
+    // الطبقة الخارجية للتمييز (ظل خارجي)
+    var iraqOuterGlow = L.polygon(iraqCoords, {
+        color: '#c62828',
+        weight: 6,
+        opacity: 0.25,
+        fill: false
+    }).addTo(layers.iraqBoundary);
+    
+    // الحدود الرئيسية
+    var iraqPolygon = L.polygon(iraqCoords, {
+        color: '#c62828',
+        weight: 3,
+        opacity: 1.0,
+        dashArray: '8, 5',
+        fillColor: '#fff9c4',
+        fillOpacity: 0.07,
+        interactive: false
+    }).addTo(layers.iraqBoundary);
+    
+    // علامة اسم الدولة في وسط العراق
+    var countryLabel = L.marker([33.3, 43.7], {
+        icon: L.divIcon({
+            className: '',
+            html: '<div style="font-size:15px;font-weight:bold;color:#b71c1c;text-shadow:0 0 4px white,0 0 4px white,0 0 4px white;pointer-events:none;white-space:nowrap;">🇮🇶 جمهورية العراق</div>',
+            iconSize: [200, 30],
+            iconAnchor: [100, 15]
+        }),
+        interactive: false,
+        zIndexOffset: -1000
+    }).addTo(layers.iraqBoundary);
+    
+    iraqPolygon.bindTooltip('جمهورية العراق', {
+        permanent: false,
+        direction: 'center',
+        className: 'fw-bold text-danger'
+    });
+}
+
+function zoomToIraq() {
+    map.flyToBounds(L.latLngBounds(iraqCoords), { padding: [30, 30], duration: 1.5 });
+}
 
 // Draw Control
 var drawControl = new L.Control.Draw({
@@ -252,7 +306,6 @@ map.on(L.Draw.Event.CREATED, function(e) {
     currentDrawnLayer = e.layer;
     drawnItems.addLayer(e.layer);
     updateDrawingInfo(e.layer);
-    
     if (e.layerType === 'polygon' || e.layerType === 'polyline') {
         new bootstrap.Modal(document.getElementById('saveModal')).show();
         document.getElementById('modalArea').textContent = document.getElementById('drawArea').textContent;
@@ -260,20 +313,15 @@ map.on(L.Draw.Event.CREATED, function(e) {
 });
 
 map.on(L.Draw.Event.EDITED, function(e) {
-    e.layers.eachLayer(function(layer) {
-        updateDrawingInfo(layer);
-    });
+    e.layers.eachLayer(function(layer) { updateDrawingInfo(layer); });
 });
 
 // Load All Data
 async function loadAllData() {
     await Promise.all([
-        loadMosques(),
-        loadMosqueBoundaries(),
-        loadProperties(),
-        loadPropertyBoundaries(),
-        loadLands(),
-        loadRoads()
+        loadMosques(), loadMosqueBoundaries(),
+        loadProperties(), loadPropertyBoundaries(),
+        loadLands(), loadRoads()
     ]);
 }
 
@@ -282,19 +330,12 @@ async function loadMosques() {
         var response = await fetch('/api/GisApi/layers/mosques/geojson');
         var data = await response.json();
         layers.mosques.clearLayers();
-        
         L.geoJSON(data, {
             pointToLayer: function(feature, latlng) {
-                return L.circleMarker(latlng, {
-                    radius: 8, fillColor: '#1e88e5', color: '#1565c0',
-                    fillOpacity: 0.8, weight: 2
-                });
+                return L.circleMarker(latlng, { radius: 8, fillColor: '#1e88e5', color: '#1565c0', fillOpacity: 0.8, weight: 2 });
             },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createMosquePopup(feature.properties));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createMosquePopup(feature.properties)); }
         }).addTo(layers.mosques);
-        
         document.getElementById('statMosques').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading mosques:', e); }
 }
@@ -304,12 +345,9 @@ async function loadMosqueBoundaries() {
         var response = await fetch('/api/GisApi/layers/mosqueboundaries/geojson');
         var data = await response.json();
         layers.mosqueBoundaries.clearLayers();
-        
         L.geoJSON(data, {
             style: { color: '#1565c0', fillColor: '#1e88e5', fillOpacity: 0.3, weight: 2 },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createBoundaryPopup(feature.properties, 'mosque'));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createBoundaryPopup(feature.properties, 'mosque')); }
         }).addTo(layers.mosqueBoundaries);
     } catch (e) { console.error('Error loading mosque boundaries:', e); }
 }
@@ -319,19 +357,12 @@ async function loadProperties() {
         var response = await fetch('/api/GisApi/layers/properties/geojson');
         var data = await response.json();
         layers.properties.clearLayers();
-        
         L.geoJSON(data, {
             pointToLayer: function(feature, latlng) {
-                return L.circleMarker(latlng, {
-                    radius: 7, fillColor: '#43a047', color: '#2e7d32',
-                    fillOpacity: 0.8, weight: 2
-                });
+                return L.circleMarker(latlng, { radius: 7, fillColor: '#43a047', color: '#2e7d32', fillOpacity: 0.8, weight: 2 });
             },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createPropertyPopup(feature.properties));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createPropertyPopup(feature.properties)); }
         }).addTo(layers.properties);
-        
         document.getElementById('statProperties').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading properties:', e); }
 }
@@ -341,12 +372,9 @@ async function loadPropertyBoundaries() {
         var response = await fetch('/api/GisApi/layers/propertyboundaries/geojson');
         var data = await response.json();
         layers.propertyBoundaries.clearLayers();
-        
         L.geoJSON(data, {
             style: { color: '#2e7d32', fillColor: '#43a047', fillOpacity: 0.3, weight: 2 },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createBoundaryPopup(feature.properties, 'property'));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createBoundaryPopup(feature.properties, 'property')); }
         }).addTo(layers.propertyBoundaries);
     } catch (e) { console.error('Error loading property boundaries:', e); }
 }
@@ -356,18 +384,14 @@ async function loadLands() {
         var response = await fetch('/api/GisApi/layers/waqflands/geojson');
         var data = await response.json();
         layers.lands.clearLayers();
-        
         L.geoJSON(data, {
             style: function(feature) {
-                var color = feature.properties.landType === 'Waqf' ? '#ff9800' : 
+                var color = feature.properties.landType === 'Waqf' ? '#ff9800' :
                            feature.properties.landType === 'Leased' ? '#2196f3' : '#9e9e9e';
                 return { color: color, fillColor: color, fillOpacity: 0.3, weight: 2 };
             },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createLandPopup(feature.properties));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createLandPopup(feature.properties)); }
         }).addTo(layers.lands);
-        
         document.getElementById('statLands').textContent = data.features?.length || 0;
     } catch (e) { console.error('Error loading lands:', e); }
 }
@@ -377,16 +401,12 @@ async function loadRoads() {
         var response = await fetch('/api/GisApi/layers/roads/geojson');
         var data = await response.json();
         layers.roads.clearLayers();
-        
         L.geoJSON(data, {
             style: function(feature) {
-                var width = feature.properties.roadType === 'Highway' ? 5 : 
-                           feature.properties.roadType === 'Main' ? 4 : 3;
+                var width = feature.properties.roadType === 'Highway' ? 5 : feature.properties.roadType === 'Main' ? 4 : 3;
                 return { color: '#795548', weight: width };
             },
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(createRoadPopup(feature.properties));
-            }
+            onEachFeature: function(feature, layer) { layer.bindPopup(createRoadPopup(feature.properties)); }
         }).addTo(layers.roads);
     } catch (e) { console.error('Error loading roads:', e); }
 }
@@ -456,21 +476,16 @@ function createBoundaryPopup(p, type) {
 // Layer Toggle
 function toggleLayer(layerName) {
     var checkbox = document.getElementById('layer' + layerName.charAt(0).toUpperCase() + layerName.slice(1));
-    if (checkbox.checked) {
-        map.addLayer(layers[layerName]);
-    } else {
-        map.removeLayer(layers[layerName]);
-    }
+    if (checkbox && checkbox.checked) map.addLayer(layers[layerName]);
+    else if (checkbox) map.removeLayer(layers[layerName]);
 }
 
 // Base Map
-function setBaseMap(type) {
-    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer); 
+function setBaseMap(type, btn) {
+    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer);
     map.removeLayer(terrainLayer); map.removeLayer(hybridLabels);
-    
-    document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    
+    document.querySelectorAll('#baseMapBtns .btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
     switch(type) {
         case 'osm': map.addLayer(osmLayer); break;
         case 'satellite': map.addLayer(satelliteLayer); break;
@@ -492,12 +507,10 @@ function updateDrawingInfo(layer) {
     if (layer.getLatLngs) {
         var latlngs = layer.getLatLngs()[0] || layer.getLatLngs();
         if (Array.isArray(latlngs[0])) latlngs = latlngs[0];
-        
         var area = L.GeometryUtil.geodesicArea(latlngs);
         var perimeter = 0;
         for (var i = 0; i < latlngs.length - 1; i++) perimeter += latlngs[i].distanceTo(latlngs[i + 1]);
         if (layer instanceof L.Polygon) perimeter += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
-        
         document.getElementById('drawArea').textContent = area.toFixed(2) + ' م²';
         document.getElementById('drawPerimeter').textContent = perimeter.toFixed(2) + ' م';
     }
@@ -509,17 +522,14 @@ async function loadEntitiesForSave() {
     var entityDiv = document.getElementById('entitySelectDiv');
     var newFieldsDiv = document.getElementById('newEntityFields');
     var select = document.getElementById('saveEntityId');
-    
     if (type === 'mosque' || type === 'property') {
         entityDiv.style.display = 'block';
         newFieldsDiv.style.display = 'none';
         select.innerHTML = '<option value="">جاري التحميل...</option>';
-        
         try {
             var url = type === 'mosque' ? '/api/GisApi/layers/mosques/geojson' : '/api/GisApi/layers/properties/geojson';
             var response = await fetch(url);
             var data = await response.json();
-            
             select.innerHTML = '<option value="">-- اختر --</option>';
             data.features.forEach(f => {
                 select.innerHTML += `<option value="${f.properties.id}">${f.properties.name} (${f.properties.code})</option>`;
@@ -536,13 +546,10 @@ async function loadEntitiesForSave() {
 
 async function saveGeometry() {
     if (!currentDrawnLayer) { alert('لا يوجد شكل للحفظ'); return; }
-    
     var type = document.getElementById('saveEntityType').value;
     var geoJson = currentDrawnLayer.toGeoJSON();
-    
     try {
         var url, body;
-        
         if (type === 'mosque') {
             var mosqueId = document.getElementById('saveEntityId').value;
             if (!mosqueId) { alert('اختر المسجد'); return; }
@@ -555,99 +562,55 @@ async function saveGeometry() {
             body = { geoJson: JSON.stringify(geoJson.geometry), boundaryType: 'Building' };
         } else if (type === 'land') {
             url = '/api/GisApi/lands';
-            body = {
-                nameAr: document.getElementById('newEntityName').value,
-                provinceId: parseInt(document.getElementById('newEntityProvince').value),
-                boundaryGeoJson: JSON.stringify(geoJson.geometry),
-                landType: 'Waqf',
-                landUse: 'Vacant'
-            };
+            body = { nameAr: document.getElementById('newEntityName').value, provinceId: parseInt(document.getElementById('newEntityProvince').value), boundaryGeoJson: JSON.stringify(geoJson.geometry), landType: 'Waqf', landUse: 'Vacant' };
         } else if (type === 'road') {
             url = '/api/GisApi/roads';
-            body = {
-                nameAr: document.getElementById('newEntityName').value,
-                provinceId: parseInt(document.getElementById('newEntityProvince').value),
-                geometryGeoJson: JSON.stringify(geoJson.geometry),
-                roadType: 'Local'
-            };
+            body = { nameAr: document.getElementById('newEntityName').value, provinceId: parseInt(document.getElementById('newEntityProvince').value), geometryGeoJson: JSON.stringify(geoJson.geometry), roadType: 'Local' };
         }
-        
-        var response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        
+        var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (response.ok) {
             alert('تم الحفظ بنجاح');
             bootstrap.Modal.getInstance(document.getElementById('saveModal')).hide();
             drawnItems.clearLayers();
             loadAllData();
         } else {
-            var error = await response.text();
-            alert('خطأ: ' + error);
+            alert('خطأ: ' + await response.text());
         }
-    } catch (e) {
-        console.error(e);
-        alert('حدث خطأ أثناء الحفظ');
-    }
+    } catch (e) { console.error(e); alert('حدث خطأ أثناء الحفظ'); }
 }
 
-// Search - Fixed for Arabic
+// Search
 function searchFeatures() {
     var term = document.getElementById('searchInput').value.trim();
     if (!term) { alert('أدخل كلمة البحث'); return; }
-    
-    var found = false;
     var results = [];
-    
-    // Search in all layers
     for (var layerName in layers) {
+        if (layerName === 'iraqBoundary') continue;
         layers[layerName].eachLayer(function(layer) {
             if (layer.feature && layer.feature.properties) {
                 var p = layer.feature.properties;
                 var name = p.name || p.entityName || '';
                 var code = p.code || p.entityCode || '';
-                
-                // Arabic-friendly search (includes)
-                if (name.includes(term) || code.includes(term)) {
-                    results.push({ layer: layer, name: name, layerName: layerName });
-                }
+                if (name.includes(term) || code.includes(term)) results.push({ layer: layer, name: name });
             }
         });
     }
-    
     if (results.length > 0) {
         var first = results[0];
-        if (first.layer.getBounds) {
-            map.fitBounds(first.layer.getBounds(), { maxZoom: 18 });
-        } else if (first.layer.getLatLng) {
-            map.setView(first.layer.getLatLng(), 18);
-        }
+        if (first.layer.getBounds) map.fitBounds(first.layer.getBounds(), { maxZoom: 18 });
+        else if (first.layer.getLatLng) map.setView(first.layer.getLatLng(), 18);
         first.layer.openPopup();
-        
-        if (results.length > 1) {
-            console.log('نتائج البحث:', results.map(r => r.name));
-        }
-    } else {
-        alert('لم يتم العثور على: ' + term);
-    }
+    } else { alert('لم يتم العثور على: ' + term); }
 }
 
-// Add Enter key support for search
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') searchFeatures();
 });
 
-// Filter by Province
-function filterByProvince() {
-    var provinceId = document.getElementById('provinceFilter').value;
-    // Reload with filter - this would require API changes
-    // For now, just reload all
-    loadAllData();
-}
+function filterByProvince() { loadAllData(); }
 
 // Initialize
+loadIraqBoundary();
 loadAllData();
 </script>
 }

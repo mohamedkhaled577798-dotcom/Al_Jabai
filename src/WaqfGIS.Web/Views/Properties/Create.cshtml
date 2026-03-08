@@ -71,19 +71,62 @@
 
             <!-- الموقع -->
             <div class="card mb-4">
-                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6></div>
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light" onclick="setPropBaseMap('osm')" title="عادية"><i class="fas fa-map"></i></button>
+                        <button type="button" class="btn btn-light" onclick="setPropBaseMap('satellite')" title="فضائية"><i class="fas fa-satellite"></i></button>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <div id="locationMap" style="height: 300px; border-radius: 8px;" class="mb-3"></div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="Latitude" class="form-label"></label>
-                            <input asp-for="Latitude" class="form-control" id="latitude" readonly />
+                    <!-- مساعد الإحداثيات -->
+                    <div class="card mb-3 border-info">
+                        <div class="card-header bg-info bg-opacity-10 py-2">
+                            <h6 class="mb-0 text-info"><i class="fas fa-crosshairs me-2"></i>تحديد الموقع الجغرافي</h6>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="Longitude" class="form-label"></label>
-                            <input asp-for="Longitude" class="form-control" id="longitude" readonly />
+                        <div class="card-body py-2">
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold"><i class="fab fa-google me-1"></i>استخراج من رابط خرائط</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-link"></i></span>
+                                    <input type="text" id="mapsLink_prop_create" class="form-control"
+                                           placeholder="الصق رابط Google أو Apple Maps هنا..."
+                                           oninput="extractCoordsFromLink('prop_create','latitude','longitude')" />
+                                    <button type="button" class="btn btn-outline-success" onclick="extractCoordsFromLink('prop_create','latitude','longitude')">
+                                        <i class="fas fa-magic me-1"></i>استخراج
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearMapsLink('prop_create')"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div id="linkResult_prop_create" class="mt-1" style="display:none;"></div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <label class="form-label small"><i class="fas fa-arrows-alt-v text-danger me-1"></i>خط العرض</label>
+                                    <div class="input-group input-group-sm">
+                                        <input asp-for="Latitude" id="latitude" class="form-control" placeholder="33.315000"
+                                               oninput="onManualCoordInput('prop_create','latitude','longitude')" />
+                                        <span class="input-group-text">°N</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small"><i class="fas fa-arrows-alt-h text-primary me-1"></i>خط الطول</label>
+                                    <div class="input-group input-group-sm">
+                                        <input asp-for="Longitude" id="longitude" class="form-control" placeholder="44.361000"
+                                               oninput="onManualCoordInput('prop_create','latitude','longitude')" />
+                                        <span class="input-group-text">°E</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-sm btn-primary w-100"
+                                            onclick="goToManualCoords('prop_create','latitude','longitude')" title="الذهاب للإحداثيات">
+                                        <i class="fas fa-map-pin"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1">يمكن النقر على الخريطة أو إدخال الإحداثيات يدوياً أو لصق رابط</small>
                         </div>
                     </div>
+                    <div id="locationMap" style="height: 320px; border-radius: 8px;"></div>
                 </div>
             </div>
 
@@ -193,23 +236,43 @@
 </form>
 
 @section Scripts {
+<script src="~/js/coordinates-helper.js"></script>
 <script>
-    var map = L.map('locationMap').setView([33.3, 44.4], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var osmProp = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+    var satProp = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+    var map = L.map('locationMap', { layers: [osmProp] }).setView([33.3, 44.4], 7);
     var marker = null;
-    
+
+    function setPropBaseMap(type) {
+        map.removeLayer(osmProp); map.removeLayer(satProp);
+        if (type === 'osm') map.addLayer(osmProp); else map.addLayer(satProp);
+    }
+
     map.on('click', function(e) {
         if (marker) marker.setLatLng(e.latlng);
         else { marker = L.marker(e.latlng, {draggable: true}).addTo(map); marker.on('dragend', updateCoords); }
         updateCoords();
+        var rd = document.getElementById('linkResult_prop_create');
+        if (rd) rd.style.display = 'none';
     });
-    
+
     function updateCoords() {
         if (marker) {
             var ll = marker.getLatLng();
             document.getElementById('latitude').value = ll.lat.toFixed(6);
             document.getElementById('longitude').value = ll.lng.toFixed(6);
         }
+    }
+
+    function updateMapMarker(uniqueId, lat, lng, flyToMap) {
+        if (marker) marker.setLatLng([lat, lng]);
+        else {
+            marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            marker.on('dragend', updateCoords);
+        }
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        if (flyToMap !== false) map.flyTo([lat, lng], Math.max(map.getZoom(), 16), {duration: 0.8});
     }
 </script>
 

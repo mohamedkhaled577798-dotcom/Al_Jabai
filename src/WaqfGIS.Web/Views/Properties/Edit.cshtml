@@ -101,14 +101,39 @@
                     <div id="locationMap" style="height:450px;"></div>
                 </div>
                 <div class="card-footer">
+                    <!-- مساعد الإحداثيات -->
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold"><i class="fab fa-google me-1 text-danger"></i>استخراج من رابط خرائط</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fas fa-link"></i></span>
+                            <input type="text" id="mapsLink_prop_edit" class="form-control"
+                                   placeholder="الصق رابط Google أو Apple Maps..."
+                                   oninput="extractCoordsFromLink('prop_edit','latitude','longitude')" />
+                            <button type="button" class="btn btn-outline-success" onclick="extractCoordsFromLink('prop_edit','latitude','longitude')">
+                                <i class="fas fa-magic me-1"></i>استخراج
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearMapsLink('prop_edit')"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div id="linkResult_prop_edit" class="mt-1" style="display:none;"></div>
+                    </div>
                     <div class="row align-items-center g-2">
                         <div class="col-md-3">
-                            <label class="form-label small mb-1">خط العرض</label>
-                            <input asp-for="Latitude" id="latitude" class="form-control form-control-sm" readonly />
+                            <label class="form-label small mb-1"><i class="fas fa-arrows-alt-v text-danger me-1"></i>خط العرض</label>
+                            <div class="input-group input-group-sm">
+                                <input asp-for="Latitude" id="latitude" class="form-control"
+                                       placeholder="33.315"
+                                       oninput="onManualCoordInput('prop_edit','latitude','longitude')" />
+                                <span class="input-group-text" style="font-size:10px;">°N</span>
+                            </div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small mb-1">خط الطول</label>
-                            <input asp-for="Longitude" id="longitude" class="form-control form-control-sm" readonly />
+                            <label class="form-label small mb-1"><i class="fas fa-arrows-alt-h text-primary me-1"></i>خط الطول</label>
+                            <div class="input-group input-group-sm">
+                                <input asp-for="Longitude" id="longitude" class="form-control"
+                                       placeholder="44.361"
+                                       oninput="onManualCoordInput('prop_edit','latitude','longitude')" />
+                                <span class="input-group-text" style="font-size:10px;">°E</span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small mb-1">أدوات الرسم</label>
@@ -140,6 +165,7 @@
 @section Scripts {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="~/js/coordinates-helper.js"></script>
 
 <script>
 var lat = @(Model.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -169,7 +195,17 @@ map.on('click', function(e) {
     marker.setLatLng(e.latlng);
     document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
     document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+    var rd = document.getElementById('linkResult_prop_edit');
+    if (rd) rd.style.display = 'none';
 });
+
+// دالة override لتحديث الخريطة من مساعد الإحداثيات
+function updateMapMarker(uniqueId, newLat, newLng, flyToMap) {
+    marker.setLatLng([newLat, newLng]);
+    document.getElementById('latitude').value = newLat.toFixed(6);
+    document.getElementById('longitude').value = newLng.toFixed(6);
+    if (flyToMap !== false) map.flyTo([newLat, newLng], Math.max(map.getZoom(), 17), {duration: 0.8});
+}
 
 // Load existing boundary
 if (existingBoundary) {

@@ -79,20 +79,75 @@
 
             <!-- الموقع الجغرافي -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6></div>
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع الجغرافي</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light" onclick="setCreateBaseMap('osm')" title="عادية"><i class="fas fa-map"></i></button>
+                        <button type="button" class="btn btn-light" onclick="setCreateBaseMap('satellite')" title="فضائية"><i class="fas fa-satellite"></i></button>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <div id="locationMap" style="height:300px;border-radius:8px;" class="mb-3"></div>
-                    <small class="text-muted">انقر على الخريطة لتحديد موقع المسجد</small>
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-6">
-                            <label asp-for="Latitude" class="form-label"></label>
-                            <input asp-for="Latitude" class="form-control" id="latitude" readonly />
+                    <!-- مساعد الإحداثيات - استخراج من رابط + إدخال يدوي -->
+                    <div class="card mb-3 border-info">
+                        <div class="card-header bg-info bg-opacity-10 py-2">
+                            <h6 class="mb-0 text-info"><i class="fas fa-crosshairs me-2"></i>تحديد الموقع الجغرافي</h6>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="Longitude" class="form-label"></label>
-                            <input asp-for="Longitude" class="form-control" id="longitude" readonly />
+                        <div class="card-body py-2">
+                            <!-- استخراج من رابط -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">
+                                    <i class="fab fa-google me-1"></i>استخراج من رابط خرائط Google أو Apple Maps
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-link"></i></span>
+                                    <input type="text" id="mapsLink_mosque_create" class="form-control"
+                                           placeholder="الصق رابط خرائط Google أو Apple هنا..."
+                                           oninput="extractCoordsFromLink('mosque_create','latitude','longitude')" />
+                                    <button type="button" class="btn btn-outline-success" onclick="extractCoordsFromLink('mosque_create','latitude','longitude')">
+                                        <i class="fas fa-magic me-1"></i>استخراج
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearMapsLink('mosque_create')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div id="linkResult_mosque_create" class="mt-1" style="display:none;"></div>
+                            </div>
+                            <!-- إدخال يدوي -->
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <label class="form-label small"><i class="fas fa-arrows-alt-v text-danger me-1"></i>خط العرض (Latitude)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input asp-for="Latitude" id="latitude" class="form-control"
+                                               placeholder="33.315000"
+                                               oninput="onManualCoordInput('mosque_create','latitude','longitude')" />
+                                        <span class="input-group-text">°N</span>
+                                    </div>
+                                    <span asp-validation-for="Latitude" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small"><i class="fas fa-arrows-alt-h text-primary me-1"></i>خط الطول (Longitude)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input asp-for="Longitude" id="longitude" class="form-control"
+                                               placeholder="44.361000"
+                                               oninput="onManualCoordInput('mosque_create','latitude','longitude')" />
+                                        <span class="input-group-text">°E</span>
+                                    </div>
+                                    <span asp-validation-for="Longitude" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-sm btn-primary w-100"
+                                            onclick="goToManualCoords('mosque_create','latitude','longitude')" title="الذهاب للإحداثيات">
+                                        <i class="fas fa-map-pin"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-info-circle me-1"></i>
+                                يمكن النقر على الخريطة أو إدخال الإحداثيات يدوياً أو لصق رابط خرائط
+                            </small>
                         </div>
                     </div>
+                    <div id="locationMap" style="height:320px;border-radius:8px;"></div>
                 </div>
             </div>
 
@@ -204,24 +259,56 @@
 </div>
 
 @section Scripts {
+<script src="~/js/coordinates-helper.js"></script>
 <script>
-    // خريطة
-    var map = L.map('locationMap').setView([33.3, 44.4], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var osmLayerCreate = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+    var satLayerCreate = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+
+    var map = L.map('locationMap', { layers: [osmLayerCreate] }).setView([33.3, 44.4], 7);
     var marker = null;
-    
+
+    function setCreateBaseMap(type) {
+        map.removeLayer(osmLayerCreate); map.removeLayer(satLayerCreate);
+        if (type === 'osm') map.addLayer(osmLayerCreate);
+        else map.addLayer(satLayerCreate);
+    }
+
     map.on('click', function(e) {
         if (marker) marker.setLatLng(e.latlng);
-        else { marker = L.marker(e.latlng, {draggable:true}).addTo(map); marker.on('dragend', updateCoords); }
+        else {
+            marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+            marker.on('dragend', updateCoords);
+        }
         updateCoords();
+        // مسح نتيجة الرابط عند النقر على الخريطة
+        var rd = document.getElementById('linkResult_mosque_create');
+        if (rd) rd.style.display = 'none';
     });
-    
+
     function updateCoords() {
         if (marker) {
             var ll = marker.getLatLng();
             document.getElementById('latitude').value = ll.lat.toFixed(6);
             document.getElementById('longitude').value = ll.lng.toFixed(6);
         }
+    }
+
+    // تهيئة مساعد الإحداثيات
+    window['locationMap_mosque_create'] = map;
+    window['locationMarker_mosque_create'] = marker;
+    // تحديث الـ marker reference عند إنشائه
+    var origClick = map._events.click;
+    // دالة مخصصة لتحديث الخريطة من مساعد الإحداثيات
+    function updateMapMarker(uniqueId, lat, lng, flyToMap) {
+        if (marker) marker.setLatLng([lat, lng]);
+        else {
+            marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            marker.on('dragend', updateCoords);
+            window['locationMarker_mosque_create'] = marker;
+        }
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        if (flyToMap !== false) map.flyTo([lat, lng], Math.max(map.getZoom(), 16), {duration: 0.8});
     }
 
     // معاينة الصور

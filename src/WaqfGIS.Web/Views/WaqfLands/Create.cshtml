@@ -198,8 +198,53 @@
             </div>
 
             <input type="hidden" asp-for="BoundaryGeoJson" id="BoundaryGeoJson" />
-            <input type="hidden" asp-for="CenterLatitude" />
-            <input type="hidden" asp-for="CenterLongitude" />
+            <input type="hidden" asp-for="CenterLatitude" id="CenterLatitude" />
+            <input type="hidden" asp-for="CenterLongitude" id="CenterLongitude" />
+
+            <!-- تحديد مركز الخريطة يدوياً -->
+            <div class="card mt-3 border-info">
+                <div class="card-header bg-info bg-opacity-10 py-2">
+                    <h6 class="mb-0 text-info"><i class="fas fa-crosshairs me-2"></i>تحديد مركز الخريطة / استخراج من رابط</h6>
+                </div>
+                <div class="card-body py-2">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold"><i class="fab fa-google me-1"></i>استخراج من رابط خرائط Google أو Apple Maps</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fas fa-link"></i></span>
+                            <input type="text" id="mapsLink_land_create" class="form-control"
+                                   placeholder="الصق رابط خرائط هنا..."
+                                   oninput="extractLandCoords()" />
+                            <button type="button" class="btn btn-outline-success" onclick="extractLandCoords()">
+                                <i class="fas fa-magic me-1"></i>استخراج
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearLandLink()"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div id="linkResult_land_create" class="mt-1" style="display:none;"></div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-5">
+                            <label class="form-label small"><i class="fas fa-arrows-alt-v text-danger me-1"></i>خط العرض</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="manualLat" class="form-control" placeholder="33.315000" />
+                                <span class="input-group-text">°N</span>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small"><i class="fas fa-arrows-alt-h text-primary me-1"></i>خط الطول</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="manualLng" class="form-control" placeholder="44.361000" />
+                                <span class="input-group-text">°E</span>
+                            </div>
+                        </div>
+                        <div class="col-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="flyToManualLandCoords()" title="الذهاب للموقع">
+                                <i class="fas fa-map-pin"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>هذا لتحديد مركز عرض الخريطة - ارسم الحدود باستخدام أدوات الرسم أعلاه</small>
+                </div>
+            </div>
 
             <div class="d-grid gap-2 mt-3">
                 <button type="submit" class="btn btn-success btn-lg">
@@ -213,15 +258,49 @@
 @section Scripts {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="~/js/coordinates-helper.js"></script>
 
 <script>
-var map = L.map('map').setView([@Model.CenterLatitude, @Model.CenterLongitude], 7);
+var osmLandCreate = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+var satLandCreate = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+var map = L.map('map', { layers: [osmLandCreate] }).setView([@Model.CenterLatitude, @Model.CenterLongitude], 7);
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-}).addTo(map);
+// دوال مساعد الإحداثيات للأراضي
+
+function extractLandCoords() {
+    var input = document.getElementById('mapsLink_land_create');
+    var resultDiv = document.getElementById('linkResult_land_create');
+    var url = input.value.trim();
+    if (!url) { resultDiv.style.display = 'none'; return; }
+    var result = parseMapLink(url);
+    if (result) {
+        document.getElementById('manualLat').value = result.lat.toFixed(6);
+        document.getElementById('manualLng').value = result.lng.toFixed(6);
+        map.flyTo([result.lat, result.lng], 16, {duration: 0.8});
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div class="alert alert-success p-2 mb-0 small">✅ تم استخراج الإحداثيات: ${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}</div>`;
+    } else if (url.length > 10) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="alert alert-warning p-2 mb-0 small">⚠️ تعذّر استخراج الإحداثيات</div>';
+    }
+}
+
+function clearLandLink() {
+    document.getElementById('mapsLink_land_create').value = '';
+    document.getElementById('linkResult_land_create').style.display = 'none';
+}
+
+function flyToManualLandCoords() {
+    var lat = parseFloat(document.getElementById('manualLat').value);
+    var lng = parseFloat(document.getElementById('manualLng').value);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+        map.flyTo([lat, lng], 16, {duration: 0.8});
+    } else {
+        alert('يرجى إدخال إحداثيات صحيحة');
+    }
+}
 
 var drawControl = new L.Control.Draw({
     position: 'topright',

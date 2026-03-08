@@ -1,0 +1,83 @@
+@* Partial View: _CoordinatesHelper.cshtml
+   يُستخدم في نماذج إضافة/تعديل المساجد والعقارات والأراضي
+   المعاملات المطلوبة في ViewData:
+   - "latId": معرف حقل خط العرض (مثال: "latitude")
+   - "lngId": معرف حقل خط الطول (مثال: "longitude")
+   - "readonly": إذا كان الحقل للقراءة فقط (true/false)
+*@
+@{
+    var latId = ViewData["latId"]?.ToString() ?? "latitude";
+    var lngId = ViewData["lngId"]?.ToString() ?? "longitude";
+    var isReadonly = ViewData["readonly"] as bool? ?? false;
+    var uniqueId = ViewData["uniqueId"]?.ToString() ?? "main";
+}
+
+<!-- مساعد الإحداثيات الجغرافية -->
+<div class="card mb-3 border-success">
+    <div class="card-header bg-success bg-opacity-10 py-2">
+        <h6 class="mb-0 text-success"><i class="fas fa-crosshairs me-2"></i>تحديد الإحداثيات الجغرافية</h6>
+    </div>
+    <div class="card-body py-2">
+        <!-- استخراج من رابط خرائط -->
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">
+                <i class="fas fa-link me-1"></i>استخراج من رابط خرائط Google أو Apple Maps
+            </label>
+            <div class="input-group input-group-sm">
+                <input type="text" id="mapsLink_@uniqueId" class="form-control"
+                       placeholder="الصق رابط خرائط Google أو Apple هنا..."
+                       oninput="extractCoordsFromLink('@uniqueId', '@latId', '@lngId')" />
+                <button type="button" class="btn btn-outline-success" onclick="extractCoordsFromLink('@uniqueId', '@latId', '@lngId')" title="استخراج الإحداثيات">
+                    <i class="fas fa-magic"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearMapsLink('@uniqueId')" title="مسح">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="linkResult_@uniqueId" class="mt-1" style="display:none;"></div>
+        </div>
+
+        <!-- إدخال يدوي -->
+        <div class="row g-2">
+            <div class="col-md-5">
+                <label class="form-label small fw-bold">
+                    <i class="fas fa-arrows-alt-v me-1 text-danger"></i>خط العرض (Latitude)
+                    <span class="text-muted" style="font-size:11px;">شمال/جنوب</span>
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="@latId" name="Latitude"
+                           class="form-control @(isReadonly ? "bg-light" : "")"
+                           placeholder="33.315000"
+                           @(isReadonly ? "" : "")
+                           oninput="onManualCoordInput('@uniqueId', '@latId', '@lngId')" />
+                    <span class="input-group-text text-muted" style="font-size:11px;">°N</span>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-bold">
+                    <i class="fas fa-arrows-alt-h me-1 text-primary"></i>خط الطول (Longitude)
+                    <span class="text-muted" style="font-size:11px;">شرق/غرب</span>
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="@lngId" name="Longitude"
+                           class="form-control @(isReadonly ? "bg-light" : "")"
+                           placeholder="44.361000"
+                           oninput="onManualCoordInput('@uniqueId', '@latId', '@lngId')" />
+                    <span class="input-group-text text-muted" style="font-size:11px;">°E</span>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-primary w-100"
+                        onclick="goToManualCoords('@uniqueId', '@latId', '@lngId')" title="التنقل إلى الإحداثيات">
+                    <i class="fas fa-map-pin"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mt-1">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                يمكن إدخال الإحداثيات يدوياً أو النقر على الخريطة أو لصق رابط Google/Apple Maps
+            </small>
+        </div>
+    </div>
+</div>
