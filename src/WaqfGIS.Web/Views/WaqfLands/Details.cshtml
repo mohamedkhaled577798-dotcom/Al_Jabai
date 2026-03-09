@@ -190,6 +190,26 @@
             </div>
         </div>
 
+        <!-- أهلية الوقف وبيانات الواقف -->
+        <div class="card mb-3">
+            <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>أهلية الوقف</h6></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th width="40%">طبيعة الوقف:</th><td>@if (Model.WaqfNature == "Ahli") { <span class="badge bg-warning text-dark">أهلي</span> } else { <span class="badge bg-success">خيري</span> }</td></tr>
+                    <tr><th>شرط الوقف:</th><td>@if (Model.WaqfCondition == "WithCondition") { <span class="badge bg-info">بشرط</span> } else { <span class="badge bg-secondary">بدون شرط</span> }</td></tr>
+                    @if (Model.HasEncroachment) { <tr><th>تجاوز:</th><td><span class="badge bg-danger">يوجد تجاوز</span>@if (!string.IsNullOrEmpty(Model.EncroachmentNotes)) { <br/><small class="text-muted">@Model.EncroachmentNotes</small> }</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.WaqifName)) { <tr><th>اسم الواقف:</th><td class="fw-bold">@Model.WaqifName</td></tr> }
+                    @if (Model.WaqfDocumentDate.HasValue) { <tr><th>تاريخ الوثيقة:</th><td>@Model.WaqfDocumentDate.Value.ToString("yyyy/MM/dd")</td></tr> }
+                    @if (!string.IsNullOrEmpty(Model.WaqfDocumentNumber)) { <tr><th>رقم الوثيقة:</th><td class="font-monospace">@Model.WaqfDocumentNumber</td></tr> }
+                </table>
+                @if (Model.WaqfCondition == "WithCondition" && !string.IsNullOrEmpty(Model.WaqfConditionText)) {
+                <div class="mt-2 p-2 bg-info bg-opacity-10 border border-info rounded">
+                    <small class="text-info fw-bold"><i class="fas fa-scroll me-1"></i>نص شرط الواقف:</small>
+                    <p class="mb-0 mt-1 small" style="white-space:pre-wrap;">@Model.WaqfConditionText</p>
+                </div>}
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body">
                 <small class="text-muted">

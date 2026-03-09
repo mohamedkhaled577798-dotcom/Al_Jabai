@@ -279,15 +279,49 @@
                             <label asp-for="EncroachmentNotes" class="form-label">ملاحظات التجاوز (وصف التجاوزات والمباني)</label>
                             <textarea asp-for="EncroachmentNotes" class="form-control" rows="2" placeholder="وصف التجاوزات أو التعديات على العقار..."></textarea>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="OccupantEmployeeName" class="form-label">اسم الموظف الشاغل للسكن</label>
-                            <input asp-for="OccupantEmployeeName" class="form-control" placeholder="اترك فارغاً إن لم ينطبق" />
+                        <!-- نظام الإشغال السكني -->
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsResidentialOccupancy" id="isResidentialOccupancy" onchange="toggleOccupancy()" />
+                                <label class="form-check-label fw-bold text-info" for="isResidentialOccupancy"><i class="fas fa-home me-1"></i>مشغول سكنياً من قبل موظف</label>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">حالة الموظف</label>
-                            <div class="d-flex gap-3 mt-2">
-                                <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="true" /><label class="form-check-label">متقاعد</label></div>
-                                <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="false" /><label class="form-check-label">عامل</label></div>
+                        <div id="occupancySection" style="display:none" class="col-12">
+                            <div class="border border-info rounded p-3 bg-info bg-opacity-10">
+                                <h6 class="text-info mb-3"><i class="fas fa-id-card me-2"></i>بيانات الموظف الشاغل</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label asp-for="OccupantEmployeeName" class="form-label small">اسم الموظف <span class="text-danger">*</span></label>
+                                        <input asp-for="OccupantEmployeeName" class="form-control form-control-sm" placeholder="اسم الموظف كاملاً..." />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="OccupantMinistry" class="form-label small">الوزارة / الجهة</label>
+                                        <input asp-for="OccupantMinistry" class="form-control form-control-sm" placeholder="اسم الوزارة أو الجهة..." />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="OccupantNationalId" class="form-label small">رقم الهوية</label>
+                                        <input asp-for="OccupantNationalId" class="form-control form-control-sm" placeholder="رقم الهوية الوطنية..." />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="OccupantPhone" class="form-label small">رقم الهاتف</label>
+                                        <input asp-for="OccupantPhone" class="form-control form-control-sm" placeholder="07XX XXXXXXX" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="OccupantStartDate" class="form-label small">تاريخ بدء الإشغال</label>
+                                        <input asp-for="OccupantStartDate" class="form-control form-control-sm" type="date" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">حالة الموظف</label>
+                                        <div class="d-flex gap-3 mt-1">
+                                            <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="false" checked /><label class="form-check-label">عامل</label></div>
+                                            <div class="form-check"><input class="form-check-input" type="radio" name="IsOccupantRetired" value="true" /><label class="form-check-label">متقاعد</label></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label asp-for="OccupancyNotes" class="form-label small">ملاحظات الإشغال</label>
+                                        <textarea asp-for="OccupancyNotes" class="form-control form-control-sm" rows="2" placeholder="أي ملاحظات تتعلق بالإشغال..."></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -388,6 +422,13 @@
         if (sel && grp) grp.style.display = sel.value === 'WithCondition' ? 'block' : 'none';
     }
     toggleConditionText();
+
+    function toggleOccupancy() {
+        var chk = document.getElementById('isResidentialOccupancy');
+        var sec = document.getElementById('occupancySection');
+        if (chk && sec) sec.style.display = chk.checked ? 'block' : 'none';
+    }
+    toggleOccupancy();
 </script>
 
 @await Html.PartialAsync("_CascadingDistricts")

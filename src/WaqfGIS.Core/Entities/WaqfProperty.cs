@@ -89,12 +89,30 @@ public class WaqfProperty : BaseEntity
     /// <summary>هل يوجد تجاوز على العقار؟</summary>
     public bool HasEncroachment { get; set; } = false;
 
-    // ============ بيانات الموظف الشاغل للسكن ============
+    // ============ بيانات الإشغال السكني ============
+    /// <summary>هل العقار مشغول سكنياً؟</summary>
+    public bool IsResidentialOccupancy { get; set; } = false;
+
     /// <summary>اسم الموظف الشاغل للسكن</summary>
     public string? OccupantEmployeeName { get; set; }
 
+    /// <summary>رقم الهوية الوطنية للموظف</summary>
+    public string? OccupantNationalId { get; set; }
+
+    /// <summary>هاتف الموظف الشاغل</summary>
+    public string? OccupantPhone { get; set; }
+
+    /// <summary>الوزارة أو الجهة التي يتبع لها الموظف</summary>
+    public string? OccupantMinistry { get; set; }
+
+    /// <summary>تاريخ بدء الإشغال</summary>
+    public DateTime? OccupantStartDate { get; set; }
+
     /// <summary>هل الموظف متقاعد؟</summary>
     public bool? IsOccupantRetired { get; set; }
+
+    /// <summary>ملاحظات الإشغال السكني</summary>
+    public string? OccupancyNotes { get; set; }
 
     // النزاعات القانونية
     public bool IsDisputed { get; set; } = false;

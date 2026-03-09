@@ -115,12 +115,31 @@ public class PropertyViewModel
     [Display(Name = "ملاحظات التجاوزات")]
     public string? EncroachmentNotes { get; set; }
 
-    // ================== بيانات الموظف الشاغل للسكن ==================
+    // ================== نظام الإشغال السكني ==================
+    [Display(Name = "مشغول سكنياً")]
+    public bool IsResidentialOccupancy { get; set; } = false;
+
     [Display(Name = "اسم الموظف الشاغل للسكن")]
     public string? OccupantEmployeeName { get; set; }
 
+    [Display(Name = "رقم الهوية الوطنية")]
+    public string? OccupantNationalId { get; set; }
+
+    [Display(Name = "هاتف الموظف")]
+    public string? OccupantPhone { get; set; }
+
+    [Display(Name = "الوزارة / الجهة")]
+    public string? OccupantMinistry { get; set; }
+
+    [Display(Name = "تاريخ بدء الإشغال")]
+    [DataType(DataType.Date)]
+    public DateTime? OccupantStartDate { get; set; }
+
     [Display(Name = "الموظف متقاعد")]
     public bool? IsOccupantRetired { get; set; }
+
+    [Display(Name = "ملاحظات الإشغال")]
+    public string? OccupancyNotes { get; set; }
 
     // قوائم منسدلة
     public static List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> WaqfNaturesList => new()

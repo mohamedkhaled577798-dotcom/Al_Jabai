@@ -121,6 +121,58 @@
             </div>
         </div>
 
+        <!-- أهلية الوقف وبيانات الواقف -->
+        <div class="card mb-4">
+            <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>أهلية الوقف</h6></div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-6"><label class="text-muted small">طبيعة الوقف</label><p class="mb-0">@if (Model.WaqfNature == "Ahli") { <span class="badge bg-warning text-dark">أهلي</span> } else { <span class="badge bg-success">خيري</span> }</p></div>
+                    <div class="col-6"><label class="text-muted small">شرط الوقف</label><p class="mb-0">@if (Model.WaqfCondition == "WithCondition") { <span class="badge bg-info">بشرط</span> } else { <span class="badge bg-secondary">بدون شرط</span> }</p></div>
+                </div>
+                @if (Model.HasEncroachment) {
+                <div class="alert alert-danger py-2 mb-2"><i class="fas fa-exclamation-circle me-1"></i>يوجد تجاوز على العقار
+                    @if (!string.IsNullOrEmpty(Model.EncroachmentNotes)) { <br/><small>@Model.EncroachmentNotes</small> }
+                </div>}
+                @if (Model.IsResidentialOccupancy) {
+                <div class="mt-2 p-2 border border-info rounded bg-info bg-opacity-10">
+                    <h6 class="text-info mb-2"><i class="fas fa-home me-1"></i>الإشغال السكني</h6>
+                    <div class="row">
+                        @if (!string.IsNullOrEmpty(Model.OccupantEmployeeName)) {
+                        <div class="col-12 mb-1"><label class="text-muted small">اسم الموظف</label><p class="mb-0 fw-bold">@Model.OccupantEmployeeName
+                            @if (Model.IsOccupantRetired == true) { <span class="badge bg-secondary ms-1">متقاعد</span> }
+                            else if (Model.IsOccupantRetired == false) { <span class="badge bg-success ms-1">عامل</span> }
+                        </p></div>}
+                        @if (!string.IsNullOrEmpty(Model.OccupantMinistry)) {
+                        <div class="col-6 mb-1"><label class="text-muted small">الوزارة/الجهة</label><p class="mb-0">@Model.OccupantMinistry</p></div>}
+                        @if (!string.IsNullOrEmpty(Model.OccupantNationalId)) {
+                        <div class="col-6 mb-1"><label class="text-muted small">رقم الهوية</label><p class="mb-0 font-monospace">@Model.OccupantNationalId</p></div>}
+                        @if (!string.IsNullOrEmpty(Model.OccupantPhone)) {
+                        <div class="col-6 mb-1"><label class="text-muted small">الهاتف</label><p class="mb-0"><a href="tel:@Model.OccupantPhone">@Model.OccupantPhone</a></p></div>}
+                        @if (Model.OccupantStartDate.HasValue) {
+                        <div class="col-6 mb-1"><label class="text-muted small">بداية الإشغال</label><p class="mb-0">@Model.OccupantStartDate.Value.ToString("dd/MM/yyyy")</p></div>}
+                        @if (!string.IsNullOrEmpty(Model.OccupancyNotes)) {
+                        <div class="col-12"><label class="text-muted small">ملاحظات</label><p class="mb-0 small">@Model.OccupancyNotes</p></div>}
+                    </div>
+                </div>}
+                @if (!string.IsNullOrEmpty(Model.WaqifName) || Model.WaqfDocumentDate.HasValue || !string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
+                <hr class="my-2"/>
+                <h6 class="text-muted small fw-bold"><i class="fas fa-user-shield me-1"></i>بيانات الواقف الأصلي</h6>
+                <div class="row">
+                    @if (!string.IsNullOrEmpty(Model.WaqifName)) {
+                    <div class="col-12 mb-1"><label class="text-muted small">اسم الواقف</label><p class="mb-0 fw-bold">@Model.WaqifName</p></div>}
+                    @if (Model.WaqfDocumentDate.HasValue) {
+                    <div class="col-6 mb-1"><label class="text-muted small">تاريخ الوثيقة</label><p class="mb-0">@Model.WaqfDocumentDate.Value.ToString("dd/MM/yyyy")</p></div>}
+                    @if (!string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
+                    <div class="col-6 mb-1"><label class="text-muted small">رقم الوثيقة</label><p class="mb-0 font-monospace">@Model.WaqfDocumentNumber</p></div>}
+                </div>}
+                @if (Model.WaqfCondition == "WithCondition" && !string.IsNullOrEmpty(Model.WaqfConditionText)) {
+                <div class="mt-2 p-2 bg-info bg-opacity-10 border border-info rounded">
+                    <small class="text-info fw-bold"><i class="fas fa-scroll me-1"></i>نص شرط الواقف:</small>
+                    <p class="mb-0 mt-1 small" style="white-space:pre-wrap;">@Model.WaqfConditionText</p>
+                </div>}
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header bg-light"><h6 class="mb-0">التدقيق</h6></div>
             <div class="card-body small">

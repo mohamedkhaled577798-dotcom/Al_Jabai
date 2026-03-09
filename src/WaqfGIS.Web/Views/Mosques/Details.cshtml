@@ -201,6 +201,68 @@
             </div>
         </div>
 
+        <!-- أهلية الوقف وبيانات الواقف -->
+        <div class="card mb-4">
+            <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>أهلية الوقف وبيانات الواقف</h6></div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="text-muted small">طبيعة الوقف</label>
+                        <p class="mb-0">
+                            @if (Model.WaqfNature == "Ahli") { <span class="badge bg-warning text-dark">أهلي</span> } else { <span class="badge bg-success">خيري</span> }
+                        </p>
+                    </div>
+                    <div class="col-6">
+                        <label class="text-muted small">شرط الوقف</label>
+                        <p class="mb-0">
+                            @if (Model.WaqfCondition == "WithCondition") { <span class="badge bg-info">بشرط</span> } else { <span class="badge bg-secondary">بدون شرط</span> }
+                        </p>
+                    </div>
+                    @if (Model.WaqfNature == "Ahli") {
+                    <div class="col-12 mt-2">
+                        <label class="text-muted small">مستلمة إدارياً</label>
+                        <p class="mb-0">@(Model.IsAdminReceived == true ? "✅ نعم" : Model.IsAdminReceived == false ? "❌ لا" : "-")</p>
+                    </div>
+                    }
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label class="text-muted small"><i class="fas fa-exclamation-triangle text-danger me-1"></i>مغتصب</label>
+                        <p class="mb-0">@(Model.IsUsurped ? "<span class='badge bg-danger'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
+                    </div>
+                    <div class="col-6">
+                        <label class="text-muted small"><i class="fas fa-lock text-warning me-1"></i>مغلق</label>
+                        <p class="mb-0">@(Model.IsClosed ? "<span class='badge bg-warning text-dark'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <label class="text-muted small"><i class="fas fa-gavel text-info me-1"></i>متنازع عليه</label>
+                        <p class="mb-0">@(Model.IsContested ? "<span class='badge bg-info'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.WaqifName) || Model.WaqfDocumentDate.HasValue || !string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
+                <hr />
+                <h6 class="text-muted small fw-bold"><i class="fas fa-user-shield me-1"></i>بيانات الواقف الأصلي</h6>
+                <div class="row">
+                    @if (!string.IsNullOrEmpty(Model.WaqifName)) {
+                    <div class="col-12 mb-2"><label class="text-muted small">اسم الواقف</label><p class="mb-0 fw-bold">@Model.WaqifName</p></div>
+                    }
+                    @if (Model.WaqfDocumentDate.HasValue) {
+                    <div class="col-6 mb-2"><label class="text-muted small">تاريخ الوثيقة</label><p class="mb-0">@Model.WaqfDocumentDate.Value.ToString("dd/MM/yyyy")</p></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
+                    <div class="col-6 mb-2"><label class="text-muted small">رقم الوثيقة</label><p class="mb-0 font-monospace">@Model.WaqfDocumentNumber</p></div>
+                    }
+                </div>
+                }
+                @if (Model.WaqfCondition == "WithCondition" && !string.IsNullOrEmpty(Model.WaqfConditionText)) {
+                <div class="mt-2 p-2 bg-info bg-opacity-10 border border-info rounded">
+                    <small class="text-info fw-bold"><i class="fas fa-scroll me-1"></i>نص شرط الواقف:</small>
+                    <p class="mb-0 mt-1 small" style="white-space:pre-wrap;">@Model.WaqfConditionText</p>
+                </div>
+                }
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header bg-dark text-white"><h6 class="mb-0"><i class="fas fa-info me-2"></i>معلومات النظام</h6></div>
             <div class="card-body small">

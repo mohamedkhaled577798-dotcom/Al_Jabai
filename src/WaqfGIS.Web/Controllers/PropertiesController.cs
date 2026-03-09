@@ -155,8 +155,14 @@ public class PropertiesController : Controller
             WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null,
             HasEncroachment = model.HasEncroachment,
             EncroachmentNotes = model.EncroachmentNotes,
-            OccupantEmployeeName = model.OccupantEmployeeName,
-            IsOccupantRetired = model.OccupantEmployeeName != null ? model.IsOccupantRetired : null,
+            IsResidentialOccupancy = model.IsResidentialOccupancy,
+            OccupantEmployeeName = model.IsResidentialOccupancy ? model.OccupantEmployeeName : null,
+            OccupantNationalId = model.IsResidentialOccupancy ? model.OccupantNationalId : null,
+            OccupantPhone = model.IsResidentialOccupancy ? model.OccupantPhone : null,
+            OccupantMinistry = model.IsResidentialOccupancy ? model.OccupantMinistry : null,
+            OccupantStartDate = model.IsResidentialOccupancy ? model.OccupantStartDate : null,
+            IsOccupantRetired = model.IsResidentialOccupancy ? model.IsOccupantRetired : null,
+            OccupancyNotes = model.IsResidentialOccupancy ? model.OccupancyNotes : null,
             CreatedBy = User.Identity?.Name
         };
 
@@ -222,8 +228,14 @@ public class PropertiesController : Controller
             WaqfConditionText = property.WaqfConditionText,
             HasEncroachment = property.HasEncroachment,
             EncroachmentNotes = property.EncroachmentNotes,
+            IsResidentialOccupancy = property.IsResidentialOccupancy,
             OccupantEmployeeName = property.OccupantEmployeeName,
-            IsOccupantRetired = property.IsOccupantRetired
+            OccupantNationalId = property.OccupantNationalId,
+            OccupantPhone = property.OccupantPhone,
+            OccupantMinistry = property.OccupantMinistry,
+            OccupantStartDate = property.OccupantStartDate,
+            IsOccupantRetired = property.IsOccupantRetired,
+            OccupancyNotes = property.OccupancyNotes
         };
 
         ViewBag.Images = await _imageUploadService.GetPropertyImagesAsync(id);
@@ -287,8 +299,14 @@ public class PropertiesController : Controller
         property.WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null;
         property.HasEncroachment = model.HasEncroachment;
         property.EncroachmentNotes = model.EncroachmentNotes;
-        property.OccupantEmployeeName = model.OccupantEmployeeName;
-        property.IsOccupantRetired = model.OccupantEmployeeName != null ? model.IsOccupantRetired : null;
+        property.IsResidentialOccupancy = model.IsResidentialOccupancy;
+        property.OccupantEmployeeName = model.IsResidentialOccupancy ? model.OccupantEmployeeName : null;
+        property.OccupantNationalId = model.IsResidentialOccupancy ? model.OccupantNationalId : null;
+        property.OccupantPhone = model.IsResidentialOccupancy ? model.OccupantPhone : null;
+        property.OccupantMinistry = model.IsResidentialOccupancy ? model.OccupantMinistry : null;
+        property.OccupantStartDate = model.IsResidentialOccupancy ? model.OccupantStartDate : null;
+        property.IsOccupantRetired = model.IsResidentialOccupancy ? model.IsOccupantRetired : null;
+        property.OccupancyNotes = model.IsResidentialOccupancy ? model.OccupancyNotes : null;
         property.UpdatedBy = User.Identity?.Name;
 
         await _propertyService.UpdateAsync(property);
