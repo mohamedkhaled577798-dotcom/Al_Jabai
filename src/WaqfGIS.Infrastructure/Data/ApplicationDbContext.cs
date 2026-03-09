@@ -68,6 +68,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<EncroachmentRecord> EncroachmentRecords => Set<EncroachmentRecord>();
     public DbSet<EncroachmentPhoto> EncroachmentPhotos => Set<EncroachmentPhoto>();
 
+    // Phase 2 - الصيانة والتنبيهات
+    public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
+    public DbSet<MaintenancePhoto>  MaintenancePhotos  => Set<MaintenancePhoto>();
+    public DbSet<AlertNotification> AlertNotifications => Set<AlertNotification>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -294,6 +299,42 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany(r => r.Photos)
                   .HasForeignKey(e => e.EncroachmentId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // MaintenanceRecord
+        modelBuilder.Entity<MaintenanceRecord>(entity =>
+        {
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.ScheduledDate);
+            entity.HasIndex(e => e.Status);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasOne(e => e.Province)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProvinceId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // MaintenancePhoto
+        modelBuilder.Entity<MaintenancePhoto>(entity =>
+        {
+            entity.HasOne(e => e.Maintenance)
+                  .WithMany(r => r.Photos)
+                  .HasForeignKey(e => e.MaintenanceId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AlertNotification
+        modelBuilder.Entity<AlertNotification>(entity =>
+        {
+            entity.HasIndex(e => e.AlertType);
+            entity.HasIndex(e => e.IsRead);
+            entity.HasIndex(e => e.DueDate);
+            entity.HasIndex(e => e.ProvinceId);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasOne(e => e.Province)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProvinceId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ServiceCategory

@@ -1,209 +1,258 @@
 @model DashboardStatistics
+@using WaqfGIS.Services
 @{
     ViewData["Title"] = "لوحة التحكم";
+    var adv = ViewBag.Adv as AdvancedDashboardStats ?? new AdvancedDashboardStats();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
 }
 
-<div class="row g-4 mb-4">
-    <!-- Statistics Cards -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-primary text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+@section Styles {
+<style>
+/* ===== KPI Cards ===== */
+.kpi-card { border:none; border-radius:14px; overflow:hidden; transition:transform .2s,box-shadow .2s; }
+.kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.kpi-icon { width:56px; height:56px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.kpi-trend { font-size:11px; font-weight:600; letter-spacing:.4px; }
+
+/* ===== Alert Bar ===== */
+.alert-bar { border-radius:10px; border-left:5px solid; }
+
+/* ===== Chart cards ===== */
+.chart-card { border:none; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+.chart-card .card-header { border-radius:14px 14px 0 0; border-bottom:1px solid #f0f0f0; background:#fff; }
+
+/* ===== Progress bars ===== */
+.enc-bar { height:8px; border-radius:4px; }
+
+/* ===== Activity timeline ===== */
+.timeline-dot { width:10px;height:10px;border-radius:50%;display:inline-block;margin-left:6px; }
+
+/* ===== Section divider ===== */
+.section-divider { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#aaa; border-bottom:1px solid #eee; padding-bottom:6px; margin-bottom:16px; }
+</style>
+}
+
+<!-- ======================================================
+     ROW 1 — بطاقات KPI الرئيسية (الأصول)
+     ====================================================== -->
+<div class="row g-3 mb-3">
+
+    <!-- المساجد -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#1e3a8a,#2563eb);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-white-50">المساجد والجوامع</h6>
-                        <h2 class="mb-0">@Model.TotalMosques</h2>
+                        <div class="small opacity-75 mb-1">المساجد والجوامع</div>
+                        <div class="fs-2 fw-bold">@adv.TotalMosques</div>
                     </div>
-                    <i class="fas fa-mosque fa-3x opacity-50"></i>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-mosque"></i>
+                    </div>
                 </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Mosques")" class="text-white text-decoration-none small">
-                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                <a href="@Url.Action("Index","Mosques")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
                 </a>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-success text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+
+    <!-- العقارات -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#065f46,#059669);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-white-50">العقارات الوقفية</h6>
-                        <h2 class="mb-0">@Model.TotalProperties</h2>
+                        <div class="small opacity-75 mb-1">العقارات الوقفية</div>
+                        <div class="fs-2 fw-bold">@adv.TotalProperties</div>
                     </div>
-                    <i class="fas fa-building fa-3x opacity-50"></i>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-building"></i>
+                    </div>
                 </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Properties")" class="text-white text-decoration-none small">
-                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                <a href="@Url.Action("Index","Properties")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
                 </a>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-warning text-dark h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+
+    <!-- الأراضي -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#78350f,#d97706);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-dark-50">الدوائر الوقفية</h6>
-                        <h2 class="mb-0">@Model.TotalOffices</h2>
+                        <div class="small opacity-75 mb-1">أراضي الوقف</div>
+                        <div class="fs-2 fw-bold">@adv.TotalLands</div>
                     </div>
-                    <i class="fas fa-landmark fa-3x opacity-50"></i>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-map"></i>
+                    </div>
                 </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Offices")" class="text-dark text-decoration-none small">
-                    عرض التفاصيل <i class="fas fa-arrow-left me-1"></i>
+                <a href="@Url.Action("Index","WaqfLands")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
                 </a>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-info text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+
+    <!-- العقود النشطة -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-white-50">المحافظات</h6>
-                        <h2 class="mb-0">@Model.TotalProvinces</h2>
+                        <div class="small opacity-75 mb-1">العقود النشطة</div>
+                        <div class="fs-2 fw-bold">@adv.ActiveContracts</div>
+                        <div class="small opacity-75">الإيراد السنوي: @adv.TotalAnnualRent.ToString("N0") د.ع</div>
                     </div>
-                    <i class="fas fa-map fa-3x opacity-50"></i>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
                 </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Map")" class="text-white text-decoration-none small">
-                    عرض الخريطة <i class="fas fa-arrow-left me-1"></i>
+                <a href="@Url.Action("Index","Contracts")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
                 </a>
             </div>
         </div>
     </div>
+
+    <!-- الدعاوى الجارية -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#7c2d12,#ea580c);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="small opacity-75 mb-1">دعاوى جارية</div>
+                        <div class="fs-2 fw-bold">@adv.ActiveDisputes</div>
+                        <div class="small opacity-75">منتهية: @adv.ResolvedDisputes</div>
+                    </div>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                </div>
+                <a href="@Url.Action("Index","Disputes")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- التجاوزات -->
+    <div class="col-xl col-md-4 col-6">
+        <div class="card kpi-card h-100" style="background:linear-gradient(135deg,#7f1d1d,#dc2626);">
+            <div class="card-body text-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="small opacity-75 mb-1">تجاوزات قائمة</div>
+                        <div class="fs-2 fw-bold">@adv.ActiveEncroachments</div>
+                        <div class="small opacity-75">قيد المعالجة: @adv.InProcessEncroachments</div>
+                    </div>
+                    <div class="kpi-icon" style="background:rgba(255,255,255,.15);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <a href="@Url.Action("Index","Encroachements")" class="text-white opacity-75 small text-decoration-none">
+                    عرض الكل <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- NEW: Contracts and Disputes Section -->
-<div class="row g-4 mb-4">
-    <!-- Contracts Card -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-primary h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">العقود النشطة</h6>
-                        <h2 class="mb-0 text-primary">@ViewBag.ActiveContracts</h2>
-                    </div>
-                    <i class="fas fa-file-contract fa-3x text-primary opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Contracts")" class="text-primary text-decoration-none small">
-                    عرض جميع العقود <i class="fas fa-arrow-left me-1"></i>
-                </a>
+<!-- ======================================================
+     شريط التنبيهات (يظهر فقط إذا كانت هناك تحذيرات)
+     ====================================================== -->
+@if (adv.ExpiringIn1Month > 0 || adv.ActiveEncroachments > 0 || adv.ActiveDisputes > 0)
+{
+<div class="row g-2 mb-3">
+    @if (adv.ExpiringIn1Month > 0)
+    {
+    <div class="col-md-4">
+        <div class="alert alert-warning alert-bar mb-0 py-2 px-3 d-flex align-items-center gap-2">
+            <i class="fas fa-clock fa-lg"></i>
+            <div>
+                <div class="fw-bold small">@adv.ExpiringIn1Month عقد ينتهي خلال شهر</div>
+                <a href="@Url.Action("Index","Contracts")" class="small">راجع العقود</a>
             </div>
         </div>
     </div>
-    
-    <!-- Expiring Contracts Card -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">عقود قريبة الانتهاء</h6>
-                        <h2 class="mb-0 text-warning">@ViewBag.ExpiringContracts</h2>
-                        <small class="text-muted">خلال 3 أشهر</small>
-                    </div>
-                    <i class="fas fa-clock fa-3x text-warning opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Notifications", "Contracts")" class="text-warning text-decoration-none small">
-                    عرض التنبيهات <i class="fas fa-arrow-left me-1"></i>
-                </a>
+    }
+    @if (adv.ActiveEncroachments > 0)
+    {
+    <div class="col-md-4">
+        <div class="alert alert-danger alert-bar mb-0 py-2 px-3 d-flex align-items-center gap-2">
+            <i class="fas fa-exclamation-circle fa-lg"></i>
+            <div>
+                <div class="fw-bold small">@adv.ActiveEncroachments تجاوز قائم بدون معالجة</div>
+                <a href="@Url.Action("Index","Encroachements")" class="small">راجع التجاوزات</a>
             </div>
         </div>
     </div>
-    
-    <!-- Active Disputes Card -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-danger h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">دعاوى جارية</h6>
-                        <h2 class="mb-0 text-danger">@ViewBag.ActiveDisputes</h2>
-                    </div>
-                    <i class="fas fa-gavel fa-3x text-danger opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Disputes")" class="text-danger text-decoration-none small">
-                    عرض الدعاوى <i class="fas fa-arrow-left me-1"></i>
-                </a>
+    }
+    @if (adv.ActiveDisputes > 0)
+    {
+    <div class="col-md-4">
+        <div class="alert alert-info alert-bar mb-0 py-2 px-3 d-flex align-items-center gap-2">
+            <i class="fas fa-balance-scale fa-lg"></i>
+            <div>
+                <div class="fw-bold small">@adv.ActiveDisputes دعوى قضائية جارية</div>
+                <a href="@Url.Action("Index","Disputes")" class="small">راجع الدعاوى</a>
             </div>
         </div>
     </div>
-    
-    <!-- Encroachments Card -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card h-100" style="border-color:#dc3545;border-width:2px;">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">تجاوزات قائمة</h6>
-                        <h2 class="mb-0 text-danger">@ViewBag.ActiveEncroachments</h2>
-                        <small class="text-muted">من إجمالي @ViewBag.TotalEncroachments مُسجّل</small>
-                    </div>
-                    <i class="fas fa-exclamation-triangle fa-3x text-danger opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="@Url.Action("Index", "Encroachements")" class="text-danger text-decoration-none small">
-                    سجل التجاوزات <i class="fas fa-arrow-left me-1"></i>
-                </a>
-            </div>
-        </div>
-    </div>
+    }
 </div>
+}
 
-<!-- Quick Actions & Mini Map -->
-<div class="row g-4 mb-4">
+<!-- ======================================================
+     ROW 2 — الخريطة + الإجراءات السريعة
+     ====================================================== -->
+<div class="row g-3 mb-3">
     <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2 text-primary"></i>خريطة سريعة</h5>
+        <div class="card chart-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <h6 class="mb-0"><i class="fas fa-map-marked-alt me-2 text-primary"></i>الخريطة التفاعلية</h6>
+                <a href="@Url.Action("Index","Map")" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-expand me-1"></i>تكبير
+                </a>
             </div>
             <div class="card-body p-0">
-                <div id="miniMap" style="height: 350px;"></div>
+                <div id="miniMap" style="height:340px;border-radius:0 0 14px 14px;"></div>
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-4">
-        <div class="card h-100">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>إجراءات سريعة</h5>
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>إجراءات سريعة</h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-3">
-                    <a href="@Url.Action("Create", "Mosques")" class="btn btn-outline-primary">
-                        <i class="fas fa-plus me-2"></i>إضافة مسجد جديد
+            <div class="card-body py-2">
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("Create","Mosques")" class="btn btn-outline-primary btn-sm text-start">
+                        <i class="fas fa-plus me-2 text-primary"></i>إضافة مسجد جديد
                     </a>
-                    <a href="@Url.Action("Create", "Properties")" class="btn btn-outline-success">
-                        <i class="fas fa-plus me-2"></i>إضافة عقار جديد
+                    <a href="@Url.Action("Create","Properties")" class="btn btn-outline-success btn-sm text-start">
+                        <i class="fas fa-plus me-2 text-success"></i>إضافة عقار جديد
                     </a>
-                    <a href="@Url.Action("Create", "Contracts")" class="btn btn-outline-info">
-                        <i class="fas fa-file-contract me-2"></i>إضافة عقد جديد
+                    <a href="@Url.Action("Create","WaqfLands")" class="btn btn-outline-warning btn-sm text-start">
+                        <i class="fas fa-plus me-2 text-warning"></i>إضافة أرض جديدة
                     </a>
-                    <a href="@Url.Action("Create", "Encroachements")" class="btn btn-outline-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>تسجيل تجاوز جديد
+                    <a href="@Url.Action("Create","Contracts")" class="btn btn-outline-info btn-sm text-start">
+                        <i class="fas fa-file-contract me-2 text-info"></i>إضافة عقد جديد
                     </a>
-                    <a href="@Url.Action("Index", "Map")" class="btn btn-outline-secondary">
-                        <i class="fas fa-map me-2"></i>فتح الخريطة التفاعلية
+                    <a href="@Url.Action("Create","Encroachements")" class="btn btn-outline-danger btn-sm text-start">
+                        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>تسجيل تجاوز
                     </a>
-                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-dark">
-                        <i class="fas fa-file-alt me-2"></i>إنشاء تقرير
+                    <a href="@Url.Action("Create","Disputes")" class="btn btn-outline-secondary btn-sm text-start">
+                        <i class="fas fa-gavel me-2"></i>تسجيل دعوى قضائية
+                    </a>
+                    <hr class="my-1"/>
+                    <a href="@Url.Action("Index","Reports")" class="btn btn-dark btn-sm text-start">
+                        <i class="fas fa-chart-bar me-2"></i>التقارير الإحصائية
                     </a>
                 </div>
             </div>
@@ -211,94 +260,443 @@
     </div>
 </div>
 
-<!-- Charts Row -->
-<div class="row g-4">
+<!-- ======================================================
+     ROW 3 — مخططات التوزيع الجغرافي
+     ====================================================== -->
+<div class="section-divider">التوزيع الجغرافي والتصنيفي</div>
+<div class="row g-3 mb-3">
+
+    <!-- المساجد حسب المحافظة -->
     <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>المساجد حسب النوع</h5>
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>المساجد حسب المحافظة</h6>
             </div>
             <div class="card-body">
-                <canvas id="mosqueTypeChart" height="250"></canvas>
+                <canvas id="chartMosqueProvince" height="220"></canvas>
             </div>
         </div>
     </div>
-    
+
+    <!-- الأراضي + العقارات حسب المحافظة -->
     <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>المساجد حسب المحافظة</h5>
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-2 text-success"></i>الأراضي الوقفية حسب المحافظة</h6>
             </div>
             <div class="card-body">
-                <canvas id="mosqueProvinceChart" height="250"></canvas>
+                <canvas id="chartLandsProvince" height="220"></canvas>
             </div>
         </div>
     </div>
+
 </div>
 
+<!-- ======================================================
+     ROW 4 — مخططات العقود والدعاوى والتجاوزات
+     ====================================================== -->
+<div class="section-divider">العقود والقانونية والتجاوزات</div>
+<div class="row g-3 mb-3">
+
+    <!-- أنواع العقود - دونات -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-pie me-2 text-info"></i>أنواع العقود</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartContractTypes" height="230"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- نشاط العقود - 6 أشهر -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>العقود الجديدة (6 أشهر)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartContractActivity" height="230"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- أنواع الدعاوى - دونات -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-pie me-2 text-danger"></i>أنواع الدعاوى القضائية</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartDisputeTypes" height="230"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ======================================================
+     ROW 5 — حالة التجاوزات + نتائج الأحكام + العقارات
+     ====================================================== -->
+<div class="row g-3 mb-3">
+
+    <!-- حالة التجاوزات - progress bars -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2 text-danger"></i>حالة التجاوزات</h6>
+            </div>
+            <div class="card-body">
+                @{
+                    int totalEnc = adv.ActiveEncroachments + adv.InProcessEncroachments + adv.RemovedEncroachments + adv.LegalEncroachments;
+                    int safeTotal = totalEnc == 0 ? 1 : totalEnc;
+                    double pctActive    = (adv.ActiveEncroachments    * 100.0) / safeTotal;
+                    double pctProcess   = (adv.InProcessEncroachments * 100.0) / safeTotal;
+                    double pctLegal     = (adv.LegalEncroachments     * 100.0) / safeTotal;
+                    double pctRemoved   = (adv.RemovedEncroachments   * 100.0) / safeTotal;
+                }
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1"><span><span class="timeline-dot bg-danger"></span>قائم</span><span class="fw-bold">@adv.ActiveEncroachments</span></div>
+                    <div class="progress enc-bar"><div class="progress-bar bg-danger" style="width:@pctActive.ToString("F0",inv)%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1"><span><span class="timeline-dot bg-warning"></span>قيد المعالجة</span><span class="fw-bold">@adv.InProcessEncroachments</span></div>
+                    <div class="progress enc-bar"><div class="progress-bar bg-warning" style="width:@pctProcess.ToString("F0",inv)%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1"><span><span class="timeline-dot bg-purple" style="background:#6f42c1;"></span>مرفوع للقضاء</span><span class="fw-bold">@adv.LegalEncroachments</span></div>
+                    <div class="progress enc-bar"><div class="progress-bar" style="width:@pctLegal.ToString("F0",inv)%;background:#6f42c1;"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1"><span><span class="timeline-dot bg-success"></span>أُزيل</span><span class="fw-bold">@adv.RemovedEncroachments</span></div>
+                    <div class="progress enc-bar"><div class="progress-bar bg-success" style="width:@pctRemoved.ToString("F0",inv)%"></div></div>
+                </div>
+                <!-- درجات الخطورة -->
+                @if (adv.EncroachmentsBySeverity.Any())
+                {
+                <hr class="my-2"/>
+                <div class="small text-muted mb-2">درجات الخطورة</div>
+                <canvas id="chartEncroachSeverity" height="130"></canvas>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- نتائج الأحكام القضائية -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-balance-scale me-2 text-warning"></i>نتائج الأحكام القضائية</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center flex-column">
+                @if (adv.VerdictResults.Any())
+                {
+                    <canvas id="chartVerdicts" height="200"></canvas>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-balance-scale fa-3x mb-3 opacity-25"></i>
+                        <div>لا توجد أحكام مسجلة حتى الآن</div>
+                    </div>
+                }
+                <div class="row g-2 w-100 mt-2">
+                    <div class="col-6">
+                        <div class="text-center p-2 rounded" style="background:#f8f9fa;">
+                            <div class="fs-5 fw-bold text-danger">@adv.ActiveDisputes</div>
+                            <div class="small text-muted">جارية</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 rounded" style="background:#f8f9fa;">
+                            <div class="fs-5 fw-bold text-success">@adv.ResolvedDisputes</div>
+                            <div class="small text-muted">منتهية</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- حالة العقارات -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-building me-2 text-success"></i>إحصائيات العقارات</h6>
+            </div>
+            <div class="card-body">
+                @{ int propSafe = adv.TotalProperties == 0 ? 1 : adv.TotalProperties; }
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span><i class="fas fa-home text-info me-1"></i>مشغولة سكنياً</span>
+                        <span class="fw-bold">@adv.OccupiedProperties</span>
+                    </div>
+                    <div class="progress enc-bar">
+                        <div class="progress-bar bg-info" style="width:@((adv.OccupiedProperties*100.0/propSafe).ToString("F0",inv))%"></div>
+                    </div>
+                    <div class="small text-muted">@((adv.OccupiedProperties*100.0/propSafe).ToString("F1",inv))% من الإجمالي</div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span><i class="fas fa-exclamation-triangle text-danger me-1"></i>عليها تجاوزات</span>
+                        <span class="fw-bold">@adv.EncroachProperties</span>
+                    </div>
+                    <div class="progress enc-bar">
+                        <div class="progress-bar bg-danger" style="width:@((adv.EncroachProperties*100.0/propSafe).ToString("F0",inv))%"></div>
+                    </div>
+                    <div class="small text-muted">@((adv.EncroachProperties*100.0/propSafe).ToString("F1",inv))% من الإجمالي</div>
+                </div>
+                <hr class="my-2"/>
+                <!-- أنواع العقارات دونات -->
+                @if (Model.PropertiesByType.Any())
+                {
+                    <canvas id="chartPropertyTypes" height="150"></canvas>
+                }
+                else
+                {
+                    <div class="text-center text-muted small py-2">لا توجد بيانات تصنيف</div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ======================================================
+     ROW 6 — مؤشرات شاملة + مخطط الإيرادات
+     ====================================================== -->
+<div class="section-divider">ملخص الإيرادات والأصول</div>
+<div class="row g-3 mb-3">
+
+    <!-- مؤشر الإيرادات -->
+    <div class="col-lg-8">
+        <div class="card chart-card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>نشاط العقود الشهري (آخر 6 أشهر)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartMonthlyActivity" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة الإيراد السنوي -->
+    <div class="col-lg-4">
+        <div class="card chart-card h-100" style="background:linear-gradient(135deg,#134e4a,#0d9488);">
+            <div class="card-body text-white d-flex flex-column justify-content-center">
+                <div class="small opacity-75 mb-2"><i class="fas fa-coins me-1"></i>إجمالي الإيراد السنوي</div>
+                <div class="display-6 fw-bold mb-1">@adv.TotalAnnualRent.ToString("N0")</div>
+                <div class="opacity-75">دينار عراقي</div>
+                <hr class="border-white opacity-25 my-3"/>
+                <div class="row g-2 text-center">
+                    <div class="col-6">
+                        <div class="fs-5 fw-bold">@adv.ActiveContracts</div>
+                        <div class="small opacity-75">عقد نشط</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fs-5 fw-bold text-warning">@adv.ExpiringIn3Months</div>
+                        <div class="small opacity-75">ينتهي قريباً</div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="@Url.Action("Index","Contracts")" class="btn btn-outline-light btn-sm w-100">
+                        <i class="fas fa-file-contract me-1"></i>إدارة العقود
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        // Mini Map
-        var miniMap = L.map('miniMap').setView([33.3, 44.4], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(miniMap);
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// =================== بيانات من السيرفر ===================
+var dataProvince    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.MosquesByProvince));
+var dataLands       = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.LandsByProvince));
+var dataContrTypes  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.ContractsByType));
+var dataDisTypes    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.DisputesByType));
+var dataVerdicts    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.VerdictResults));
+var dataEncrSev     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.EncroachmentsBySeverity));
+var dataPropTypes   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PropertiesByType));
+var dataMonthly     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(adv.MonthlyContractActivity));
 
-        // Load markers
-        fetch('/api/geodata/mosques')
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(mosque => {
-                    L.marker([mosque.latitude, mosque.longitude])
-                        .addTo(miniMap)
-                        .bindPopup('<strong>' + mosque.nameAr + '</strong><br>' + mosque.type);
-                });
-            })
-            .catch(err => console.log('No data yet'));
+// =================== Palette ===================
+var palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#6366f1','#14b8a6','#f97316'];
+var paletteDark = palette.map(c => c + 'cc');
 
-        // Mosque Type Chart
-        var mosqueTypeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByType));
-        if (mosqueTypeData.length > 0) {
-            new Chart(document.getElementById('mosqueTypeChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: mosqueTypeData.map(x => x.name),
-                    datasets: [{
-                        data: mosqueTypeData.map(x => x.count),
-                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
+// =================== Helper ===================
+function makeChart(id, cfg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    new Chart(el, cfg);
+}
+
+// =================== الخريطة المصغرة ===================
+var miniMap = L.map('miniMap', { zoomControl: true }).setView([33.3, 44.4], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(miniMap);
+fetch('/api/gis/layers/mosques/geojson')
+    .then(r => r.json()).then(data => {
+        if (data.features) data.features.forEach(f => {
+            if (f.geometry && f.geometry.coordinates) {
+                var coord = f.geometry.coordinates;
+                L.circleMarker([coord[1], coord[0]], { radius:5, color:'#2563eb', fillColor:'#3b82f6', fillOpacity:.7, weight:1 })
+                    .addTo(miniMap)
+                    .bindTooltip(f.properties?.nameAr || '');
+            }
+        });
+    }).catch(() => {});
+
+// =================== المساجد حسب المحافظة ===================
+makeChart('chartMosqueProvince', {
+    type: 'bar',
+    data: {
+        labels: dataProvince.map(x => x.name),
+        datasets: [{ label: 'عدد المساجد', data: dataProvince.map(x => x.count),
+            backgroundColor: palette[0] + '99', borderColor: palette[0], borderWidth: 1.5,
+            borderRadius: 5, borderSkipped: false }]
+    },
+    options: { responsive:true, indexAxis:'y',
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, y:{ grid:{ display:false } } }
+    }
+});
+
+// =================== الأراضي حسب المحافظة ===================
+makeChart('chartLandsProvince', {
+    type: 'bar',
+    data: {
+        labels: dataLands.map(x => x.name),
+        datasets: [{ label: 'عدد الأراضي', data: dataLands.map(x => x.count),
+            backgroundColor: palette[2] + '99', borderColor: palette[2], borderWidth: 1.5,
+            borderRadius: 5, borderSkipped: false }]
+    },
+    options: { responsive:true, indexAxis:'y',
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, y:{ grid:{ display:false } } }
+    }
+});
+
+// =================== أنواع العقود ===================
+if (dataContrTypes.length > 0) {
+    makeChart('chartContractTypes', {
+        type: 'doughnut',
+        data: {
+            labels: dataContrTypes.map(x => x.name),
+            datasets: [{ data: dataContrTypes.map(x => x.count),
+                backgroundColor: palette.slice(0, dataContrTypes.length),
+                borderWidth: 2, hoverOffset: 8 }]
+        },
+        options: { responsive:true, cutout:'65%',
+            plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:10 } } }
         }
+    });
+}
 
-        // Mosque Province Chart
-        var mosqueProvinceData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MosquesByProvince));
-        if (mosqueProvinceData.length > 0) {
-            new Chart(document.getElementById('mosqueProvinceChart'), {
-                type: 'bar',
-                data: {
-                    labels: mosqueProvinceData.map(x => x.name),
-                    datasets: [{
-                        label: 'عدد المساجد',
-                        data: mosqueProvinceData.map(x => x.count),
-                        backgroundColor: '#0d6efd'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
+// =================== نشاط العقود الشهري ===================
+makeChart('chartContractActivity', {
+    type: 'line',
+    data: {
+        labels: dataMonthly.map(x => x.month),
+        datasets: [{ label: 'عقود جديدة', data: dataMonthly.map(x => x.count),
+            borderColor: palette[0], backgroundColor: palette[0]+'22',
+            fill: true, tension: 0.4, pointRadius: 5,
+            pointBackgroundColor: palette[0], pointBorderColor: '#fff', pointBorderWidth: 2 }]
+    },
+    options: { responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{ y:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } }
+    }
+});
+
+// =================== أنواع الدعاوى ===================
+if (dataDisTypes.length > 0) {
+    makeChart('chartDisputeTypes', {
+        type: 'doughnut',
+        data: {
+            labels: dataDisTypes.map(x => x.name),
+            datasets: [{ data: dataDisTypes.map(x => x.count),
+                backgroundColor: [palette[3], palette[4], palette[5], palette[6], palette[2]],
+                borderWidth: 2, hoverOffset: 8 }]
+        },
+        options: { responsive:true, cutout:'65%',
+            plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:10 } } }
         }
-    </script>
+    });
+}
+
+// =================== نتائج الأحكام ===================
+if (dataVerdicts.length > 0) {
+    makeChart('chartVerdicts', {
+        type: 'pie',
+        data: {
+            labels: dataVerdicts.map(x => x.name),
+            datasets: [{ data: dataVerdicts.map(x => x.count),
+                backgroundColor: ['#10b981','#ef4444','#f59e0b','#8b5cf6'],
+                borderWidth: 2, hoverOffset: 6 }]
+        },
+        options: { responsive:true,
+            plugins:{ legend:{ position:'right', labels:{ font:{size:11} } } }
+        }
+    });
+}
+
+// =================== درجات خطورة التجاوزات ===================
+if (dataEncrSev.length > 0) {
+    makeChart('chartEncroachSeverity', {
+        type: 'bar',
+        data: {
+            labels: dataEncrSev.map(x => x.name),
+            datasets: [{ data: dataEncrSev.map(x => x.count),
+                backgroundColor: ['#dc2626','#ea580c','#ca8a04','#16a34a'],
+                borderRadius: 4, borderSkipped: false }]
+        },
+        options: { responsive:true, indexAxis:'y',
+            plugins:{ legend:{ display:false } },
+            scales:{ x:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, y:{ grid:{ display:false } } }
+        }
+    });
+}
+
+// =================== أنواع العقارات ===================
+if (dataPropTypes.length > 0) {
+    makeChart('chartPropertyTypes', {
+        type: 'doughnut',
+        data: {
+            labels: dataPropTypes.map(x => x.name),
+            datasets: [{ data: dataPropTypes.map(x => x.count),
+                backgroundColor: palette.slice(0, dataPropTypes.length),
+                borderWidth: 2, hoverOffset: 6 }]
+        },
+        options: { responsive:true, cutout:'60%',
+            plugins:{ legend:{ position:'right', labels:{ font:{size:10}, padding:6 } } }
+        }
+    });
+}
+
+// =================== نشاط شهري - خط ===================
+makeChart('chartMonthlyActivity', {
+    type: 'bar',
+    data: {
+        labels: dataMonthly.map(x => x.month),
+        datasets: [{
+            label: 'عقود جديدة',
+            data: dataMonthly.map(x => x.count),
+            backgroundColor: dataMonthly.map((_, i) => i === dataMonthly.length-1 ? palette[0] : palette[0]+'66'),
+            borderRadius: 6, borderSkipped: false
+        }]
+    },
+    options: { responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+            y:{ beginAtZero:true, grid:{ color:'#f0f0f0' } },
+            x:{ grid:{ display:false } }
+        }
+    }
+});
+
+</script>
 }

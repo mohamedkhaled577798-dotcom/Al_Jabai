@@ -16,33 +16,18 @@ public class HomeController : Controller
     public HomeController(ReportService reportService, IUnitOfWork unitOfWork, ILogger<HomeController> logger)
     {
         _reportService = reportService;
-        _unitOfWork = unitOfWork;
-        _logger = logger;
+        _unitOfWork    = unitOfWork;
+        _logger        = logger;
     }
 
     public async Task<IActionResult> Index()
     {
         var stats = await _reportService.GetDashboardStatisticsAsync();
-        
-        // إضافة إحصائيات العقود والدعاوى
-        var contracts = await _unitOfWork.Repository<InvestmentContract>().GetAllAsync();
-        var disputes = await _unitOfWork.Repository<LegalDispute>().GetAllAsync();
-        var services = await _unitOfWork.Repository<ServiceFacility>().GetAllAsync();
-        var encroachments = await _unitOfWork.Repository<EncroachmentRecord>().GetAllAsync();
-        
-        ViewBag.ActiveContracts = contracts.Count(c => c.IsActive);
-        ViewBag.ExpiringContracts = contracts.Count(c => c.IsActive && c.EndDate <= DateTime.Now.AddMonths(3));
-        ViewBag.ActiveDisputes = disputes.Count(d => d.CaseStatus == "جارية");
-        ViewBag.TotalServices = services.Count();
-        ViewBag.ActiveEncroachments = encroachments.Count(e => e.Status == "قائم" || e.Status == "قيد المعالجة");
-        ViewBag.TotalEncroachments = encroachments.Count();
-        
+        var adv   = await _reportService.GetAdvancedDashboardAsync();
+        ViewBag.Adv = adv;
         return View(stats);
     }
 
     [AllowAnonymous]
-    public IActionResult Error()
-    {
-        return View();
-    }
+    public IActionResult Error() => View();
 }

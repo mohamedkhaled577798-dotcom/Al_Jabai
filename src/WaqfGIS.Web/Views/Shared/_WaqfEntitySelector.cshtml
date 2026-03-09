@@ -28,9 +28,10 @@
             <select name="@typeFieldId" id="@(uniqueId)_EntityType" class="form-select"
                     onchange="entitySelectorTypeChanged('@uniqueId')">
                 <option value="">-- اختر النوع --</option>
-                <option value="WaqfProperty" @@(Model.CurrentEntityType == "WaqfProperty" ? "selected" : "")>🏢 عقار وقفي</option>
-                <option value="WaqfLand"     @@(Model.CurrentEntityType == "WaqfLand"     ? "selected" : "")>🌍 أرض وقفية</option>
-                <option value="Mosque"       @@(Model.CurrentEntityType == "Mosque"       ? "selected" : "")>🕌 مسجد</option>
+                @{ var curType = Model.CurrentEntityType ?? ""; }
+                <option value="WaqfProperty" selected="@(curType == "WaqfProperty" ? "selected" : null)">🏢 عقار وقفي</option>
+                <option value="WaqfLand"     selected="@(curType == "WaqfLand"     ? "selected" : null)">🌍 أرض وقفية</option>
+                <option value="Mosque"       selected="@(curType == "Mosque"       ? "selected" : null)">🕌 مسجد</option>
             </select>
         </div>
 
@@ -89,6 +90,9 @@
         document.getElementById(uid + '_EntityName').value = '';
         document.getElementById(uid + '_SelectedDisplay').innerHTML = '<span class="text-muted">لم يُختر بعد</span>';
         document.getElementById(uid + '_EntityResults').style.display = 'none';
+        // إشعار الخريطة بمسح الكيان
+        if (typeof window['entitySelectorCallback_' + uid] === 'function')
+            window['entitySelectorCallback_' + uid](null);
     };
 
     // البحث مع تأخير
@@ -140,6 +144,11 @@
         document.getElementById(uid + '_SelectedDisplay').innerHTML =
             '<span class="badge bg-success me-1">✔</span>' + escapeHtml(name);
         document.getElementById(uid + '_EntityResults').style.display = 'none';
+        // إشعار الخريطة بالكيان الجديد
+        if (typeof window['entitySelectorCallback_' + uid] === 'function') {
+            var entityType = document.getElementById(uid + '_EntityType').value;
+            window['entitySelectorCallback_' + uid]({ id: id, name: name, entityType: entityType });
+        }
     };
 
     // مسح الاختيار
@@ -149,6 +158,9 @@
         document.getElementById(uid + '_EntityName').value = '';
         document.getElementById(uid + '_SelectedDisplay').innerHTML = '<span class="text-muted">لم يُختر بعد</span>';
         document.getElementById(uid + '_EntityResults').style.display = 'none';
+        // إشعار الخريطة بمسح الكيان
+        if (typeof window['entitySelectorCallback_' + uid] === 'function')
+            window['entitySelectorCallback_' + uid](null);
     };
 
     function showResults(uid, html) {

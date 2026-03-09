@@ -6,6 +6,7 @@ using NetTopologySuite.Geometries;
 using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
+using WaqfGIS.Services.GIS;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -16,17 +17,20 @@ public class EncroachementsController : Controller
     private readonly IUnitOfWork _unitOfWork;
     private readonly PermissionService _permissionService;
     private readonly AuditLogService _auditLogService;
+    private readonly GeometryService _geometryService;
     private readonly ILogger<EncroachementsController> _logger;
 
     public EncroachementsController(
         IUnitOfWork unitOfWork,
         PermissionService permissionService,
         AuditLogService auditLogService,
+        GeometryService geometryService,
         ILogger<EncroachementsController> logger)
     {
         _unitOfWork = unitOfWork;
         _permissionService = permissionService;
         _auditLogService = auditLogService;
+        _geometryService = geometryService;
         _logger = logger;
     }
 
@@ -328,6 +332,49 @@ public class EncroachementsController : Controller
             TempData["Success"] = "تم حذف الصورة";
         }
         return RedirectToAction(nameof(Edit), new { id = encroachmentId });
+    }
+
+    // =================== API - جلب إحداثيات الكيان ===================
+    [HttpGet]
+    public async Task<IActionResult> GetEntityLocation(string entityType, int entityId)
+    {
+        var coords = await GetEntityCoordsAsync(entityType, entityId);
+        if (coords == null) return Json(new { found = false });
+        
+        // جلب حدود الكيان (Polygon/Boundary) أيضاً للعرض على الخريطة
+        string? boundaryGeoJson = null;
+        try {
+            if (entityType == "Mosque") {
+                var boundaries = await _unitOfWork.Repository<MosqueBoundary>().Query()
+                    .Where(b => b.MosqueId == entityId && b.Boundary != null).ToListAsync();
+                if (boundaries.Any()) {
+                    var featureList = boundaries.Select(b => new {
+                        type = "Feature",
+                        geometry = System.Text.Json.JsonSerializer.Deserialize<object>(_geometryService.ToGeoJson(b.Boundary!) ?? "{}"),
+                        properties = new { boundaryType = b.BoundaryType }
+                    });
+                    boundaryGeoJson = System.Text.Json.JsonSerializer.Serialize(new { type = "FeatureCollection", features = featureList });
+                }
+            } else if (entityType == "WaqfProperty") {
+                var boundaries = await _unitOfWork.Repository<PropertyBoundary>().Query()
+                    .Where(b => b.PropertyId == entityId && b.Boundary != null).ToListAsync();
+                if (boundaries.Any()) {
+                    var featureList = boundaries.Select(b => new {
+                        type = "Feature",
+                        geometry = System.Text.Json.JsonSerializer.Deserialize<object>(_geometryService.ToGeoJson(b.Boundary!) ?? "{}"),
+                        properties = new { boundaryType = b.BoundaryType }
+                    });
+                    boundaryGeoJson = System.Text.Json.JsonSerializer.Serialize(new { type = "FeatureCollection", features = featureList });
+                }
+            }
+        } catch { /* تجاهل خطأ الحدود */ }
+
+        return Json(new {
+            found = true,
+            lat = coords.Value.lat,
+            lng = coords.Value.lng,
+            boundaryGeoJson
+        });
     }
 
     // =================== API - للخريطة الرئيسية ===================

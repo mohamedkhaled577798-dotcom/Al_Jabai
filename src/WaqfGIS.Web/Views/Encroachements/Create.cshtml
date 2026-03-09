@@ -7,6 +7,16 @@
     int mapZoom = hasCoords ? 17 : 7;
 }
 
+@section Styles {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<style>
+    .entity-highlight-layer { animation: pulse-border 1.5s ease-in-out 2; }
+    @@keyframes pulse-border { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .draw-info-box { background: rgba(30,30,30,.85); color:#fff; padding:8px 12px; border-radius:6px; font-size:13px; }
+    #encrMap .leaflet-draw-toolbar a { background-color: #1a1a2e !important; }
+</style>
+}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-0"><i class="fas fa-plus text-danger me-2"></i>تسجيل تجاوز جديد</h4>
@@ -17,12 +27,15 @@
 
 <form asp-action="Create" method="post" enctype="multipart/form-data">
     <div class="row">
-        <!-- العمود الأيمن: النموذج -->
+
+        <!-- ===== العمود الأيمن: النموذج ===== -->
         <div class="col-lg-5">
 
             <!-- اختيار الكيان الوقفي -->
             <div class="card mb-3">
-                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-mosque me-2"></i>الكيان الوقفي المرتبط بالتجاوز</h6></div>
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-mosque me-2"></i>الكيان الوقفي المرتبط بالتجاوز</h6>
+                </div>
                 <div class="card-body">
                     @await Html.PartialAsync("_WaqfEntitySelector", new WaqfGIS.Web.Models.WaqfEntitySelectorModel {
                         UniqueId = "encr",
@@ -36,9 +49,11 @@
                 </div>
             </div>
 
-            <!-- نوع وتصنيف التجاوز -->
+            <!-- تصنيف التجاوز -->
             <div class="card mb-3">
-                <div class="card-header bg-danger text-white"><h6 class="mb-0"><i class="fas fa-tag me-2"></i>تصنيف التجاوز</h6></div>
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-tag me-2"></i>تصنيف التجاوز</h6>
+                </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-12">
@@ -59,7 +74,8 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="EncroachmentAreaSqm" class="form-label">مساحة التجاوز (م²)</label>
-                            <input asp-for="EncroachmentAreaSqm" class="form-control" type="number" step="0.1" />
+                            <input asp-for="EncroachmentAreaSqm" id="areaInput" class="form-control" type="number" step="0.01" />
+                            <small class="text-muted"><i class="fas fa-drafting-compass me-1"></i>تُحسب تلقائياً عند رسم المساحة</small>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ProvinceId" class="form-label">المحافظة</label>
@@ -78,7 +94,9 @@
 
             <!-- بيانات المتجاوز -->
             <div class="card mb-3">
-                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المتجاوز</h6></div>
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المتجاوز</h6>
+                </div>
                 <div class="card-body">
                     <div class="row g-2">
                         <div class="col-12">
@@ -91,7 +109,7 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="EncroachwrNationalId" class="form-label">رقم الهوية</label>
-                            <input asp-for="EncroachwrNationalId" class="form-control" placeholder="رقم الهوية الوطنية..." />
+                            <input asp-for="EncroachwrNationalId" class="form-control" />
                         </div>
                     </div>
                 </div>
@@ -99,7 +117,9 @@
 
             <!-- الحالة والإجراءات -->
             <div class="card mb-3">
-                <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-tasks me-2"></i>الحالة والإجراءات</h6></div>
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-tasks me-2"></i>الحالة والإجراءات</h6>
+                </div>
                 <div class="card-body">
                     <div class="row g-2">
                         <div class="col-md-6">
@@ -112,7 +132,7 @@
                         </div>
                         <div class="col-12">
                             <label asp-for="ActionTaken" class="form-label">الإجراءات المتخذة</label>
-                            <textarea asp-for="ActionTaken" class="form-control" rows="2" placeholder="ماذا اتُّخذ من إجراءات حتى الآن..."></textarea>
+                            <textarea asp-for="ActionTaken" class="form-control" rows="2"></textarea>
                         </div>
                         <div class="col-12">
                             <div class="form-check form-switch">
@@ -124,7 +144,7 @@
                             <div class="row g-2 border border-primary rounded p-2">
                                 <div class="col-md-6">
                                     <label asp-for="ReportReferenceNumber" class="form-label small">رقم الكتاب الرسمي</label>
-                                    <input asp-for="ReportReferenceNumber" class="form-control form-control-sm" placeholder="رقم الكتاب..." />
+                                    <input asp-for="ReportReferenceNumber" class="form-control form-control-sm" />
                                 </div>
                                 <div class="col-md-6">
                                     <label asp-for="AuthorityReportDate" class="form-label small">تاريخ التبليغ الرسمي</label>
@@ -140,7 +160,7 @@
                         </div>
                         <div class="col-12">
                             <label asp-for="Notes" class="form-label">ملاحظات</label>
-                            <textarea asp-for="Notes" class="form-control" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+                            <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
                         </div>
                     </div>
                 </div>
@@ -148,7 +168,9 @@
 
             <!-- صور التجاوز -->
             <div class="card mb-3">
-                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-camera me-2"></i>صور التجاوز</h6></div>
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-camera me-2"></i>صور التجاوز</h6>
+                </div>
                 <div class="card-body">
                     <input type="file" name="photos" class="form-control" multiple accept="image/*" />
                     <small class="text-muted">يمكن رفع عدة صور توثيقية للتجاوز</small>
@@ -161,100 +183,332 @@
             </div>
         </div>
 
-        <!-- العمود الأيسر: الخريطة -->
+        <!-- ===== العمود الأيسر: الخريطة ===== -->
         <div class="col-lg-7">
             <div class="card sticky-top" style="top:10px;">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>تحديد موقع التجاوز على الخريطة</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-light" onclick="setMap('osm')"><i class="fas fa-map"></i></button>
-                        <button type="button" class="btn btn-outline-light active" onclick="setMap('sat')"><i class="fas fa-satellite"></i></button>
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>تحديد موقع التجاوز على الخريطة</h6>
+                        <div class="d-flex gap-2">
+                            <!-- أزرار نوع الخريطة -->
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-light" onclick="setMap('osm')" title="خريطة عادية"><i class="fas fa-map"></i></button>
+                                <button type="button" class="btn btn-outline-light active" onclick="setMap('sat')" title="صورة جوية"><i class="fas fa-satellite"></i></button>
+                            </div>
+                            <!-- أداة المسح -->
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="clearAllDrawings()" title="مسح الرسومات">
+                                <i class="fas fa-eraser me-1"></i>مسح
+                            </button>
+                        </div>
+                    </div>
+                    <!-- شريط أدوات الرسم -->
+                    <div class="mt-2 d-flex gap-1 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="startDrawPoint()" id="btnDrawPoint" title="ضع نقطة التجاوز">
+                            <i class="fas fa-map-pin me-1"></i>نقطة التجاوز
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning" onclick="startDrawPolygon()" id="btnDrawPolygon" title="ارسم مساحة التجاوز">
+                            <i class="fas fa-draw-polygon me-1"></i>رسم المساحة
+                        </button>
+                        <button type="button" class="btn btn-sm btn-info" onclick="startDrawPolyline()" id="btnDrawLine" title="ارسم حد التجاوز كخط">
+                            <i class="fas fa-minus me-1"></i>رسم الحد
+                        </button>
+                        <span id="drawStatusBadge" class="badge bg-secondary align-self-center" style="display:none;"></span>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div id="encrMap" style="height:450px;"></div>
+
+                <!-- الخريطة -->
+                <div class="card-body p-0 position-relative">
+                    <div id="encrMap" style="height:480px;"></div>
+                    <!-- مربع المعلومات -->
+                    <div id="mapInfoBox" class="draw-info-box position-absolute" style="bottom:10px;right:10px;display:none;max-width:220px;z-index:1000;">
+                        <div id="mapInfoContent"></div>
+                    </div>
                 </div>
+
+                <!-- إحداثيات + وصف -->
                 <div class="card-footer">
                     <div class="row g-2 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label small"><i class="fas fa-arrows-alt-v text-danger me-1"></i>خط العرض</label>
-                            <input asp-for="Latitude" id="encrLat" class="form-control form-control-sm" placeholder="33.315..." />
+                            <input asp-for="Latitude" id="encrLat" class="form-control form-control-sm" placeholder="33.315..." oninput="manualCoordsChanged()" />
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small"><i class="fas fa-arrows-alt-h text-primary me-1"></i>خط الطول</label>
-                            <input asp-for="Longitude" id="encrLng" class="form-control form-control-sm" placeholder="44.361..." />
+                            <input asp-for="Longitude" id="encrLng" class="form-control form-control-sm" placeholder="44.361..." oninput="manualCoordsChanged()" />
                         </div>
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="goToCoords()"><i class="fas fa-map-pin"></i></button>
+                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="goToCoords()" title="انتقل للإحداثيات">
+                                <i class="fas fa-map-pin"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="mt-2">
                         <label asp-for="LocationDescription" class="form-label small">وصف الموقع</label>
                         <input asp-for="LocationDescription" class="form-control form-control-sm" placeholder="مثال: جانب البوابة الشمالية..." />
                     </div>
-                    <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>انقر على الخريطة لتحديد الموقع الدقيق للتجاوز</small>
+                    <!-- legend -->
+                    <div class="mt-2 d-flex gap-3 flex-wrap">
+                        <small><span style="display:inline-block;width:12px;height:12px;background:#dc3545;border-radius:50%;"></span> نقطة التجاوز</small>
+                        <small><span style="display:inline-block;width:12px;height:12px;background:#fd7e14;border-radius:2px;"></span> مساحة التجاوز</small>
+                        <small><span style="display:inline-block;width:28px;height:3px;background:#0dcaf0;vertical-align:middle;"></span> حد التجاوز</small>
+                        <small><span style="display:inline-block;width:12px;height:12px;background:#198754;border-radius:2px;opacity:.5;"></span> حدود الكيان</small>
+                    </div>
+                    <small class="text-muted d-block mt-1"><i class="fas fa-info-circle me-1"></i>اختر كياناً من الأعلى لرؤيته على الخريطة، أو استخدم أدوات الرسم لتوثيق التجاوز</small>
                 </div>
             </div>
         </div>
+
     </div>
+
+    <!-- حقول مخفية للبيانات الجغرافية المرسومة -->
+    <input type="hidden" name="DrawnGeometryGeoJson" id="drawnGeometryGeoJson" />
 </form>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
+// =================== إعداد الخريطة ===================
 var osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
 var satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-var map = L.map('encrMap', { layers: [satL] }).setView([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture), @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], @mapZoom);
+var map = L.map('encrMap', { layers: [satL] })
+    .setView([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture),
+              @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], @mapZoom);
 
 function setMap(type) {
     map.removeLayer(osmL); map.removeLayer(satL);
-    if (type === 'osm') map.addLayer(osmL); else map.addLayer(satL);
+    (type === 'osm' ? osmL : satL).addTo(map);
 }
 
-var marker = null;
-@if (hasCoords) {
-    <text>
-    marker = L.marker([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture), @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], {
-        draggable: true,
-        icon: L.divIcon({ className:'', html:'<div style="width:20px;height:20px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[20,20], iconAnchor:[10,10] })
-    }).addTo(map);
-    marker.on('dragend', updateCoords);
-    </text>
+// =================== طبقات الرسم ===================
+var drawnItems  = new L.FeatureGroup().addTo(map);  // رسومات التجاوز
+var entityLayer = new L.FeatureGroup().addTo(map);  // حدود الكيان الوقفي
+var pointMarker = null;                              // علامة نقطة التجاوز
+
+// أدوات Leaflet.Draw
+var drawControl = new L.Control.Draw({
+    draw: false,  // نُخفي شريط Draw الافتراضي — نستخدم أزرارنا
+    edit: { featureGroup: drawnItems, remove: true }
+});
+map.addControl(drawControl);
+
+var currentDrawHandler = null;
+
+// =================== أدوات الرسم اليدوية ===================
+function stopCurrentDraw() {
+    if (currentDrawHandler) { currentDrawHandler.disable(); currentDrawHandler = null; }
+    ['btnDrawPoint','btnDrawPolygon','btnDrawLine'].forEach(function(id) {
+        var b = document.getElementById(id); if(b) b.classList.remove('active');
+    });
+    document.getElementById('drawStatusBadge').style.display = 'none';
 }
 
-map.on('click', function(e) {
-    if (marker) marker.setLatLng(e.latlng);
-    else {
-        marker = L.marker(e.latlng, {
-            draggable: true,
-            icon: L.divIcon({ className:'', html:'<div style="width:20px;height:20px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[20,20], iconAnchor:[10,10] })
-        }).addTo(map);
-        marker.on('dragend', updateCoords);
+function startDrawPoint() {
+    stopCurrentDraw();
+    currentDrawHandler = new L.Draw.Marker(map, {
+        icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+    });
+    currentDrawHandler.enable();
+    document.getElementById('btnDrawPoint').classList.add('active');
+    showStatus('انقر على الخريطة لتحديد نقطة التجاوز');
+}
+
+function startDrawPolygon() {
+    stopCurrentDraw();
+    currentDrawHandler = new L.Draw.Polygon(map, {
+        shapeOptions: { color: '#fd7e14', fillColor: '#fd7e14', fillOpacity: 0.25, weight: 2 }
+    });
+    currentDrawHandler.enable();
+    document.getElementById('btnDrawPolygon').classList.add('active');
+    showStatus('انقر لرسم حدود مساحة التجاوز • انقر مرتين للإنهاء');
+}
+
+function startDrawPolyline() {
+    stopCurrentDraw();
+    currentDrawHandler = new L.Draw.Polyline(map, {
+        shapeOptions: { color: '#0dcaf0', weight: 3 }
+    });
+    currentDrawHandler.enable();
+    document.getElementById('btnDrawLine').classList.add('active');
+    showStatus('انقر لرسم الخط • انقر مرتين للإنهاء');
+}
+
+function showStatus(msg) {
+    var b = document.getElementById('drawStatusBadge');
+    b.textContent = msg; b.style.display = 'inline-block';
+}
+
+function clearAllDrawings() {
+    drawnItems.clearLayers();
+    if (pointMarker) { map.removeLayer(pointMarker); pointMarker = null; }
+    document.getElementById('encrLat').value = '';
+    document.getElementById('encrLng').value = '';
+    document.getElementById('drawnGeometryGeoJson').value = '';
+    document.getElementById('areaInput').value = '';
+    hideInfoBox();
+    stopCurrentDraw();
+}
+
+// =================== أحداث الرسم ===================
+map.on(L.Draw.Event.CREATED, function(e) {
+    stopCurrentDraw();
+    var layer = e.layer;
+
+    if (e.layerType === 'marker') {
+        // نقطة التجاوز — تحل محل النقطة السابقة
+        if (pointMarker) map.removeLayer(pointMarker);
+        pointMarker = layer.addTo(map);
+        var ll = layer.getLatLng();
+        document.getElementById('encrLat').value = ll.lat.toFixed(6);
+        document.getElementById('encrLng').value = ll.lng.toFixed(6);
+        showInfoBox('📍 نقطة التجاوز\nخط العرض: ' + ll.lat.toFixed(5) + '\nخط الطول: ' + ll.lng.toFixed(5));
+    } else {
+        drawnItems.addLayer(layer);
+        if (e.layerType === 'polygon') {
+            // حساب المساحة
+            var area = L.GeometryUtil ? L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]) : calcArea(layer.getLatLngs()[0]);
+            var areaSqm = Math.round(area * 100) / 100;
+            document.getElementById('areaInput').value = areaSqm;
+            showInfoBox('📐 مساحة التجاوز\n' + formatArea(areaSqm));
+        }
+        saveDrawnGeometry();
     }
-    updateCoords();
 });
 
-function updateCoords() {
-    if (!marker) return;
-    var ll = marker.getLatLng();
+map.on(L.Draw.Event.EDITED, function() { saveDrawnGeometry(); });
+map.on(L.Draw.Event.DELETED, function() {
+    saveDrawnGeometry();
+    document.getElementById('areaInput').value = '';
+});
+
+function saveDrawnGeometry() {
+    var geoJson = drawnItems.toGeoJSON();
+    document.getElementById('drawnGeometryGeoJson').value = JSON.stringify(geoJson);
+}
+
+// حساب المساحة بدون plugin
+function calcArea(latlngs) {
+    var area = 0, n = latlngs.length;
+    for (var i = 0; i < n; i++) {
+        var j = (i + 1) % n;
+        area += (latlngs[i].lng * Math.PI/180) * Math.sin(latlngs[j].lat * Math.PI/180);
+        area -= (latlngs[j].lng * Math.PI/180) * Math.sin(latlngs[i].lat * Math.PI/180);
+    }
+    return Math.abs(area) * 6371000 * 6371000 / 2;
+}
+
+function formatArea(sqm) {
+    return sqm >= 10000 ? (sqm/10000).toFixed(3) + ' هكتار' : sqm.toFixed(1) + ' م²';
+}
+
+// =================== نقطة التجاوز بالنقر المباشر ===================
+@if (hasCoords) {
+<text>
+pointMarker = L.marker([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture), @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], {
+    draggable: true,
+    icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+}).addTo(map);
+pointMarker.on('dragend', function() {
+    var ll = pointMarker.getLatLng();
     document.getElementById('encrLat').value = ll.lat.toFixed(6);
     document.getElementById('encrLng').value = ll.lng.toFixed(6);
+});
+</text>
+}
+
+// =================== إحداثيات يدوية ===================
+function manualCoordsChanged() {
+    var lat = parseFloat(document.getElementById('encrLat').value);
+    var lng = parseFloat(document.getElementById('encrLng').value);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        if (pointMarker) pointMarker.setLatLng([lat, lng]);
+        else {
+            pointMarker = L.marker([lat, lng], {
+                draggable: true,
+                icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+            }).addTo(map);
+            pointMarker.on('dragend', function() {
+                var ll = pointMarker.getLatLng();
+                document.getElementById('encrLat').value = ll.lat.toFixed(6);
+                document.getElementById('encrLng').value = ll.lng.toFixed(6);
+            });
+        }
+    }
 }
 
 function goToCoords() {
     var lat = parseFloat(document.getElementById('encrLat').value);
     var lng = parseFloat(document.getElementById('encrLng').value);
-    if (isNaN(lat) || isNaN(lng)) return;
-    if (marker) marker.setLatLng([lat, lng]);
-    else {
-        marker = L.marker([lat, lng], {
-            draggable: true,
-            icon: L.divIcon({ className:'', html:'<div style="width:20px;height:20px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[20,20], iconAnchor:[10,10] })
-        }).addTo(map);
-        marker.on('dragend', updateCoords);
-    }
-    map.flyTo([lat, lng], 18, { duration: 0.8 });
+    if (!isNaN(lat) && !isNaN(lng)) map.flyTo([lat, lng], 18, { duration: 0.8 });
 }
 
+// =================== عرض الكيان على الخريطة ===================
+var entityMarker = null;
+
+window['entitySelectorCallback_encr'] = function(entity) {
+    // امسح الطبقة السابقة
+    entityLayer.clearLayers();
+    if (entityMarker) { map.removeLayer(entityMarker); entityMarker = null; }
+    hideInfoBox();
+
+    if (!entity) return;
+
+    // جلب الإحداثيات والحدود من الـ API
+    fetch('/Encroachements/GetEntityLocation?entityType=' + encodeURIComponent(entity.entityType) + '&entityId=' + entity.id)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.found) {
+                showInfoBox('⚠️ لا توجد إحداثيات مسجلة لهذا الكيان');
+                return;
+            }
+
+            // علامة الكيان (خضراء)
+            entityMarker = L.marker([data.lat, data.lng], {
+                icon: L.divIcon({
+                    className: '',
+                    html: '<div style="width:28px;height:28px;background:#198754;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;">' +
+                          '<i class="fas fa-mosque" style="color:white;font-size:12px;"></i></div>',
+                    iconSize: [28,28], iconAnchor: [14,14]
+                })
+            }).addTo(entityLayer);
+            entityMarker.bindPopup('<strong>' + escHtml(entity.name) + '</strong><br><small class="text-success">الكيان الوقفي</small>').openPopup();
+
+            // إضافة الحدود إذا وجدت
+            if (data.boundaryGeoJson) {
+                try {
+                    var boundaryLayer = L.geoJSON(JSON.parse(data.boundaryGeoJson), {
+                        style: { color: '#198754', weight: 2, fillColor: '#198754', fillOpacity: 0.15, dashArray: '6,4' }
+                    }).addTo(entityLayer);
+                    map.fitBounds(boundaryLayer.getBounds().pad(0.3));
+                } catch(e) {
+                    map.flyTo([data.lat, data.lng], 17, { duration: 1 });
+                }
+            } else {
+                map.flyTo([data.lat, data.lng], 17, { duration: 1 });
+            }
+
+            showInfoBox('🏛️ ' + entity.name + '\nتم تحديد موقع الكيان على الخريطة\nاستخدم أدوات الرسم لتوثيق التجاوز');
+        })
+        .catch(function() {
+            showInfoBox('⚠️ خطأ في جلب بيانات الكيان');
+        });
+};
+
+// =================== مربع المعلومات ===================
+function showInfoBox(msg) {
+    var box = document.getElementById('mapInfoBox');
+    var content = document.getElementById('mapInfoContent');
+    content.innerHTML = msg.split('\n').map(function(l) { return '<div>' + escHtml(l) + '</div>'; }).join('');
+    box.style.display = 'block';
+    setTimeout(function() { box.style.display = 'none'; }, 6000);
+}
+function hideInfoBox() { document.getElementById('mapInfoBox').style.display = 'none'; }
+
+function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// =================== misc ===================
 function toggleReportFields() {
     var chk = document.getElementById('isReported');
     var grp = document.getElementById('reportFieldsGroup');
