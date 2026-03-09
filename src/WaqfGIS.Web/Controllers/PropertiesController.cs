@@ -149,6 +149,10 @@ public class PropertiesController : Controller
             WaqfNature = model.WaqfNature,
             IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null,
             WaqfCondition = model.WaqfCondition,
+            WaqifName = model.WaqifName,
+            WaqfDocumentDate = model.WaqfDocumentDate,
+            WaqfDocumentNumber = model.WaqfDocumentNumber,
+            WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null,
             HasEncroachment = model.HasEncroachment,
             EncroachmentNotes = model.EncroachmentNotes,
             OccupantEmployeeName = model.OccupantEmployeeName,
@@ -212,6 +216,10 @@ public class PropertiesController : Controller
             WaqfNature = property.WaqfNature,
             IsAdminReceived = property.IsAdminReceived,
             WaqfCondition = property.WaqfCondition,
+            WaqifName = property.WaqifName,
+            WaqfDocumentDate = property.WaqfDocumentDate,
+            WaqfDocumentNumber = property.WaqfDocumentNumber,
+            WaqfConditionText = property.WaqfConditionText,
             HasEncroachment = property.HasEncroachment,
             EncroachmentNotes = property.EncroachmentNotes,
             OccupantEmployeeName = property.OccupantEmployeeName,
@@ -273,6 +281,10 @@ public class PropertiesController : Controller
         property.WaqfNature = model.WaqfNature;
         property.IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null;
         property.WaqfCondition = model.WaqfCondition;
+        property.WaqifName = model.WaqifName;
+        property.WaqfDocumentDate = model.WaqfDocumentDate;
+        property.WaqfDocumentNumber = model.WaqfDocumentNumber;
+        property.WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null;
         property.HasEncroachment = model.HasEncroachment;
         property.EncroachmentNotes = model.EncroachmentNotes;
         property.OccupantEmployeeName = model.OccupantEmployeeName;

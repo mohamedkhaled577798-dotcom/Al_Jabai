@@ -248,10 +248,33 @@
                         </div>
                         <div class="col-md-4">
                             <label asp-for="WaqfCondition" class="form-label fw-bold">شرط الوقف</label>
-                            <select asp-for="WaqfCondition" class="form-select">
+                            <select asp-for="WaqfCondition" class="form-select" id="waqfConditionSelect" onchange="toggleConditionText()">
                                 <option value="WithoutCondition">بدون شرط</option>
                                 <option value="WithCondition">بشرط</option>
                             </select>
+                        </div>
+                    </div>
+                    <!-- بيانات الواقف الأصلي -->
+                    <hr class="my-3" />
+                    <h6 class="text-muted mb-3"><i class="fas fa-user-shield me-2"></i>بيانات الواقف الأصلي</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="WaqifName" class="form-label">اسم الواقف</label>
+                            <input asp-for="WaqifName" class="form-control" placeholder="اسم الواقف الأصلي..." />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="WaqfDocumentDate" class="form-label">تاريخ وثيقة الوقف</label>
+                            <input asp-for="WaqfDocumentDate" class="form-control" type="date" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="WaqfDocumentNumber" class="form-label">رقم وثيقة الوقف</label>
+                            <input asp-for="WaqfDocumentNumber" class="form-control" placeholder="رقم الوثيقة..." />
+                        </div>
+                        <div class="col-12" id="waqfConditionTextGroup" style="display:none">
+                            <label asp-for="WaqfConditionText" class="form-label fw-bold text-primary">نص شرط الواقف</label>
+                            <textarea asp-for="WaqfConditionText" class="form-control" rows="4"
+                                placeholder="أدخل نص شرط الواقف كاملاً كما ورد في الوثيقة الأصلية..."></textarea>
+                            <small class="text-muted"><i class="fas fa-info-circle me-1"></i>يُعرض هذا الشرط فقط عند اختيار &quot;بشرط&quot;</small>
                         </div>
                     </div>
                     <hr class="my-3" />
@@ -399,6 +422,14 @@
         if (sel && grp) grp.style.display = sel.value === 'Ahli' ? 'block' : 'none';
     }
     toggleAdminReceived();
+
+    // نص شرط الواقف
+    function toggleConditionText() {
+        var sel = document.getElementById('waqfConditionSelect');
+        var grp = document.getElementById('waqfConditionTextGroup');
+        if (sel && grp) grp.style.display = sel.value === 'WithCondition' ? 'block' : 'none';
+    }
+    toggleConditionText();
 
     // معاينة الصور
     function previewImages(input) {

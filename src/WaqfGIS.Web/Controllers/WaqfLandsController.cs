@@ -332,6 +332,10 @@ public class WaqfLandsController : Controller
             WaqfNature = land.WaqfNature,
             IsAdminReceived = land.IsAdminReceived,
             WaqfCondition = land.WaqfCondition,
+            WaqifName = land.WaqifName,
+            WaqfDocumentDate = land.WaqfDocumentDate,
+            WaqfDocumentNumber = land.WaqfDocumentNumber,
+            WaqfConditionText = land.WaqfConditionText,
             HasEncroachment = land.HasEncroachment,
             EncroachmentNotes = land.EncroachmentNotes,
             ProvinceName = land.Province?.NameAr,
@@ -371,6 +375,10 @@ public class WaqfLandsController : Controller
             WaqfNature = viewModel.WaqfNature,
             IsAdminReceived = viewModel.WaqfNature == "Ahli" ? viewModel.IsAdminReceived : null,
             WaqfCondition = viewModel.WaqfCondition,
+            WaqifName = viewModel.WaqifName,
+            WaqfDocumentDate = viewModel.WaqfDocumentDate,
+            WaqfDocumentNumber = viewModel.WaqfDocumentNumber,
+            WaqfConditionText = viewModel.WaqfCondition == "WithCondition" ? viewModel.WaqfConditionText : null,
             HasEncroachment = viewModel.HasEncroachment,
             EncroachmentNotes = viewModel.EncroachmentNotes
         };

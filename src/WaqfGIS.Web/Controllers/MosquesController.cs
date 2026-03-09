@@ -141,6 +141,10 @@ public class MosquesController : Controller
             WaqfNature = model.WaqfNature,
             IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null,
             WaqfCondition = model.WaqfCondition,
+            WaqifName = model.WaqifName,
+            WaqfDocumentDate = model.WaqfDocumentDate,
+            WaqfDocumentNumber = model.WaqfDocumentNumber,
+            WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null,
             IsUsurped = model.IsUsurped,
             IsClosed = model.IsClosed,
             IsContested = model.IsContested,
@@ -199,6 +203,10 @@ public class MosquesController : Controller
             WaqfNature = mosque.WaqfNature,
             IsAdminReceived = mosque.IsAdminReceived,
             WaqfCondition = mosque.WaqfCondition,
+            WaqifName = mosque.WaqifName,
+            WaqfDocumentDate = mosque.WaqfDocumentDate,
+            WaqfDocumentNumber = mosque.WaqfDocumentNumber,
+            WaqfConditionText = mosque.WaqfConditionText,
             IsUsurped = mosque.IsUsurped,
             IsClosed = mosque.IsClosed,
             IsContested = mosque.IsContested
@@ -264,6 +272,10 @@ public class MosquesController : Controller
         mosque.WaqfNature = model.WaqfNature;
         mosque.IsAdminReceived = model.WaqfNature == "Ahli" ? model.IsAdminReceived : null;
         mosque.WaqfCondition = model.WaqfCondition;
+        mosque.WaqifName = model.WaqifName;
+        mosque.WaqfDocumentDate = model.WaqfDocumentDate;
+        mosque.WaqfDocumentNumber = model.WaqfDocumentNumber;
+        mosque.WaqfConditionText = model.WaqfCondition == "WithCondition" ? model.WaqfConditionText : null;
         mosque.IsUsurped = model.IsUsurped;
         mosque.IsClosed = model.IsClosed;
         mosque.IsContested = model.IsContested;
