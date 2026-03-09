@@ -5,17 +5,43 @@
     var documents = ViewBag.Documents as List<WaqfGIS.Core.Entities.DisputeDocument>;
 }
 
+@{
+    var entityTypeAr = Model.EntityType switch {
+        "WaqfProperty" => "عقار وقفي",
+        "WaqfLand"     => "أرض وقفية",
+        "Mosque"       => "مسجد",
+        _              => Model.EntityType
+    };
+    var entityController = Model.EntityType switch {
+        "WaqfProperty" => "Properties",
+        "WaqfLand"     => "WaqfLands",
+        "Mosque"       => "Mosques",
+        _              => null
+    };
+    var entityBadgeClass = Model.EntityType switch {
+        "WaqfProperty" => "bg-success",
+        "WaqfLand"     => "bg-primary",
+        "Mosque"       => "bg-warning text-dark",
+        _              => "bg-secondary"
+    };
+}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-gavel"></i> تفاصيل الدعوى</h2>
         <div>
-            <a asp-action="Index" class="btn btn-secondary">
+            <h4 class="mb-0"><i class="fas fa-gavel text-primary me-2"></i>تفاصيل الدعوى</h4>
+            <small class="text-muted">رقم الدعوى: <strong>@Model.CaseNumber</strong></small>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i>تعديل
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-right"></i> رجوع
             </a>
             @if (Model.CaseStatus == "جارية")
             {
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStageModal">
-                    <i class="fas fa-edit"></i> تحديث المرحلة
+                    <i class="fas fa-tasks"></i> تحديث المرحلة
                 </button>
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addVerdictModal">
                     <i class="fas fa-check"></i> إضافة حكم
@@ -49,10 +75,20 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>الكيان:</th>
+                            <th>الكيان الوقفي:</th>
                             <td>
-                                <span class="badge bg-info">@Model.EntityType</span><br/>
-                                @Model.EntityName
+                                <span class="badge @entityBadgeClass">
+                                    @(Model.EntityType == "Mosque" ? "🕌" : Model.EntityType == "WaqfProperty" ? "🏢" : "🌍")
+                                    @entityTypeAr
+                                </span>
+                                <br/>
+                                @if (entityController != null && Model.EntityId > 0) {
+                                    <a asp-controller="@entityController" asp-action="Details" asp-route-id="@Model.EntityId" class="fw-bold">
+                                        <i class="fas fa-link me-1"></i>@Model.EntityName
+                                    </a>
+                                } else {
+                                    <span>@Model.EntityName</span>
+                                }
                             </td>
                         </tr>
                         <tr>

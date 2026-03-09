@@ -75,6 +75,10 @@
                        asp-controller="Disputes" asp-action="Index">
                         <i class="fas fa-gavel me-2"></i> الدعاوى القضائية
                     </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Encroachements" ? "active bg-danger rounded" : "")" 
+                       asp-controller="Encroachements" asp-action="Index">
+                        <i class="fas fa-exclamation-triangle me-2"></i> سجل التجاوزات
+                    </a>
                     <hr class="border-secondary">
                     <!-- قسم الخدمات والتحليل -->
                     <div class="nav-section-title text-muted small px-3 mt-2 mb-1">التحليل والخدمات</div>

@@ -290,6 +290,57 @@ public class ContractsController : Controller
         }
     }
 
+    // API: Search entities by type and name query
+    [HttpGet]
+    public async Task<IActionResult> SearchEntities(string entityType, string? q)
+    {
+        try
+        {
+            var search = q?.Trim().ToLower() ?? "";
+            var results = new List<object>();
+
+            switch (entityType)
+            {
+                case "Mosque":
+                    var mosques = await _unitOfWork.Repository<Mosque>().GetAllAsync();
+                    results = mosques
+                        .Where(m => string.IsNullOrEmpty(search) || m.NameAr.ToLower().Contains(search))
+                        .OrderBy(m => m.NameAr)
+                        .Take(20)
+                        .Select(m => new { id = m.Id, name = m.NameAr, code = (string?)null, address = m.Address })
+                        .ToList<object>();
+                    break;
+
+                case "WaqfProperty":
+                    var properties = await _unitOfWork.Repository<WaqfProperty>().GetAllAsync();
+                    results = properties
+                        .Where(p => string.IsNullOrEmpty(search) || p.NameAr.ToLower().Contains(search))
+                        .OrderBy(p => p.NameAr)
+                        .Take(20)
+                        .Select(p => new { id = p.Id, name = p.NameAr, code = (string?)null, address = p.Address })
+                        .ToList<object>();
+                    break;
+
+                case "WaqfLand":
+                    var lands = await _unitOfWork.Repository<WaqfLand>().GetAllAsync();
+                    results = lands
+                        .Where(l => string.IsNullOrEmpty(search) || l.NameAr.ToLower().Contains(search))
+                        .OrderBy(l => l.NameAr)
+                        .Take(20)
+                        .Select(l => new { id = l.Id, name = l.NameAr, code = l.Code, address = (string?)null })
+                        .ToList<object>();
+                    break;
+            }
+
+            return Json(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching entities");
+            return Json(new List<object>());
+        }
+    }
+
     // API: Get entities by type
     [HttpGet]
     public async Task<IActionResult> GetEntitiesByType(string entityType)

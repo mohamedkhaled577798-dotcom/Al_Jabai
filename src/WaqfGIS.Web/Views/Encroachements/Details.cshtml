@@ -1,0 +1,244 @@
+@model WaqfGIS.Core.Entities.EncroachmentRecord
+@using WaqfGIS.Core.Entities
+@{
+    ViewData["Title"] = "تفاصيل التجاوز";
+    var canEdit = ViewBag.CanEdit as bool? ?? false;
+    bool hasLocation = Model.Location != null;
+    var sevClass = Model.Severity switch {
+        "بالغ الخطورة" => "bg-danger",
+        "خطير" => "bg-warning text-dark",
+        "متوسط" => "bg-info text-dark",
+        _ => "bg-light text-dark border"
+    };
+    var stColor = Model.Status switch {
+        "قائم" => "#dc3545",
+        "قيد المعالجة" => "#fd7e14",
+        "مرفوع للقضاء" => "#6f42c1",
+        "أُزيل" => "#198754",
+        _ => "#6c757d"
+    };
+    var entityTypeLabel = Model.EntityType switch {
+        "WaqfProperty" => "عقار وقفي",
+        "WaqfLand" => "أرض وقفية",
+        "Mosque" => "مسجد",
+        _ => Model.EntityType
+    };
+    var entityController = Model.EntityType switch {
+        "WaqfProperty" => "Properties",
+        "WaqfLand" => "WaqfLands",
+        "Mosque" => "Mosques",
+        _ => null
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle text-danger me-2"></i>تفاصيل التجاوز #@Model.Id</h4>
+        <small class="text-muted">@entityTypeLabel — @Model.EntityName</small>
+    </div>
+    <div class="d-flex gap-2">
+        @if (entityController != null) {
+        <a asp-controller="@entityController" asp-action="Details" asp-route-id="@Model.EntityId" class="btn btn-outline-info">
+            <i class="fas fa-link me-1"></i>عرض @entityTypeLabel
+        </a>
+        }
+        @if (canEdit) {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="fas fa-edit me-1"></i>تعديل</a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- العمود الأيسر -->
+    <div class="col-lg-7">
+
+        <!-- بطاقة الحالة الرئيسية -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header" style="background:@stColor;color:white;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>@Model.EncroachmentType</h5>
+                    <div>
+                        <span class="badge bg-white text-dark me-1">@Model.Severity</span>
+                        <span class="badge border border-white text-white">@Model.Status</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">@Model.Description</p>
+                <div class="row text-center">
+                    <div class="col-4 border-end">
+                        <small class="text-muted d-block">تاريخ الاكتشاف</small>
+                        <strong>@Model.DiscoveryDate.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                    <div class="col-4 border-end">
+                        <small class="text-muted d-block">المساحة المتجاوَز عليها</small>
+                        <strong>@(Model.EncroachmentAreaSqm.HasValue ? Model.EncroachmentAreaSqm.Value.ToString("N1") + " م²" : "—")</strong>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted d-block">المحافظة</small>
+                        <strong>@(Model.Province?.NameAr ?? "—")</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- بيانات المتجاوز -->
+        @if (!string.IsNullOrEmpty(Model.EncroachwrName) || !string.IsNullOrEmpty(Model.EncroachwrPhone)) {
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المتجاوز</h6></div>
+            <div class="card-body">
+                <div class="row">
+                    @if (!string.IsNullOrEmpty(Model.EncroachwrName)) {
+                    <div class="col-md-6 mb-2">
+                        <label class="text-muted small">الاسم</label>
+                        <p class="mb-0 fw-bold">@Model.EncroachwrName</p>
+                    </div>}
+                    @if (!string.IsNullOrEmpty(Model.EncroachwrPhone)) {
+                    <div class="col-md-3 mb-2">
+                        <label class="text-muted small">الهاتف</label>
+                        <p class="mb-0"><a href="tel:@Model.EncroachwrPhone">@Model.EncroachwrPhone</a></p>
+                    </div>}
+                    @if (!string.IsNullOrEmpty(Model.EncroachwrNationalId)) {
+                    <div class="col-md-3 mb-2">
+                        <label class="text-muted small">رقم الهوية</label>
+                        <p class="mb-0 font-monospace">@Model.EncroachwrNationalId</p>
+                    </div>}
+                </div>
+            </div>
+        </div>
+        }
+
+        <!-- الإجراءات والمتابعة -->
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-tasks me-2"></i>الإجراءات والمتابعة</h6></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2"><label class="text-muted small">حالة التجاوز</label>
+                        <p class="mb-0"><span class="badge" style="background:@stColor">@Model.Status</span></p></div>
+                    @if (Model.ReportDate.HasValue) {
+                    <div class="col-md-4 mb-2"><label class="text-muted small">تاريخ التبليغ</label>
+                        <p class="mb-0">@Model.ReportDate.Value.ToString("dd/MM/yyyy")</p></div>}
+                    @if (Model.RemovalDate.HasValue) {
+                    <div class="col-md-4 mb-2"><label class="text-muted small">تاريخ الإزالة</label>
+                        <p class="mb-0 text-success fw-bold">@Model.RemovalDate.Value.ToString("dd/MM/yyyy")</p></div>}
+                </div>
+                @if (!string.IsNullOrEmpty(Model.ActionTaken)) {
+                <div class="mt-2">
+                    <label class="text-muted small">الإجراءات المتخذة</label>
+                    <div class="p-2 bg-light rounded">@Model.ActionTaken</div>
+                </div>}
+                @if (Model.IsReportedToAuthorities) {
+                <div class="mt-2 p-2 border border-primary rounded">
+                    <i class="fas fa-file-signature text-primary me-1"></i><strong>أُبلِّغت الجهات المعنية رسمياً</strong>
+                    @if (!string.IsNullOrEmpty(Model.ReportReferenceNumber)) {
+                    <span class="ms-2 badge bg-primary">كتاب رقم: @Model.ReportReferenceNumber</span>}
+                    @if (Model.AuthorityReportDate.HasValue) {
+                    <small class="text-muted ms-2">بتاريخ @Model.AuthorityReportDate.Value.ToString("dd/MM/yyyy")</small>}
+                </div>}
+                @if (Model.HasLegalCase) {
+                <div class="mt-2 alert alert-danger py-2 mb-0">
+                    <i class="fas fa-gavel me-1"></i><strong>يوجد قضية قانونية</strong>
+                    @if (Model.LegalDispute != null) {
+                    <span class="ms-2">رقم القضية: @Model.LegalDispute.CaseNumber</span>}
+                </div>}
+                @if (!string.IsNullOrEmpty(Model.Notes)) {
+                <div class="mt-2"><label class="text-muted small">ملاحظات</label>
+                    <p class="mb-0">@Model.Notes</p></div>}
+            </div>
+        </div>
+
+        <!-- الصور -->
+        @if (Model.Photos.Any()) {
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-camera me-2"></i>صور التجاوز (@Model.Photos.Count)</h6></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    @foreach (var ph in Model.Photos) {
+                    <div class="col-4 col-md-3">
+                        <a href="@ph.FilePath" target="_blank">
+                            <img src="@ph.FilePath" class="img-fluid rounded" style="height:80px;width:100%;object-fit:cover;" />
+                        </a>
+                    </div>}
+                </div>
+            </div>
+        </div>}
+
+        <!-- معلومات النظام -->
+        <div class="card mb-3">
+            <div class="card-header bg-light"><h6 class="mb-0 text-muted"><i class="fas fa-info-circle me-2"></i>معلومات التسجيل</h6></div>
+            <div class="card-body py-2">
+                <div class="row small text-muted">
+                    <div class="col-md-4">سُجِّل بواسطة: <strong>@(Model.CreatedBy ?? "—")</strong></div>
+                    <div class="col-md-4">تاريخ التسجيل: <strong>@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                    @if (!string.IsNullOrEmpty(Model.UpdatedBy)) {
+                    <div class="col-md-4">آخر تعديل: <strong>@Model.UpdatedBy</strong></div>}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- العمود الأيمن: الخريطة -->
+    <div class="col-lg-5">
+        <div class="card sticky-top" style="top:10px;">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>موقع التجاوز</h6>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-light btn-sm" onclick="setMapType('osm')"><i class="fas fa-map"></i></button>
+                    <button class="btn btn-outline-light btn-sm active" onclick="setMapType('sat')"><i class="fas fa-satellite"></i></button>
+                </div>
+            </div>
+            <div id="detailMap" style="height:400px;"></div>
+            @if (hasLocation || !string.IsNullOrEmpty(Model.LocationDescription)) {
+            <div class="card-footer">
+                @if (hasLocation) {
+                <small class="text-muted">
+                    <i class="fas fa-crosshairs me-1"></i>
+                    @Model.Location!.Y.ToString("F6")°N, @Model.Location.X.ToString("F6")°E
+                </small>}
+                @if (!string.IsNullOrEmpty(Model.LocationDescription)) {
+                <p class="mb-0 small mt-1"><i class="fas fa-map-pin me-1 text-danger"></i>@Model.LocationDescription</p>}
+            </div>}
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+var satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+@if (hasLocation) {
+    var lat = @Model.Location!.Y.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    var lng = @Model.Location!.X.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    <text>
+var map = L.map('detailMap', { layers: [satL] }).setView([@Model.Location!.Y.ToString(System.Globalization.CultureInfo.InvariantCulture), @Model.Location!.X.ToString(System.Globalization.CultureInfo.InvariantCulture)], 18);
+var encMarker = L.marker([@Model.Location!.Y.ToString(System.Globalization.CultureInfo.InvariantCulture), @Model.Location!.X.ToString(System.Globalization.CultureInfo.InvariantCulture)], {
+    icon: L.divIcon({
+        className: '',
+        html: '<div style="width:24px;height:24px;background:@stColor;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;"><i class="fas fa-exclamation" style="color:white;font-size:10px;"></i></div>',
+        iconSize: [24,24], iconAnchor: [12,12]
+    })
+}).bindPopup(`<strong>@Model.EncroachmentType</strong><br><span style="color:@stColor">@Model.Status</span>`).addTo(map);
+encMarker.openPopup();
+    </text>
+} else {
+    <text>
+var map = L.map('detailMap', { layers: [satL] }).setView([33.3, 44.4], 7);
+L.control.attribution().addTo(map);
+var noLocDiv = L.control({ position: 'topright' });
+noLocDiv.onAdd = function() {
+    var d = L.DomUtil.create('div','leaflet-bar');
+    d.innerHTML = '<div style="background:rgba(255,255,255,0.9);padding:8px;border-radius:4px;font-size:12px;"><i class="fas fa-map-marker-slash text-muted"></i> لم يُحدَّد الموقع</div>';
+    return d;
+};
+noLocDiv.addTo(map);
+    </text>
+}
+
+function setMapType(type) {
+    map.removeLayer(osmL); map.removeLayer(satL);
+    if (type === 'osm') map.addLayer(osmL); else map.addLayer(satL);
+}
+</script>
+}

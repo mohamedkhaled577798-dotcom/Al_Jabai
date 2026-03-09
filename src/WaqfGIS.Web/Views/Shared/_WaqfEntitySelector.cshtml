@@ -1,0 +1,172 @@
+@* Partial View: _WaqfEntitySelector.cshtml
+   الاستخدام:
+   @await Html.PartialAsync("_WaqfEntitySelector", new WaqfGIS.Web.Models.WaqfEntitySelectorModel {
+       EntityTypeFieldId = "EntityType",
+       EntityIdFieldId   = "EntityId",
+       EntityNameFieldId = "EntityName",
+       CurrentEntityType = Model.EntityType,
+       CurrentEntityId   = Model.EntityId,
+       CurrentEntityName = Model.EntityName
+   })
+*@
+@model WaqfGIS.Web.Models.WaqfEntitySelectorModel
+
+@{
+    var typeFieldId = Model.EntityTypeFieldId ?? "EntityType";
+    var idFieldId   = Model.EntityIdFieldId   ?? "EntityId";
+    var nameFieldId = Model.EntityNameFieldId  ?? "EntityName";
+    var uniqueId    = Model.UniqueId ?? typeFieldId; // لتجنب التكرار إذا تعدد الـ partial
+}
+
+<div class="entity-selector-group border border-warning rounded p-3 mb-0" style="background:#fffdf0;">
+    <h6 class="text-warning mb-3"><i class="fas fa-mosque me-2"></i>الكيان الوقفي المرتبط</h6>
+
+    <!-- نوع الكيان -->
+    <div class="row g-2 mb-2">
+        <div class="col-md-4">
+            <label class="form-label fw-bold small">نوع الكيان <span class="text-danger">*</span></label>
+            <select name="@typeFieldId" id="@(uniqueId)_EntityType" class="form-select"
+                    onchange="entitySelectorTypeChanged('@uniqueId')">
+                <option value="">-- اختر النوع --</option>
+                <option value="WaqfProperty" @@(Model.CurrentEntityType == "WaqfProperty" ? "selected" : "")>🏢 عقار وقفي</option>
+                <option value="WaqfLand"     @@(Model.CurrentEntityType == "WaqfLand"     ? "selected" : "")>🌍 أرض وقفية</option>
+                <option value="Mosque"       @@(Model.CurrentEntityType == "Mosque"       ? "selected" : "")>🕌 مسجد</option>
+            </select>
+        </div>
+
+        <!-- حقل البحث -->
+        <div class="col-md-5">
+            <label class="form-label fw-bold small">بحث عن الكيان <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-warning"><i class="fas fa-search"></i></span>
+                <input type="text"
+                       id="@(uniqueId)_EntitySearch"
+                       class="form-control"
+                       placeholder="ابحث بالاسم..."
+                       autocomplete="off"
+                       oninput="entitySelectorSearch('@uniqueId')"
+                       value="@Model.CurrentEntityName" />
+                <button type="button" class="btn btn-outline-secondary" onclick="entitySelectorClear('@uniqueId')" title="مسح">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- قائمة نتائج البحث -->
+            <div id="@(uniqueId)_EntityResults"
+                 class="list-group shadow"
+                 style="position:absolute;z-index:9999;width:calc(100% - 30px);max-height:220px;overflow-y:auto;display:none;">
+            </div>
+        </div>
+
+        <!-- الكيان المختار -->
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">الكيان المختار</label>
+            <div id="@(uniqueId)_SelectedDisplay"
+                 class="form-control-plaintext border rounded px-2 py-1 small bg-white"
+                 style="min-height:38px;line-height:1.4;">
+                @if (Model.CurrentEntityId > 0 && !string.IsNullOrEmpty(Model.CurrentEntityName)) {
+                    <span class="badge bg-success me-1">✔</span>
+                    @Model.CurrentEntityName
+                } else {
+                    <span class="text-muted">لم يُختر بعد</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- الحقول المخفية -->
+    <input type="hidden" name="@idFieldId"   id="@(uniqueId)_EntityId"   value="@(Model.CurrentEntityId > 0 ? Model.CurrentEntityId.ToString() : "")" />
+    <input type="hidden" name="@nameFieldId" id="@(uniqueId)_EntityName" value="@Model.CurrentEntityName" />
+</div>
+
+<script>
+(function() {
+    var _searchTimer = null;
+
+    // عند تغيير نوع الكيان — امسح الاختيار الحالي
+    window.entitySelectorTypeChanged = function(uid) {
+        document.getElementById(uid + '_EntitySearch').value = '';
+        document.getElementById(uid + '_EntityId').value = '';
+        document.getElementById(uid + '_EntityName').value = '';
+        document.getElementById(uid + '_SelectedDisplay').innerHTML = '<span class="text-muted">لم يُختر بعد</span>';
+        document.getElementById(uid + '_EntityResults').style.display = 'none';
+    };
+
+    // البحث مع تأخير
+    window.entitySelectorSearch = function(uid) {
+        clearTimeout(_searchTimer);
+        var q = document.getElementById(uid + '_EntitySearch').value.trim();
+        var type = document.getElementById(uid + '_EntityType').value;
+
+        if (!type) {
+            showResults(uid, '<div class="list-group-item text-muted small">الرجاء اختيار نوع الكيان أولاً</div>');
+            return;
+        }
+        if (q.length < 1) {
+            document.getElementById(uid + '_EntityResults').style.display = 'none';
+            return;
+        }
+
+        _searchTimer = setTimeout(function() {
+            fetch('/Contracts/SearchEntities?entityType=' + encodeURIComponent(type) + '&q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data || data.length === 0) {
+                        showResults(uid, '<div class="list-group-item text-muted small"><i class="fas fa-info-circle me-1"></i>لا توجد نتائج</div>');
+                        return;
+                    }
+                    var html = '';
+                    data.forEach(function(item) {
+                        html += '<button type="button" class="list-group-item list-group-item-action py-2" '
+                              + 'onclick="entitySelectorSelect(\'' + uid + '\',' + item.id + ',\'' + escapeHtml(item.name) + '\')">'
+                              + '<i class="fas fa-check-circle text-success me-2 opacity-0 selectedIcon"></i>'
+                              + '<strong>' + escapeHtml(item.name) + '</strong>'
+                              + (item.code ? '<small class="text-muted ms-2">' + escapeHtml(item.code) + '</small>' : '')
+                              + (item.address ? '<br><small class="text-muted">' + escapeHtml(item.address) + '</small>' : '')
+                              + '</button>';
+                    });
+                    showResults(uid, html);
+                })
+                .catch(function() {
+                    showResults(uid, '<div class="list-group-item text-danger small">خطأ في الاتصال</div>');
+                });
+        }, 300);
+    };
+
+    // اختيار كيان
+    window.entitySelectorSelect = function(uid, id, name) {
+        document.getElementById(uid + '_EntityId').value = id;
+        document.getElementById(uid + '_EntityName').value = name;
+        document.getElementById(uid + '_EntitySearch').value = name;
+        document.getElementById(uid + '_SelectedDisplay').innerHTML =
+            '<span class="badge bg-success me-1">✔</span>' + escapeHtml(name);
+        document.getElementById(uid + '_EntityResults').style.display = 'none';
+    };
+
+    // مسح الاختيار
+    window.entitySelectorClear = function(uid) {
+        document.getElementById(uid + '_EntitySearch').value = '';
+        document.getElementById(uid + '_EntityId').value = '';
+        document.getElementById(uid + '_EntityName').value = '';
+        document.getElementById(uid + '_SelectedDisplay').innerHTML = '<span class="text-muted">لم يُختر بعد</span>';
+        document.getElementById(uid + '_EntityResults').style.display = 'none';
+    };
+
+    function showResults(uid, html) {
+        var el = document.getElementById(uid + '_EntityResults');
+        el.innerHTML = html;
+        el.style.display = 'block';
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // إغلاق القائمة عند النقر خارجها
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('[id$="_EntityResults"]').forEach(function(el) {
+            if (!el.contains(e.target)) el.style.display = 'none';
+        });
+    });
+})();
+</script>

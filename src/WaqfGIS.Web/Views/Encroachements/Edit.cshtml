@@ -1,0 +1,265 @@
+@model WaqfGIS.Web.Models.EncroachmentViewModel
+@using WaqfGIS.Core.Entities
+@{
+    ViewData["Title"] = "تعديل سجل التجاوز";
+    var photos = ViewBag.Photos as IEnumerable<EncroachmentPhoto> ?? new List<EncroachmentPhoto>();
+    double mapLat = Model.Latitude ?? 33.3;
+    double mapLng = Model.Longitude ?? 44.4;
+    int mapZoom = Model.Latitude.HasValue ? 18 : 7;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-edit text-warning me-2"></i>تعديل سجل التجاوز #@Model.Id</h4>
+        <small class="text-muted">@Model.EntityTypeLabel — @Model.EntityName</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-info"><i class="fas fa-eye me-1"></i>عرض</a>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row">
+        <div class="col-lg-5">
+
+            <!-- اختيار الكيان الوقفي -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-mosque me-2"></i>الكيان الوقفي المرتبط بالتجاوز</h6></div>
+                <div class="card-body">
+                    @await Html.PartialAsync("_WaqfEntitySelector", new WaqfGIS.Web.Models.WaqfEntitySelectorModel {
+                        UniqueId = "encrEdit",
+                        EntityTypeFieldId = "EntityType",
+                        EntityIdFieldId   = "EntityId",
+                        EntityNameFieldId = "EntityName",
+                        CurrentEntityType = Model.EntityType,
+                        CurrentEntityId   = Model.EntityId,
+                        CurrentEntityName = Model.EntityName
+                    })
+                </div>
+            </div>
+
+            <!-- تصنيف التجاوز -->
+            <div class="card mb-3">
+                <div class="card-header bg-danger text-white"><h6 class="mb-0"><i class="fas fa-tag me-2"></i>تصنيف التجاوز</h6></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="EncroachmentType" class="form-label fw-bold">نوع التجاوز <span class="text-danger">*</span></label>
+                            <select asp-for="EncroachmentType" class="form-select" asp-items="@EncroachmentViewModel.EncroachmentTypesList">
+                                <option value="">-- اختر --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Severity" class="form-label">درجة الخطورة</label>
+                            <select asp-for="Severity" class="form-select" asp-items="@EncroachmentViewModel.SeverityList"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label">الحالة</label>
+                            <select asp-for="Status" class="form-select" asp-items="@EncroachmentViewModel.StatusList"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DiscoveryDate" class="form-label">تاريخ الاكتشاف</label>
+                            <input asp-for="DiscoveryDate" class="form-control" type="date" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EncroachmentAreaSqm" class="form-label">المساحة (م²)</label>
+                            <input asp-for="EncroachmentAreaSqm" class="form-control" type="number" step="0.1" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ProvinceId" class="form-label">المحافظة</label>
+                            <select asp-for="ProvinceId" class="form-select" asp-items="@ViewBag.Provinces">
+                                <option value="">--</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RemovalDate" class="form-label">تاريخ الإزالة</label>
+                            <input asp-for="RemovalDate" class="form-control" type="date" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label fw-bold">وصف التجاوز</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- المتجاوز -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المتجاوز</h6></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-12"><label asp-for="EncroachwrName" class="form-label small">الاسم</label><input asp-for="EncroachwrName" class="form-control form-control-sm" /></div>
+                        <div class="col-md-6"><label asp-for="EncroachwrPhone" class="form-label small">الهاتف</label><input asp-for="EncroachwrPhone" class="form-control form-control-sm" /></div>
+                        <div class="col-md-6"><label asp-for="EncroachwrNationalId" class="form-label small">رقم الهوية</label><input asp-for="EncroachwrNationalId" class="form-control form-control-sm" /></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الإجراءات -->
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white"><h6 class="mb-0"><i class="fas fa-tasks me-2"></i>الإجراءات</h6></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-12"><label asp-for="ActionTaken" class="form-label small">الإجراءات المتخذة</label>
+                            <textarea asp-for="ActionTaken" class="form-control form-control-sm" rows="2"></textarea></div>
+                        <div class="col-md-6"><label asp-for="ReportDate" class="form-label small">تاريخ التبليغ</label>
+                            <input asp-for="ReportDate" class="form-control form-control-sm" type="date" /></div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsReportedToAuthorities" id="isReported" onchange="toggleReportFields()" />
+                                <label class="form-check-label" for="isReported">أُبلِّغت الجهات المعنية رسمياً</label>
+                            </div>
+                        </div>
+                        <div id="reportFieldsGroup" style="display:@(Model.IsReportedToAuthorities?"block":"none")" class="col-12">
+                            <div class="row g-2 border border-primary rounded p-2">
+                                <div class="col-md-6"><label asp-for="ReportReferenceNumber" class="form-label small">رقم الكتاب</label>
+                                    <input asp-for="ReportReferenceNumber" class="form-control form-control-sm" /></div>
+                                <div class="col-md-6"><label asp-for="AuthorityReportDate" class="form-label small">تاريخ التبليغ</label>
+                                    <input asp-for="AuthorityReportDate" class="form-control form-control-sm" type="date" /></div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="HasLegalCase" />
+                                <label class="form-check-label">له قضية قانونية</label>
+                            </div>
+                        </div>
+                        <div class="col-12"><label asp-for="Notes" class="form-label small">ملاحظات</label>
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="2"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الصور الموجودة -->
+            @if (photos.Any()) {
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-camera me-2"></i>الصور الموجودة</h6></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach (var ph in photos) {
+                        <div class="col-4 col-md-3 position-relative">
+                            <img src="@ph.FilePath" class="img-fluid rounded" style="height:70px;width:100%;object-fit:cover;" />
+                            <form asp-action="DeletePhoto" method="post" class="d-inline position-absolute" style="top:2px;right:2px;" onsubmit="return confirm('حذف الصورة؟')">
+                                <input type="hidden" name="photoId" value="@ph.Id" />
+                                <input type="hidden" name="encroachmentId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-danger btn-xs p-0" style="width:18px;height:18px;font-size:9px;"><i class="fas fa-times"></i></button>
+                            </form>
+                        </div>}
+                    </div>
+                </div>
+            </div>}
+
+            <!-- إضافة صور -->
+            <div class="card mb-3">
+                <div class="card-header bg-light"><h6 class="mb-0">إضافة صور جديدة</h6></div>
+                <div class="card-body">
+                    <input type="file" name="photos" class="form-control" multiple accept="image/*" />
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning btn-lg"><i class="fas fa-save me-2"></i>حفظ التعديلات</button>
+            </div>
+        </div>
+
+        <!-- الخريطة -->
+        <div class="col-lg-7">
+            <div class="card sticky-top" style="top:10px;">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>موقع التجاوز</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-light" onclick="setMap('osm')"><i class="fas fa-map"></i></button>
+                        <button type="button" class="btn btn-outline-light active" onclick="setMap('sat')"><i class="fas fa-satellite"></i></button>
+                    </div>
+                </div>
+                <div id="encrMap" style="height:420px;"></div>
+                <div class="card-footer">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <label class="form-label small">خط العرض</label>
+                            <input asp-for="Latitude" id="encrLat" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">خط الطول</label>
+                            <input asp-for="Longitude" id="encrLng" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="goToCoords()"><i class="fas fa-map-pin"></i></button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label asp-for="LocationDescription" class="form-label small">وصف الموقع</label>
+                        <input asp-for="LocationDescription" class="form-control form-control-sm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+var osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+var satL = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+var map = L.map('encrMap', { layers: [satL] }).setView([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture), @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], @mapZoom);
+
+function setMap(type) {
+    map.removeLayer(osmL); map.removeLayer(satL);
+    if (type === 'osm') map.addLayer(osmL); else map.addLayer(satL);
+}
+
+var marker = @(Model.Latitude.HasValue ? "null" : "null");
+@if (Model.Latitude.HasValue) {
+    <text>
+marker = L.marker([@mapLat.ToString(System.Globalization.CultureInfo.InvariantCulture), @mapLng.ToString(System.Globalization.CultureInfo.InvariantCulture)], {
+    draggable: true,
+    icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+}).addTo(map);
+marker.on('dragend', updateCoords);
+    </text>
+}
+
+map.on('click', function(e) {
+    if (marker) marker.setLatLng(e.latlng);
+    else {
+        marker = L.marker(e.latlng, {
+            draggable: true,
+            icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+        }).addTo(map);
+        marker.on('dragend', updateCoords);
+    }
+    updateCoords();
+});
+
+function updateCoords() {
+    if (!marker) return;
+    var ll = marker.getLatLng();
+    document.getElementById('encrLat').value = ll.lat.toFixed(6);
+    document.getElementById('encrLng').value = ll.lng.toFixed(6);
+}
+
+function goToCoords() {
+    var lat = parseFloat(document.getElementById('encrLat').value);
+    var lng = parseFloat(document.getElementById('encrLng').value);
+    if (isNaN(lat) || isNaN(lng)) return;
+    if (marker) marker.setLatLng([lat, lng]);
+    else {
+        marker = L.marker([lat, lng], {
+            draggable: true,
+            icon: L.divIcon({ className:'', html:'<div style="width:22px;height:22px;background:#dc3545;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>', iconSize:[22,22], iconAnchor:[11,11] })
+        }).addTo(map);
+        marker.on('dragend', updateCoords);
+    }
+    map.flyTo([lat, lng], 18, { duration: 0.8 });
+}
+
+function toggleReportFields() {
+    var chk = document.getElementById('isReported');
+    var grp = document.getElementById('reportFieldsGroup');
+    if (chk && grp) grp.style.display = chk.checked ? 'block' : 'none';
+}
+</script>
+}

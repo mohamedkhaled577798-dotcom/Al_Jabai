@@ -17,8 +17,10 @@
     <div>
         @if (ViewBag.CanEdit == true)
         {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-2"><i class="fas fa-edit me-1"></i>تعديل</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-1"><i class="fas fa-edit me-1"></i>تعديل</a>
+            <a asp-controller="Encroachements" asp-action="Create" asp-route-entityType="Mosque" asp-route-entityId="@Model.Id" class="btn btn-outline-danger me-1" title="تسجيل تجاوز جديد"><i class="fas fa-exclamation-triangle me-1"></i>تسجيل تجاوز</a>
         }
+        <a asp-controller="Encroachements" asp-action="Index" asp-route-entityType="Mosque" class="btn btn-outline-warning me-1"><i class="fas fa-list me-1"></i>سجل التجاوزات</a>
         <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
     </div>
 </div>

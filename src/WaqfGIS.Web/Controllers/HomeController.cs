@@ -28,11 +28,14 @@ public class HomeController : Controller
         var contracts = await _unitOfWork.Repository<InvestmentContract>().GetAllAsync();
         var disputes = await _unitOfWork.Repository<LegalDispute>().GetAllAsync();
         var services = await _unitOfWork.Repository<ServiceFacility>().GetAllAsync();
+        var encroachments = await _unitOfWork.Repository<EncroachmentRecord>().GetAllAsync();
         
         ViewBag.ActiveContracts = contracts.Count(c => c.IsActive);
         ViewBag.ExpiringContracts = contracts.Count(c => c.IsActive && c.EndDate <= DateTime.Now.AddMonths(3));
         ViewBag.ActiveDisputes = disputes.Count(d => d.CaseStatus == "جارية");
         ViewBag.TotalServices = services.Count();
+        ViewBag.ActiveEncroachments = encroachments.Count(e => e.Status == "قائم" || e.Status == "قيد المعالجة");
+        ViewBag.TotalEncroachments = encroachments.Count();
         
         return View(stats);
     }

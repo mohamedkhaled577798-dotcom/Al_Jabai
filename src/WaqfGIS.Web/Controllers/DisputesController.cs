@@ -161,6 +161,61 @@ public class DisputesController : Controller
         }
     }
 
+    // GET: Disputes/Edit/5
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var dispute = await _unitOfWork.Repository<LegalDispute>().GetByIdAsync(id);
+        if (dispute == null) { TempData["Error"] = "الدعوى غير موجودة"; return RedirectToAction(nameof(Index)); }
+        var model = new DisputeViewModel {
+            Id = dispute.Id,
+            CaseNumber = dispute.CaseNumber, CaseDate = dispute.CaseDate,
+            CourtName = dispute.CourtName, CourtType = dispute.CourtType,
+            EntityType = dispute.EntityType, EntityId = dispute.EntityId, EntityName = dispute.EntityName,
+            DisputeType = dispute.DisputeType, DisputeSubject = dispute.DisputeSubject,
+            DisputeDescription = dispute.DisputeDescription, ClaimAmount = dispute.ClaimAmount,
+            PlaintiffName = dispute.PlaintiffName, PlaintiffPhone = dispute.PlaintiffPhone, PlaintiffAddress = dispute.PlaintiffAddress,
+            DefendantName = dispute.DefendantName, DefendantPhone = dispute.DefendantPhone, DefendantAddress = dispute.DefendantAddress,
+            LawyerName = dispute.LawyerName, LawyerPhone = dispute.LawyerPhone, LawyerLicenseNumber = dispute.LawyerLicenseNumber, LegalCosts = dispute.LegalCosts,
+            CaseStatus = dispute.CaseStatus, CurrentStage = dispute.CurrentStage, NextHearingDate = dispute.NextHearingDate
+        };
+        return View(model);
+    }
+
+    // POST: Disputes/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, DisputeViewModel model)
+    {
+        if (id != model.Id) return NotFound();
+        if (!ModelState.IsValid) return View(model);
+        try
+        {
+            var dispute = await _unitOfWork.Repository<LegalDispute>().GetByIdAsync(id);
+            if (dispute == null) return NotFound();
+            dispute.CaseNumber = model.CaseNumber; dispute.CaseDate = model.CaseDate;
+            dispute.CourtName = model.CourtName; dispute.CourtType = model.CourtType;
+            dispute.EntityType = model.EntityType; dispute.EntityId = model.EntityId; dispute.EntityName = model.EntityName;
+            dispute.DisputeType = model.DisputeType; dispute.DisputeSubject = model.DisputeSubject;
+            dispute.DisputeDescription = model.DisputeDescription; dispute.ClaimAmount = model.ClaimAmount;
+            dispute.PlaintiffName = model.PlaintiffName; dispute.PlaintiffPhone = model.PlaintiffPhone; dispute.PlaintiffAddress = model.PlaintiffAddress;
+            dispute.DefendantName = model.DefendantName; dispute.DefendantPhone = model.DefendantPhone; dispute.DefendantAddress = model.DefendantAddress;
+            dispute.LawyerName = model.LawyerName; dispute.LawyerPhone = model.LawyerPhone; dispute.LawyerLicenseNumber = model.LawyerLicenseNumber; dispute.LegalCosts = model.LegalCosts;
+            dispute.CaseStatus = model.CaseStatus; dispute.CurrentStage = model.CurrentStage; dispute.NextHearingDate = model.NextHearingDate;
+            dispute.UpdatedBy = User.Identity?.Name ?? "System";
+            await _unitOfWork.Repository<LegalDispute>().UpdateAsync(dispute);
+            await _unitOfWork.SaveChangesAsync();
+            TempData["Success"] = "تم تحديث بيانات الدعوى";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error editing dispute ID: {Id}", id);
+            ModelState.AddModelError("", "حدث خطأ أثناء الحفظ");
+            return View(model);
+        }
+    }
+
     // GET: Disputes/Create
     [HttpGet]
     public IActionResult Create()

@@ -12,8 +12,10 @@
         <h4><i class="fas fa-building text-success me-2"></i>@Model.NameAr</h4>
         <small class="text-muted">@Model.Code</small>
     </div>
-    <div>
+    <div class="d-flex gap-2">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit me-1"></i>تعديل</a>
+        <a asp-controller="Encroachements" asp-action="Create" asp-route-entityType="WaqfProperty" asp-route-entityId="@Model.Id" class="btn btn-outline-danger" title="تسجيل تجاوز جديد"><i class="fas fa-exclamation-triangle me-1"></i>تسجيل تجاوز</a>
+        <a asp-controller="Encroachements" asp-action="Index" asp-route-entityType="WaqfProperty" class="btn btn-outline-warning" title="عرض سجل التجاوزات"><i class="fas fa-list me-1"></i>سجل التجاوزات</a>
         <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
     </div>
 </div>
@@ -140,7 +142,7 @@
                         @if (!string.IsNullOrEmpty(Model.OccupantEmployeeName)) {
                         <div class="col-12 mb-1"><label class="text-muted small">اسم الموظف</label><p class="mb-0 fw-bold">@Model.OccupantEmployeeName
                             @if (Model.IsOccupantRetired == true) { <span class="badge bg-secondary ms-1">متقاعد</span> }
-                            else if (Model.IsOccupantRetired == false) { <span class="badge bg-success ms-1">عامل</span> }
+                            else if (Model.IsOccupantRetired == false) { <span class="badge bg-success ms-1">موظف مستمر</span> }
                         </p></div>}
                         @if (!string.IsNullOrEmpty(Model.OccupantMinistry)) {
                         <div class="col-6 mb-1"><label class="text-muted small">الوزارة/الجهة</label><p class="mb-0">@Model.OccupantMinistry</p></div>}

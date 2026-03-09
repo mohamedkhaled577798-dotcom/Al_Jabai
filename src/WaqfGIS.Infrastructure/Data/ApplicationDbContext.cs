@@ -64,6 +64,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PropertyServiceAssessment> PropertyServiceAssessments => Set<PropertyServiceAssessment>();
     public DbSet<ServiceProximity> ServiceProximities => Set<ServiceProximity>();
 
+    // Phase 1.4 - سجل التجاوزات
+    public DbSet<EncroachmentRecord> EncroachmentRecords => Set<EncroachmentRecord>();
+    public DbSet<EncroachmentPhoto> EncroachmentPhotos => Set<EncroachmentPhoto>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -263,6 +267,33 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(e => e.ServiceFacilityId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // EncroachmentRecord
+        modelBuilder.Entity<EncroachmentRecord>(entity =>
+        {
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.DiscoveryDate);
+            entity.Property(e => e.Location).HasColumnType("geometry");
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasOne(e => e.Province)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProvinceId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.LegalDispute)
+                  .WithMany()
+                  .HasForeignKey(e => e.LegalDisputeId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // EncroachmentPhoto
+        modelBuilder.Entity<EncroachmentPhoto>(entity =>
+        {
+            entity.HasOne(e => e.Encroachment)
+                  .WithMany(r => r.Photos)
+                  .HasForeignKey(e => e.EncroachmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ServiceCategory

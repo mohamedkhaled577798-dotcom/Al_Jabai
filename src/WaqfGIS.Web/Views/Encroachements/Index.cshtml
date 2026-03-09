@@ -1,0 +1,235 @@
+@model IEnumerable<WaqfGIS.Core.Entities.EncroachmentRecord>
+@{
+    ViewData["Title"] = "سجل التجاوزات";
+    var canEdit = ViewBag.CanEdit as bool? ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle text-danger me-2"></i>سجل التجاوزات والتعديات</h4>
+        <small class="text-muted">متابعة وإدارة التجاوزات على الأملاك الوقفية</small>
+    </div>
+    @if (canEdit) {
+    <a asp-action="Create" class="btn btn-danger"><i class="fas fa-plus me-1"></i>تسجيل تجاوز جديد</a>
+    }
+</div>
+
+<!-- إحصاءات سريعة -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-danger text-center py-2">
+            <div class="card-body py-2">
+                <div class="fs-3 fw-bold text-danger">@ViewBag.TotalCount</div>
+                <div class="small text-muted">إجمالي التجاوزات</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-warning text-center py-2">
+            <div class="card-body py-2">
+                <div class="fs-3 fw-bold text-warning">@ViewBag.ActiveCount</div>
+                <div class="small text-muted">قائمة</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-info text-center py-2">
+            <div class="card-body py-2">
+                <div class="fs-3 fw-bold text-info">@ViewBag.InProcessCount</div>
+                <div class="small text-muted">قيد المعالجة</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-success text-center py-2">
+            <div class="card-body py-2">
+                <div class="fs-3 fw-bold text-success">@ViewBag.RemovedCount</div>
+                <div class="small text-muted">أُزيلت</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الخريطة -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-map me-2"></i>خريطة التجاوزات</h6>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-light btn-sm" onclick="setBaseMap('osm')"><i class="fas fa-map"></i></button>
+            <button class="btn btn-outline-light btn-sm" onclick="setBaseMap('satellite')"><i class="fas fa-satellite"></i></button>
+        </div>
+    </div>
+    <div id="encroachmentMap" style="height:380px;"></div>
+    <div class="card-footer py-1">
+        <div class="d-flex gap-3 flex-wrap small">
+            <span><span class="badge rounded-circle" style="background:#dc3545;width:12px;height:12px;display:inline-block;"></span> قائم</span>
+            <span><span class="badge rounded-circle" style="background:#fd7e14;width:12px;height:12px;display:inline-block;"></span> قيد المعالجة</span>
+            <span><span class="badge rounded-circle" style="background:#6f42c1;width:12px;height:12px;display:inline-block;"></span> مرفوع للقضاء</span>
+            <span><span class="badge rounded-circle" style="background:#198754;width:12px;height:12px;display:inline-block;"></span> أُزيل</span>
+        </div>
+    </div>
+</div>
+
+<!-- فلتر البحث -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="بحث..." value="@ViewBag.CurrentSearch" />
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">كل الحالات</option>
+                    <option value="قائم" selected="@(ViewBag.CurrentStatus=="قائم")">قائم</option>
+                    <option value="قيد المعالجة" selected="@(ViewBag.CurrentStatus=="قيد المعالجة")">قيد المعالجة</option>
+                    <option value="مرفوع للقضاء" selected="@(ViewBag.CurrentStatus=="مرفوع للقضاء")">مرفوع للقضاء</option>
+                    <option value="أُزيل" selected="@(ViewBag.CurrentStatus=="أُزيل")">أُزيل</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="entityType" class="form-select form-select-sm">
+                    <option value="">كل الأنواع</option>
+                    <option value="WaqfProperty" selected="@(ViewBag.CurrentEntityType=="WaqfProperty")">عقارات</option>
+                    <option value="WaqfLand" selected="@(ViewBag.CurrentEntityType=="WaqfLand")">أراضي</option>
+                    <option value="Mosque" selected="@(ViewBag.CurrentEntityType=="Mosque")">مساجد</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="provinceId" class="form-select form-select-sm" asp-items="@ViewBag.Provinces">
+                    <option value="">كل المحافظات</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-primary me-1"><i class="fas fa-search me-1"></i>بحث</button>
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">إعادة تعيين</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- الجدول -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (!Model.Any()) {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <p>لا توجد تجاوزات مسجلة</p>
+        </div>
+        } else {
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>العنصر الوقفي</th>
+                        <th>نوع التجاوز</th>
+                        <th>المتجاوز</th>
+                        <th>تاريخ الاكتشاف</th>
+                        <th>درجة الخطورة</th>
+                        <th>الحالة</th>
+                        <th style="width:100px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model) {
+                    <tr>
+                        <td><small class="text-muted">@r.Id</small></td>
+                        <td>
+                            <div class="fw-bold">@r.EntityName</div>
+                            <small class="text-muted">
+                                @(r.EntityType switch { "WaqfProperty"=>"عقار", "WaqfLand"=>"أرض", "Mosque"=>"مسجد", _=>r.EntityType })
+                                @if (r.Province != null) { @(" — " + r.Province.NameAr) }
+                            </small>
+                        </td>
+                        <td><span class="badge bg-secondary">@r.EncroachmentType</span></td>
+                        <td>@(r.EncroachwrName ?? "—")</td>
+                        <td><small>@r.DiscoveryDate.ToString("dd/MM/yyyy")</small></td>
+                        <td>
+                            @{
+                                var sevClass = r.Severity switch {
+                                    "بالغ الخطورة" => "bg-danger",
+                                    "خطير" => "bg-warning text-dark",
+                                    "متوسط" => "bg-info text-dark",
+                                    _ => "bg-light text-dark"
+                                };
+                            }
+                            <span class="badge @sevClass">@r.Severity</span>
+                        </td>
+                        <td>
+                            @{
+                                var stClass = r.Status switch {
+                                    "قائم" => "bg-danger",
+                                    "قيد المعالجة" => "bg-warning text-dark",
+                                    "مرفوع للقضاء" => "bg-purple text-white",
+                                    "أُزيل" => "bg-success",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge" style="background:@(r.Status=="مرفوع للقضاء"?"#6f42c1":""); @(r.Status!="مرفوع للقضاء"?"":"")" 
+                                  class="@stClass">
+                                @if (r.Status == "مرفوع للقضاء") {
+                                    <span class="badge" style="background:#6f42c1">@r.Status</span>
+                                } else {
+                                    <span class="badge @stClass">@r.Status</span>
+                                }
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-xs btn-outline-info" title="تفاصيل"><i class="fas fa-eye"></i></a>
+                            @if (canEdit) {
+                            <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-xs btn-outline-warning" title="تعديل"><i class="fas fa-edit"></i></a>
+                            }
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+var satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+var map = L.map('encroachmentMap', { layers: [osmLayer] }).setView([33.3, 44.4], 7);
+
+function setBaseMap(type) {
+    map.removeLayer(osmLayer); map.removeLayer(satLayer);
+    if (type === 'osm') map.addLayer(osmLayer); else map.addLayer(satLayer);
+}
+
+var colorMap = { 'قائم': '#dc3545', 'قيد المعالجة': '#fd7e14', 'مرفوع للقضاء': '#6f42c1', 'أُزيل': '#198754' };
+
+function getIcon(status, severity) {
+    var color = colorMap[status] || '#6c757d';
+    var size = severity === 'بالغ الخطورة' ? 18 : severity === 'خطير' ? 15 : 12;
+    return L.divIcon({
+        className: '',
+        html: `<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.4);"></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+    });
+}
+
+var geoData = @Html.Raw(ViewBag.GeoJson ?? "{}");
+if (geoData.features && geoData.features.length > 0) {
+    var bounds = [];
+    geoData.features.forEach(function(f) {
+        var p = f.properties;
+        var coords = f.geometry.coordinates;
+        var marker = L.marker([coords[1], coords[0]], { icon: getIcon(p.status, p.severity) })
+            .bindPopup(`<div class="p-1">
+                <strong>${p.entityName || 'تجاوز'}</strong><br>
+                <span class="badge bg-secondary">${p.encroachmentType}</span>
+                <span class="badge" style="background:${colorMap[p.status]||'#999'}">${p.status}</span><br>
+                <small class="text-muted">${p.discoveryDate}</small><br>
+                <a href="${p.detailsUrl}" class="btn btn-xs btn-info mt-1">تفاصيل</a>
+            </div>`).addTo(map);
+        bounds.push([coords[1], coords[0]]);
+    });
+    if (bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30] });
+}
+</script>
+}
