@@ -1,42 +1,46 @@
 using Microsoft.AspNetCore.Http;
 using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
+using WaqfGIS.Services.Storage;
 
 namespace WaqfGIS.Services;
 
 /// <summary>
-/// خدمة رفع وإدارة الصور
+/// خدمة رفع وإدارة الصور — محدّثة لاستخدام التخزين الآمن المشفَّر
+/// جميع الصور تُخزَّن مشفّرة في D:\WakfData
 /// </summary>
 public class ImageUploadService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly string _uploadPath;
+    private readonly IUnitOfWork             _unitOfWork;
+    private readonly SecureFileStorageService _storage;
 
-    public ImageUploadService(IUnitOfWork unitOfWork, string webRootPath)
+    private static readonly string[] ImageExtensions =
+        { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+    public ImageUploadService(IUnitOfWork unitOfWork, SecureFileStorageService storage)
     {
         _unitOfWork = unitOfWork;
-        _uploadPath = Path.Combine(webRootPath, "uploads", "images");
-        
-        if (!Directory.Exists(_uploadPath))
-            Directory.CreateDirectory(_uploadPath);
+        _storage    = storage;
     }
 
-    public async Task<MosqueImage> UploadMosqueImageAsync(int mosqueId, IFormFile file, string? description, string? uploadedBy)
+    // =================== مساجد ===================
+    public async Task<MosqueImage> UploadMosqueImageAsync(
+        int mosqueId, IFormFile file, string? description, string? uploadedBy)
     {
-        var fileName = await SaveFileAsync(file, "mosques");
-        
+        var saved = await _storage.SaveFileAsync(file, "MosqueImages", ImageExtensions);
+
         var image = new MosqueImage
         {
-            MosqueId = mosqueId,
-            FileName = fileName,
-            OriginalFileName = file.FileName,
-            FilePath = $"/uploads/images/mosques/{fileName}",
-            FileSize = file.Length,
-            ContentType = file.ContentType,
-            Description = description,
-            UploadedAt = DateTime.UtcNow,
-            UploadedBy = uploadedBy,
-            IsMain = false
+            MosqueId         = mosqueId,
+            FileName         = saved.Uid,                  // UID على القرص
+            OriginalFileName = saved.OriginalName,
+            FilePath         = saved.DbPath,               // "MosqueImages/uid"
+            FileSize         = saved.FileSize,
+            ContentType      = saved.MimeType,
+            Description      = description,
+            UploadedAt       = DateTime.UtcNow,
+            UploadedBy       = uploadedBy,
+            IsMain           = false
         };
 
         await _unitOfWork.MosqueImages.AddAsync(image);
@@ -44,45 +48,40 @@ public class ImageUploadService
         return image;
     }
 
-    public async Task<List<MosqueImage>> UploadMosqueImagesAsync(int mosqueId, IFormFileCollection files, string? uploadedBy)
+    public async Task<List<MosqueImage>> UploadMosqueImagesAsync(
+        int mosqueId, IFormFileCollection files, string? uploadedBy)
     {
-        var images = new List<MosqueImage>();
+        var images  = new List<MosqueImage>();
         bool isFirst = !await HasMosqueImagesAsync(mosqueId);
 
         foreach (var file in files)
         {
-            if (IsValidImage(file))
-            {
-                var image = await UploadMosqueImageAsync(mosqueId, file, null, uploadedBy);
-                if (isFirst)
-                {
-                    image.IsMain = true;
-                    await _unitOfWork.MosqueImages.UpdateAsync(image);
-                    await _unitOfWork.SaveChangesAsync();
-                    isFirst = false;
-                }
-                images.Add(image);
-            }
+            if (!IsValidImage(file)) continue;
+            var image = await UploadMosqueImageAsync(mosqueId, file, null, uploadedBy);
+            if (isFirst) { image.IsMain = true; await _unitOfWork.MosqueImages.UpdateAsync(image); await _unitOfWork.SaveChangesAsync(); isFirst = false; }
+            images.Add(image);
         }
         return images;
     }
 
-    public async Task<PropertyImage> UploadPropertyImageAsync(int propertyId, IFormFile file, string? description, string? uploadedBy)
+    // =================== عقارات ===================
+    public async Task<PropertyImage> UploadPropertyImageAsync(
+        int propertyId, IFormFile file, string? description, string? uploadedBy)
     {
-        var fileName = await SaveFileAsync(file, "properties");
-        
+        var saved = await _storage.SaveFileAsync(file, "PropertyImages", ImageExtensions);
+
         var image = new PropertyImage
         {
-            WaqfPropertyId = propertyId,
-            FileName = fileName,
-            OriginalFileName = file.FileName,
-            FilePath = $"/uploads/images/properties/{fileName}",
-            FileSize = file.Length,
-            ContentType = file.ContentType,
-            Description = description,
-            UploadedAt = DateTime.UtcNow,
-            UploadedBy = uploadedBy,
-            IsMain = false
+            WaqfPropertyId   = propertyId,
+            FileName         = saved.Uid,
+            OriginalFileName = saved.OriginalName,
+            FilePath         = saved.DbPath,
+            FileSize         = saved.FileSize,
+            ContentType      = saved.MimeType,
+            Description      = description,
+            UploadedAt       = DateTime.UtcNow,
+            UploadedBy       = uploadedBy,
+            IsMain           = false
         };
 
         await _unitOfWork.PropertyImages.AddAsync(image);
@@ -90,45 +89,40 @@ public class ImageUploadService
         return image;
     }
 
-    public async Task<List<PropertyImage>> UploadPropertyImagesAsync(int propertyId, IFormFileCollection files, string? uploadedBy)
+    public async Task<List<PropertyImage>> UploadPropertyImagesAsync(
+        int propertyId, IFormFileCollection files, string? uploadedBy)
     {
-        var images = new List<PropertyImage>();
+        var images  = new List<PropertyImage>();
         bool isFirst = !await HasPropertyImagesAsync(propertyId);
 
         foreach (var file in files)
         {
-            if (IsValidImage(file))
-            {
-                var image = await UploadPropertyImageAsync(propertyId, file, null, uploadedBy);
-                if (isFirst)
-                {
-                    image.IsMain = true;
-                    await _unitOfWork.PropertyImages.UpdateAsync(image);
-                    await _unitOfWork.SaveChangesAsync();
-                    isFirst = false;
-                }
-                images.Add(image);
-            }
+            if (!IsValidImage(file)) continue;
+            var image = await UploadPropertyImageAsync(propertyId, file, null, uploadedBy);
+            if (isFirst) { image.IsMain = true; await _unitOfWork.PropertyImages.UpdateAsync(image); await _unitOfWork.SaveChangesAsync(); isFirst = false; }
+            images.Add(image);
         }
         return images;
     }
 
-    public async Task<OfficeImage> UploadOfficeImageAsync(int officeId, IFormFile file, string? description, string? uploadedBy)
+    // =================== دوائر ===================
+    public async Task<OfficeImage> UploadOfficeImageAsync(
+        int officeId, IFormFile file, string? description, string? uploadedBy)
     {
-        var fileName = await SaveFileAsync(file, "offices");
-        
+        var saved = await _storage.SaveFileAsync(file, "OfficeDocs", ImageExtensions);
+
         var image = new OfficeImage
         {
-            WaqfOfficeId = officeId,
-            FileName = fileName,
-            OriginalFileName = file.FileName,
-            FilePath = $"/uploads/images/offices/{fileName}",
-            FileSize = file.Length,
-            ContentType = file.ContentType,
-            Description = description,
-            UploadedAt = DateTime.UtcNow,
-            UploadedBy = uploadedBy,
-            IsMain = false
+            WaqfOfficeId     = officeId,
+            FileName         = saved.Uid,
+            OriginalFileName = saved.OriginalName,
+            FilePath         = saved.DbPath,
+            FileSize         = saved.FileSize,
+            ContentType      = saved.MimeType,
+            Description      = description,
+            UploadedAt       = DateTime.UtcNow,
+            UploadedBy       = uploadedBy,
+            IsMain           = false
         };
 
         await _unitOfWork.OfficeImages.AddAsync(image);
@@ -136,102 +130,82 @@ public class ImageUploadService
         return image;
     }
 
+    // =================== قراءة ===================
     public async Task<IEnumerable<MosqueImage>> GetMosqueImagesAsync(int mosqueId)
-    {
-        return await Task.FromResult(_unitOfWork.MosqueImages.Query()
+        => await Task.FromResult(_unitOfWork.MosqueImages.Query()
             .Where(i => i.MosqueId == mosqueId)
-            .OrderByDescending(i => i.IsMain)
-            .ThenByDescending(i => i.UploadedAt)
-            .ToList());
-    }
+            .OrderByDescending(i => i.IsMain).ThenByDescending(i => i.UploadedAt).ToList());
 
     public async Task<IEnumerable<PropertyImage>> GetPropertyImagesAsync(int propertyId)
-    {
-        return await Task.FromResult(_unitOfWork.PropertyImages.Query()
+        => await Task.FromResult(_unitOfWork.PropertyImages.Query()
             .Where(i => i.WaqfPropertyId == propertyId)
-            .OrderByDescending(i => i.IsMain)
-            .ThenByDescending(i => i.UploadedAt)
-            .ToList());
-    }
+            .OrderByDescending(i => i.IsMain).ThenByDescending(i => i.UploadedAt).ToList());
 
     public async Task<IEnumerable<OfficeImage>> GetOfficeImagesAsync(int officeId)
-    {
-        return await Task.FromResult(_unitOfWork.OfficeImages.Query()
+        => await Task.FromResult(_unitOfWork.OfficeImages.Query()
             .Where(i => i.WaqfOfficeId == officeId)
-            .OrderByDescending(i => i.IsMain)
-            .ThenByDescending(i => i.UploadedAt)
-            .ToList());
-    }
+            .OrderByDescending(i => i.IsMain).ThenByDescending(i => i.UploadedAt).ToList());
 
+    // =================== حذف ===================
     public async Task DeleteMosqueImageAsync(int imageId)
     {
         var image = await _unitOfWork.MosqueImages.GetByIdAsync(imageId);
-        if (image != null)
-        {
-            DeleteFile(image.FilePath);
-            await _unitOfWork.MosqueImages.DeleteAsync(image);
-            await _unitOfWork.SaveChangesAsync();
-        }
+        if (image == null) return;
+        DeleteStoredFile(image.FilePath);
+        await _unitOfWork.MosqueImages.DeleteAsync(image);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task DeletePropertyImageAsync(int imageId)
     {
         var image = await _unitOfWork.PropertyImages.GetByIdAsync(imageId);
-        if (image != null)
-        {
-            DeleteFile(image.FilePath);
-            await _unitOfWork.PropertyImages.DeleteAsync(image);
-            await _unitOfWork.SaveChangesAsync();
-        }
+        if (image == null) return;
+        DeleteStoredFile(image.FilePath);
+        await _unitOfWork.PropertyImages.DeleteAsync(image);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task SetMainMosqueImageAsync(int mosqueId, int imageId)
     {
         var images = _unitOfWork.MosqueImages.Query().Where(i => i.MosqueId == mosqueId).ToList();
         foreach (var img in images)
-        {
-            img.IsMain = img.Id == imageId;
-            await _unitOfWork.MosqueImages.UpdateAsync(img);
-        }
+        { img.IsMain = img.Id == imageId; await _unitOfWork.MosqueImages.UpdateAsync(img); }
         await _unitOfWork.SaveChangesAsync();
     }
 
-    private async Task<string> SaveFileAsync(IFormFile file, string subFolder)
+    // =================== مساعدات ===================
+
+    /// <summary>
+    /// بناء URL الخادم لعرض صورة مشفّرة
+    /// DbPath = "MosqueImages/uid" → /Files/Get?folder=MosqueImages&uid=xxx&ext=.jpg
+    /// </summary>
+    public static string BuildFileUrl(string dbPath, string ext = ".jpg", bool download = false)
     {
-        var folderPath = Path.Combine(_uploadPath, subFolder);
-        if (!Directory.Exists(folderPath))
-            Directory.CreateDirectory(folderPath);
-
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-        var filePath = Path.Combine(folderPath, fileName);
-
-        using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        return fileName;
+        if (string.IsNullOrEmpty(dbPath)) return "/img/no-image.png";
+        var parts  = dbPath.Split('/');
+        var folder = parts.Length > 1 ? parts[0] : "MosqueImages";
+        var uid    = parts.Length > 1 ? parts[1] : parts[0];
+        return $"/Files/Get?folder={folder}&uid={uid}&ext={Uri.EscapeDataString(ext)}&dl={(download?"true":"false")}";
     }
 
-    private void DeleteFile(string filePath)
+    private void DeleteStoredFile(string dbPath)
     {
-        var fullPath = Path.Combine(_uploadPath, "..", filePath.TrimStart('/'));
-        if (File.Exists(fullPath))
-            File.Delete(fullPath);
+        if (string.IsNullOrEmpty(dbPath)) return;
+        var parts  = dbPath.Split('/');
+        if (parts.Length < 2) return;
+        var diskPath = _storage.GetDiskPath(parts[0], parts[1]);
+        _storage.DeleteFile(diskPath);
     }
 
-    private bool IsValidImage(IFormFile file)
+    private static bool IsValidImage(IFormFile file)
     {
         var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
-        var maxSize = 10 * 1024 * 1024; // 10MB
-        return allowedTypes.Contains(file.ContentType.ToLower()) && file.Length <= maxSize;
+        return allowedTypes.Contains(file.ContentType.ToLower()) && file.Length <= 10 * 1024 * 1024;
     }
 
     private async Task<bool> HasMosqueImagesAsync(int mosqueId)
-    {
-        return await Task.FromResult(_unitOfWork.MosqueImages.Query().Any(i => i.MosqueId == mosqueId));
-    }
+        => await Task.FromResult(_unitOfWork.MosqueImages.Query().Any(i => i.MosqueId == mosqueId));
 
     private async Task<bool> HasPropertyImagesAsync(int propertyId)
-    {
-        return await Task.FromResult(_unitOfWork.PropertyImages.Query().Any(i => i.WaqfPropertyId == propertyId));
-    }
+        => await Task.FromResult(_unitOfWork.PropertyImages.Query().Any(i => i.WaqfPropertyId == propertyId));
 }

@@ -6,6 +6,7 @@ using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Web.Models;
+using System.Text.Json;
 
 namespace WaqfGIS.Web.Controllers;
 
@@ -16,13 +17,19 @@ public class ReportsController : Controller
     private readonly IUnitOfWork _unitOfWork;
     private readonly ExcelExportService _excelExportService;
     private readonly AuditLogService _auditLogService;
+    private readonly ExcelImportService _excelImportService;
+    private readonly PdfReportService _pdfReportService;
 
-    public ReportsController(ReportService reportService, IUnitOfWork unitOfWork, ExcelExportService excelExportService, AuditLogService auditLogService)
+    public ReportsController(ReportService reportService, IUnitOfWork unitOfWork,
+        ExcelExportService excelExportService, AuditLogService auditLogService,
+        ExcelImportService excelImportService, PdfReportService pdfReportService)
     {
-        _reportService = reportService;
-        _auditLogService = auditLogService;
-        _unitOfWork = unitOfWork;
+        _reportService      = reportService;
+        _auditLogService    = auditLogService;
+        _unitOfWork         = unitOfWork;
         _excelExportService = excelExportService;
+        _excelImportService = excelImportService;
+        _pdfReportService   = pdfReportService;
     }
 
     public async Task<IActionResult> Index()
@@ -189,6 +196,101 @@ public class ReportsController : Controller
         var fileName = $"تقرير_{province.NameAr}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    // ========== استيراد Excel ==========
+
+    [HttpGet]
+    public async Task<IActionResult> Import()
+    {
+        ViewBag.Offices = new SelectList(await _unitOfWork.WaqfOffices.GetAllAsync(), "Id", "NameAr");
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(10 * 1024 * 1024)] // 10MB
+    public async Task<IActionResult> ImportMosques(IFormFile file, int officeId)
+    {
+        if (file == null || file.Length == 0)
+        { TempData["Error"] = "الرجاء اختيار ملف"; return RedirectToAction(nameof(Import)); }
+
+        using var stream = file.OpenReadStream();
+        var result = await _excelImportService.ImportMosquesAsync(stream, file.FileName, officeId);
+        TempData["ImportResult"] = System.Text.Json.JsonSerializer.Serialize(result);
+        return RedirectToAction(nameof(Import));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> ImportProperties(IFormFile file, int officeId)
+    {
+        if (file == null || file.Length == 0)
+        { TempData["Error"] = "الرجاء اختيار ملف"; return RedirectToAction(nameof(Import)); }
+
+        using var stream = file.OpenReadStream();
+        var result = await _excelImportService.ImportPropertiesAsync(stream, file.FileName, officeId);
+        TempData["ImportResult"] = System.Text.Json.JsonSerializer.Serialize(result);
+        return RedirectToAction(nameof(Import));
+    }
+
+    // ========== تصدير PDF ==========
+
+    [HttpGet]
+    public async Task<IActionResult> ExportMosquePdf(int id)
+    {
+        var mosque = await _unitOfWork.Mosques.Query()
+            .Include(m => m.MosqueType).Include(m => m.MosqueStatus)
+            .Include(m => m.Province).Include(m => m.WaqfOffice)
+            .FirstOrDefaultAsync(m => m.Id == id);
+        if (mosque == null) return NotFound();
+
+        var pdf = _pdfReportService.GenerateMosqueCard(mosque);
+        return File(pdf, "application/pdf", $"مسجد_{mosque.Code}_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPropertyPdf(int id)
+    {
+        var property = await _unitOfWork.WaqfProperties.Query()
+            .Include(p => p.PropertyType).Include(p => p.UsageType)
+            .Include(p => p.Province).Include(p => p.WaqfOffice)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (property == null) return NotFound();
+
+        var pdf = _pdfReportService.GeneratePropertyCard(property);
+        return File(pdf, "application/pdf", $"عقار_{property.Code}_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportProvincePdf(int provinceId)
+    {
+        var province = await _unitOfWork.Provinces.GetByIdAsync(provinceId);
+        if (province == null) return NotFound();
+
+        var mosques = await _unitOfWork.Mosques.Query()
+            .Include(m => m.MosqueType).Include(m => m.MosqueStatus)
+            .Where(m => m.ProvinceId == provinceId).ToListAsync();
+        var properties = await _unitOfWork.WaqfProperties.Query()
+            .Include(p => p.PropertyType)
+            .Where(p => p.ProvinceId == provinceId).ToListAsync();
+
+        var pdf = _pdfReportService.GenerateProvinceReport(province.NameAr, mosques, properties);
+        return File(pdf, "application/pdf", $"تقرير_{province.NameAr}_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportMaintenancePdf(int? provinceId)
+    {
+        var records = await _unitOfWork.Repository<MaintenanceRecord>().Query()
+            .Include(m => m.Province)
+            .Where(m => !provinceId.HasValue || m.ProvinceId == provinceId)
+            .OrderByDescending(m => m.ScheduledDate)
+            .ToListAsync();
+
+        var pdf = _pdfReportService.GenerateMaintenanceReport(records);
+        return File(pdf, "application/pdf", $"سجل_الصيانة_{DateTime.Now:yyyyMMdd}.pdf");
     }
 
     // ========== سجل التدقيق ==========

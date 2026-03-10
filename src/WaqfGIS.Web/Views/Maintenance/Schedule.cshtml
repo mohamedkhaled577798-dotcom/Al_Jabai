@@ -1,0 +1,108 @@
+@{
+    ViewData["Title"] = "الجدول الزمني للصيانة";
+    var upcoming = ViewBag.Upcoming as List<WaqfGIS.Core.Entities.MaintenanceRecord> ?? new();
+    var overdue  = ViewBag.Overdue  as List<WaqfGIS.Core.Entities.MaintenanceRecord> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold"><i class="fas fa-calendar-alt me-2 text-info"></i>الجدول الزمني للصيانة</h4>
+    <a href="@Url.Action("Create")" class="btn btn-warning btn-sm">
+        <i class="fas fa-plus me-1"></i>إضافة صيانة
+    </a>
+</div>
+
+<!-- المتأخرة أولاً -->
+@if (overdue.Any())
+{
+<div class="card border-danger border-0 shadow-sm mb-4" style="border-right:5px solid #dc2626!important;">
+    <div class="card-header bg-danger text-white">
+        <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>صيانة متأخرة (@overdue.Count)</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 small align-middle">
+                <thead class="table-light"><tr>
+                    <th>العنوان</th><th>الكيان</th><th>النوع</th><th>الأولوية</th><th>كان مجدولاً</th><th>التأخر</th><th></th>
+                </tr></thead>
+                <tbody>
+                @foreach (var r in overdue)
+                {
+                <tr>
+                    <td class="fw-semibold">@r.Title</td>
+                    <td><small>@r.EntityName</small></td>
+                    <td><small>@r.MaintenanceType</small></td>
+                    <td><span class="badge bg-@(r.Priority=="عاجلة"?"danger":r.Priority=="عالية"?"warning":"secondary")">@r.Priority</span></td>
+                    <td class="text-danger">@r.ScheduledDate.ToString("dd/MM/yyyy")</td>
+                    <td><span class="badge bg-danger">@((DateTime.Today - r.ScheduledDate).Days) يوم</span></td>
+                    <td><a href="@Url.Action("Details", new{id=r.Id})" class="btn btn-sm btn-outline-danger">معالجة</a></td>
+                </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+}
+
+<!-- الجدول الزمني القادم -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-calendar-check me-2 text-info"></i>صيانة مجدولة خلال 90 يوم (@upcoming.Count)</h6>
+    </div>
+    <div class="card-body">
+        @if (!upcoming.Any())
+        {
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-calendar-check fa-3x mb-2 opacity-25"></i>
+            <div>لا توجد صيانة مجدولة خلال 90 يوم القادمة</div>
+        </div>
+        }
+        else
+        {
+        <!-- Timeline -->
+        <div class="position-relative">
+            @{
+                var grouped = upcoming.GroupBy(r => r.ScheduledDate.ToString("MMMM yyyy",
+                    new System.Globalization.CultureInfo("ar-IQ"))).ToList();
+            }
+            @foreach (var month in grouped)
+            {
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="badge bg-info fs-6 px-3">@month.Key</div>
+                    <hr class="flex-grow-1 ms-2" />
+                </div>
+                <div class="row g-2 ms-2">
+                    @foreach (var r in month)
+                    {
+                    var daysLeft = (r.ScheduledDate - DateTime.Today).Days;
+                    var urgency = daysLeft <= 3 ? "danger" : daysLeft <= 7 ? "warning" : "info";
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-right:3px solid var(--bs-@urgency)!important;">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-semibold small">@r.Title</div>
+                                        <small class="text-muted">@r.EntityName</small>
+                                    </div>
+                                    <span class="badge bg-@urgency">@daysLeft يوم</span>
+                                </div>
+                                <div class="mt-1 d-flex gap-1 flex-wrap">
+                                    <span class="badge bg-light text-dark" style="font-size:10px;">@r.MaintenanceType</span>
+                                    <span class="badge bg-light text-dark" style="font-size:10px;">@r.Priority</span>
+                                </div>
+                                <div class="mt-1 d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">@r.ScheduledDate.ToString("dd/MM")</small>
+                                    <a href="@Url.Action("Details", new{id=r.Id})" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;">تفاصيل</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</div>

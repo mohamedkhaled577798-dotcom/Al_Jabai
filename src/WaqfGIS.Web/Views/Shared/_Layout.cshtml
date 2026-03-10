@@ -60,9 +60,13 @@
                        asp-controller="Roads" asp-action="Index">
                         <i class="fas fa-road me-2"></i> الطرق
                     </a>
-                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active bg-primary rounded" : "")" 
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() != "Import" ? "active bg-primary rounded" : "")" 
                        asp-controller="Reports" asp-action="Index">
                         <i class="fas fa-chart-bar me-2"></i> التقارير
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["action"]?.ToString() == "Import" ? "active bg-primary rounded" : "")" 
+                       asp-controller="Reports" asp-action="Import">
+                        <i class="fas fa-exchange-alt me-2"></i> استيراد / تصدير
                     </a>
                     <hr class="border-secondary">
                     <!-- قسم العقود والدعاوى -->
@@ -78,6 +82,15 @@
                     <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Encroachements" ? "active bg-danger rounded" : "")" 
                        asp-controller="Encroachements" asp-action="Index">
                         <i class="fas fa-exclamation-triangle me-2"></i> سجل التجاوزات
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Alerts" ? "active bg-warning text-dark rounded" : "")" 
+                       asp-controller="Alerts" asp-action="Index">
+                        <i class="fas fa-bell me-2"></i> مركز التنبيهات
+                        <span id="sidebarAlertBadge" class="badge bg-danger ms-1" style="display:none;">!</span>
+                    </a>
+                    <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Maintenance" ? "active bg-secondary rounded" : "")" 
+                       asp-controller="Maintenance" asp-action="Index">
+                        <i class="fas fa-tools me-2"></i> سجل الصيانة
                     </a>
                     <hr class="border-secondary">
                     <!-- قسم الخدمات والتحليل -->
@@ -130,7 +143,14 @@
                         <span class="navbar-text fw-bold text-primary">
                             @ViewData["Title"]
                         </span>
-                        <ul class="navbar-nav ms-auto">
+                        <ul class="navbar-nav ms-auto align-items-center">
+                            <!-- Bell icon للتنبيهات -->
+                            <li class="nav-item me-2">
+                                <a class="nav-link position-relative" href="@Url.Action("Index","Alerts")" id="alertBell" title="التنبيهات">
+                                    <i class="fas fa-bell fa-lg"></i>
+                                    <span id="alertBadge" class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" style="display:none;font-size:10px;">0</span>
+                                </a>
+                            </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" 
                                    role="button" data-bs-toggle="dropdown">
@@ -184,5 +204,34 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+    <script>
+    // تحديث عداد التنبيهات كل دقيقتين
+    function refreshAlertBadge() {
+        fetch('/Alerts/Summary')
+            .then(r => r.json())
+            .then(data => {
+                var count = data.totalUnread || 0;
+                var badge = document.getElementById('alertBadge');
+                var sidebar = document.getElementById('sidebarAlertBadge');
+                if (badge) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                    // اهتزاز الجرس إذا وجد تنبيه حرج
+                    if (data.criticalCount > 0)
+                        document.getElementById('alertBell')?.classList.add('text-danger');
+                    else
+                        document.getElementById('alertBell')?.classList.remove('text-danger');
+                }
+                if (sidebar) sidebar.style.display = count > 0 ? 'inline-block' : 'none';
+            })
+            .catch(() => {});
+    }
+    refreshAlertBadge();
+    setInterval(refreshAlertBadge, 120000); // كل دقيقتين
+    </script>
+    }
 </body>
 </html>

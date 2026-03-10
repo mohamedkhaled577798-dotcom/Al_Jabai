@@ -16,6 +16,8 @@
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit me-1"></i>تعديل</a>
         <a asp-controller="Encroachements" asp-action="Create" asp-route-entityType="WaqfProperty" asp-route-entityId="@Model.Id" class="btn btn-outline-danger" title="تسجيل تجاوز جديد"><i class="fas fa-exclamation-triangle me-1"></i>تسجيل تجاوز</a>
         <a asp-controller="Encroachements" asp-action="Index" asp-route-entityType="WaqfProperty" class="btn btn-outline-warning" title="عرض سجل التجاوزات"><i class="fas fa-list me-1"></i>سجل التجاوزات</a>
+        <a asp-controller="Maintenance" asp-action="Create" asp-route-entityType="WaqfProperty" asp-route-entityId="@Model.Id" asp-route-entityName="@Model.NameAr" class="btn btn-outline-secondary" title="إضافة صيانة"><i class="fas fa-tools me-1"></i>صيانة</a>
+        <a asp-controller="Reports" asp-action="ExportPropertyPdf" asp-route-id="@Model.Id" class="btn btn-outline-danger" target="_blank" title="تصدير PDF"><i class="fas fa-file-pdf me-1"></i>PDF</a>
         <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>رجوع</a>
     </div>
 </div>
@@ -91,18 +93,20 @@
                                        rf.MimeType != null && rf.MimeType.Contains("image") ? "fa-file-image text-success" :
                                        rf.MimeType != null && rf.MimeType.Contains("sheet") ? "fa-file-excel text-success" : "fa-file text-secondary";
                             var sizeKb = rf.FileSize.HasValue ? (rf.FileSize.Value / 1024.0).ToString("F1") + " KB" : "";
+                            var rfExt  = rf.MimeType?.Contains("pdf")==true ? ".pdf" : System.IO.Path.GetExtension(rf.FileName ?? "");
+                            var rfUrl  = FileUrl(rf.FilePath, rfExt, true);
                             <div class="list-group-item px-0 py-2">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <i class="fas @icon me-2"></i>
-                                        <a href="@rf.FilePath" target="_blank" class="text-decoration-none fw-bold">@rf.FileName</a><br/>
+                                        <a href="@rfUrl" target="_blank" class="text-decoration-none fw-bold">@rf.FileName</a><br/>
                                         <small class="text-muted ms-4">
                                             <span class="badge bg-secondary me-1">@rf.DocumentType</span>
                                             @rf.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")
                                             @if (!string.IsNullOrEmpty(sizeKb)) { <text> · @sizeKb</text> }
                                         </small>
                                     </div>
-                                    <a href="@rf.FilePath" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-download"></i></a>
+                                    <a href="@rfUrl" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-download"></i></a>
                                 </div>
                             </div>
                         }

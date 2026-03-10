@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Infrastructure.Data;
 using WaqfGIS.Infrastructure.Repositories;
 using WaqfGIS.Services;
+using WaqfGIS.Services.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,16 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// ═══════════════════════════════════════════════════
+// تخزين الملفات الآمن المشفّر
+// لتغيير مسار التخزين: عدّل "FileStorage:RootPath" في appsettings.json
+// ═══════════════════════════════════════════════════
+builder.Services.Configure<FileStorageSettings>(
+    builder.Configuration.GetSection("FileStorage"));
+builder.Services.AddSingleton<FileStorageSettings>(sp =>
+    sp.GetRequiredService<IOptions<FileStorageSettings>>().Value);
+builder.Services.AddSingleton<SecureFileStorageService>();
+
 // Add Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<MosqueService>();
@@ -47,9 +59,7 @@ builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<PermissionService>();
-builder.Services.AddScoped<ImageUploadService>(sp => 
-    new ImageUploadService(sp.GetRequiredService<IUnitOfWork>(), 
-        sp.GetRequiredService<IWebHostEnvironment>().WebRootPath));
+builder.Services.AddScoped<ImageUploadService>();
 
 // GIS Services - Phase 2
 builder.Services.AddScoped<WaqfGIS.Services.GIS.GeometryService>();
@@ -60,6 +70,11 @@ builder.Services.AddScoped<WaqfGIS.Services.RoadService>();
 
 // Advanced Services - Phase 3
 builder.Services.AddScoped<ContractService>();
+builder.Services.AddScoped<AlertService>();
+builder.Services.AddScoped<ExcelImportService>();
+builder.Services.AddScoped<PdfReportService>();
+builder.Services.AddScoped<MaintenanceService>();
+builder.Services.AddHostedService<WaqfGIS.Web.BackgroundServices.AlertBackgroundService>();
 builder.Services.AddScoped<ServiceAssessmentService>();
 
 // Add MVC

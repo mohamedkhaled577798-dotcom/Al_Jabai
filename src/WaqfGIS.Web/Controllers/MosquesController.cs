@@ -8,6 +8,7 @@ using WaqfGIS.Core.Enums;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Services.GIS;
+using WaqfGIS.Services.Storage;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -22,6 +23,7 @@ public class MosquesController : Controller
     private readonly ImageUploadService _imageUploadService;
     private readonly PermissionService _permissionService;
     private readonly GeometryService _geometryService;
+    private readonly SecureFileStorageService _storage;
 
     public MosquesController(
         MosqueService mosqueService, 
@@ -30,15 +32,17 @@ public class MosquesController : Controller
         AuditLogService auditLogService,
         ImageUploadService imageUploadService,
         PermissionService permissionService,
-        GeometryService geometryService)
+        GeometryService geometryService,
+        SecureFileStorageService storage)
     {
-        _mosqueService = mosqueService;
-        _unitOfWork = unitOfWork;
+        _mosqueService      = mosqueService;
+        _unitOfWork         = unitOfWork;
         _excelExportService = excelExportService;
-        _auditLogService = auditLogService;
+        _auditLogService    = auditLogService;
         _imageUploadService = imageUploadService;
-        _permissionService = permissionService;
-        _geometryService = geometryService;
+        _permissionService  = permissionService;
+        _geometryService    = geometryService;
+        _storage            = storage;
     }
 
     public async Task<IActionResult> Index(int? provinceId, int? typeId, string? search)
@@ -383,8 +387,11 @@ public class MosquesController : Controller
         var file = await _unitOfWork.Repository<MosqueRegistrationFile>().GetByIdAsync(fileId);
         if (file != null && file.MosqueId == mosqueId)
         {
-            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file.FilePath.TrimStart('/'));
-            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            // حذف الملف المشفَّر من القرص
+            var parts = file.FilePath.Split('/');
+            if (parts.Length >= 2)
+                _storage.DeleteFile(_storage.GetDiskPath(parts[0], parts[1]));
+
             await _unitOfWork.Repository<MosqueRegistrationFile>().DeleteAsync(file);
             await _unitOfWork.SaveChangesAsync();
             TempData["Success"] = "تم حذف الملف";
@@ -394,30 +401,25 @@ public class MosquesController : Controller
 
     private async Task UploadMosqueRegistrationFilesAsync(int mosqueId, IFormFileCollection files, string inputName)
     {
-        var regFiles = files.Where(f => f.Name == inputName).ToList();
+        var regFiles = files.Where(f => f.Name == inputName && f.Length > 0).ToList();
         if (!regFiles.Any()) return;
 
-        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "mosque-docs", mosqueId.ToString());
-        Directory.CreateDirectory(uploadDir);
+        var docType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة";
 
         foreach (var file in regFiles)
         {
-            if (file.Length == 0) continue;
-            var ext = Path.GetExtension(file.FileName);
-            var savedName = $"{Guid.NewGuid()}{ext}";
-            var fullPath = Path.Combine(uploadDir, savedName);
-            using var stream = System.IO.File.Create(fullPath);
-            await file.CopyToAsync(stream);
+            // حفظ مشفَّر في MosqueDocs
+            var saved = await _storage.SaveFileAsync(file, "MosqueDocs");
 
             var regFile = new MosqueRegistrationFile
             {
-                MosqueId = mosqueId,
-                DocumentType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة",
-                FileName = file.FileName,
-                FilePath = $"/uploads/mosque-docs/{mosqueId}/{savedName}",
-                FileSize = file.Length,
-                MimeType = file.ContentType,
-                UploadedBy = User.Identity?.Name
+                MosqueId     = mosqueId,
+                DocumentType = docType,
+                FileName     = saved.OriginalName,
+                FilePath     = saved.DbPath,            // "MosqueDocs/uid"
+                FileSize     = saved.FileSize,
+                MimeType     = saved.MimeType,
+                UploadedBy   = User.Identity?.Name
             };
             await _unitOfWork.Repository<MosqueRegistrationFile>().AddAsync(regFile);
         }

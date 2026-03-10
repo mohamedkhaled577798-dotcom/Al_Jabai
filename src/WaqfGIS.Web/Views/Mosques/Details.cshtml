@@ -7,6 +7,11 @@
     var boundaryGeoJson = ViewBag.BoundaryGeoJson as string;
     var boundaryArea = ViewBag.BoundaryArea as double?;
     var regFiles = ViewBag.RegistrationFiles as IEnumerable<MosqueRegistrationFile> ?? new List<MosqueRegistrationFile>();
+
+    // بناء URL الصورة الرئيسية
+    string mainImgUrl = mainImage != null
+        ? FileUrl(mainImage.FilePath, mainImage.ContentType?.Contains("png") == true ? ".png" : ".jpg")
+        : "/img/no-image.png";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -21,6 +26,8 @@
             <a asp-controller="Encroachements" asp-action="Create" asp-route-entityType="Mosque" asp-route-entityId="@Model.Id" class="btn btn-outline-danger me-1" title="تسجيل تجاوز جديد"><i class="fas fa-exclamation-triangle me-1"></i>تسجيل تجاوز</a>
         }
         <a asp-controller="Encroachements" asp-action="Index" asp-route-entityType="Mosque" class="btn btn-outline-warning me-1"><i class="fas fa-list me-1"></i>سجل التجاوزات</a>
+        <a asp-controller="Maintenance" asp-action="Create" asp-route-entityType="Mosque" asp-route-entityId="@Model.Id" asp-route-entityName="@Model.NameAr" class="btn btn-outline-secondary me-1" title="إضافة صيانة"><i class="fas fa-tools me-1"></i>صيانة</a>
+        <a asp-controller="Reports" asp-action="ExportMosquePdf" asp-route-id="@Model.Id" class="btn btn-outline-danger me-1" target="_blank" title="تصدير PDF"><i class="fas fa-file-pdf me-1"></i>PDF</a>
         <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-right me-1"></i>العودة</a>
     </div>
 </div>
@@ -30,7 +37,7 @@
         @if (mainImage != null)
         {
             <div class="card mb-4">
-                <img src="@mainImage.FilePath" class="card-img-top" style="height:350px;object-fit:cover;cursor:pointer;" onclick="showImage('@mainImage.FilePath')" />
+                <img src="@mainImgUrl" class="card-img-top" style="height:350px;object-fit:cover;cursor:pointer;" onclick="showImage('@mainImgUrl')" />
             </div>
         }
 
@@ -53,7 +60,6 @@
             </div>
         </div>
 
-        <!-- الموقع والحدود -->
         <div class="card mb-4">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>الموقع وحدود المسجد</h6>
@@ -62,26 +68,19 @@
                     <button type="button" class="btn btn-light" onclick="setBaseMap('satellite')"><i class="fas fa-satellite"></i></button>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div id="map" style="height:400px;"></div>
-            </div>
+            <div class="card-body p-0"><div id="map" style="height:400px;"></div></div>
             <div class="card-footer">
                 <div class="row">
                     <div class="col-md-6">
                         <small><strong>الإحداثيات:</strong> @Model.Location?.Y.ToString("F6"), @Model.Location?.X.ToString("F6")</small>
                     </div>
                     <div class="col-md-6 text-end">
-                        @if (boundaryArea.HasValue)
-                        {
+                        @if (boundaryArea.HasValue) {
                             <span class="badge bg-success"><i class="fas fa-draw-polygon me-1"></i>مساحة الحدود: @boundaryArea.Value.ToString("N0") م²</span>
-                        }
-                        else
-                        {
+                        } else {
                             <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>لم يتم رسم الحدود</span>
                         }
-                        <a href="https://www.google.com/maps?q=@Model.Location?.Y,@Model.Location?.X" target="_blank" class="btn btn-sm btn-outline-success ms-2">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
+                        <a href="https://www.google.com/maps?q=@Model.Location?.Y,@Model.Location?.X" target="_blank" class="btn btn-sm btn-outline-success ms-2"><i class="fas fa-external-link-alt"></i></a>
                     </div>
                 </div>
             </div>
@@ -97,7 +96,6 @@
                     <div class="col-md-3 text-center"><h3 class="text-warning mb-0">@(Model.LastRenovationYear?.ToString() ?? "-")</h3><small class="text-muted">آخر ترميم</small></div>
                 </div>
                 <hr>
-                <h6 class="mb-3">المرافق</h6>
                 <div class="row">
                     <div class="col-md-3 mb-2">@(Model.HasFridayPrayer ? "✅" : "❌") صلاة الجمعة</div>
                     <div class="col-md-3 mb-2">@(Model.HasMinaret ? "✅" : "❌") مئذنة</div>
@@ -135,8 +133,14 @@
                 <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-images me-2"></i>صور المسجد (@images.Count())</h6></div>
                 <div class="card-body">
                     <div class="row g-2">
-                        @foreach (var img in images){
-                            <div class="col-4"><img src="@img.FilePath" class="img-fluid rounded @(img.IsMain ? "border border-2 border-primary" : "")" style="height:70px;width:100%;object-fit:cover;cursor:pointer;" onclick="showImage('@img.FilePath')" /></div>
+                        @foreach (var img in images) {
+                            var thumbUrl = FileUrl(img.FilePath, img.ContentType?.Contains("png")==true?".png":".jpg");
+                            <div class="col-4">
+                                <img src="@thumbUrl"
+                                     class="img-fluid rounded @(img.IsMain ? "border border-2 border-primary" : "")"
+                                     style="height:70px;width:100%;object-fit:cover;cursor:pointer;"
+                                     onclick="showImage('@thumbUrl')" />
+                            </div>
                         }
                     </div>
                 </div>
@@ -168,11 +172,14 @@
                                        rf.MimeType != null && rf.MimeType.Contains("image") ? "fa-file-image text-success" :
                                        rf.MimeType != null && rf.MimeType.Contains("sheet") ? "fa-file-excel text-success" : "fa-file text-secondary";
                             var sizeKb = rf.FileSize.HasValue ? (rf.FileSize.Value / 1024.0).ToString("F1") + " KB" : "";
+                            // بناء URL التنزيل
+                            var rfExt  = rf.MimeType?.Contains("pdf")==true ? ".pdf" : System.IO.Path.GetExtension(rf.FileName ?? "");
+                            var rfUrl  = FileUrl(rf.FilePath, rfExt, true);
                             <div class="list-group-item px-0 py-2">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
                                         <i class="fas @icon me-2"></i>
-                                        <a href="@rf.FilePath" target="_blank" class="text-decoration-none fw-bold">@rf.FileName</a>
+                                        <a href="@rfUrl" target="_blank" class="text-decoration-none fw-bold">@rf.FileName</a>
                                         <br/>
                                         <small class="text-muted ms-4">
                                             <span class="badge bg-secondary me-1">@rf.DocumentType</span>
@@ -180,7 +187,7 @@
                                             @if (!string.IsNullOrEmpty(sizeKb)) { <text> · @sizeKb</text> }
                                         </small>
                                     </div>
-                                    <a href="@rf.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="@rfUrl" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>
@@ -208,60 +215,28 @@
             <div class="card-header" style="background:#6f42c1;color:#fff"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>أهلية الوقف وبيانات الواقف</h6></div>
             <div class="card-body">
                 <div class="row mb-3">
-                    <div class="col-6">
-                        <label class="text-muted small">طبيعة الوقف</label>
-                        <p class="mb-0">
-                            @if (Model.WaqfNature == "Ahli") { <span class="badge bg-warning text-dark">أهلي</span> } else { <span class="badge bg-success">خيري</span> }
-                        </p>
-                    </div>
-                    <div class="col-6">
-                        <label class="text-muted small">شرط الوقف</label>
-                        <p class="mb-0">
-                            @if (Model.WaqfCondition == "WithCondition") { <span class="badge bg-info">بشرط</span> } else { <span class="badge bg-secondary">بدون شرط</span> }
-                        </p>
-                    </div>
+                    <div class="col-6"><label class="text-muted small">طبيعة الوقف</label><p class="mb-0">@if (Model.WaqfNature == "Ahli") { <span class="badge bg-warning text-dark">أهلي</span> } else { <span class="badge bg-success">خيري</span> }</p></div>
+                    <div class="col-6"><label class="text-muted small">شرط الوقف</label><p class="mb-0">@if (Model.WaqfCondition == "WithCondition") { <span class="badge bg-info">بشرط</span> } else { <span class="badge bg-secondary">بدون شرط</span> }</p></div>
                     @if (Model.WaqfNature == "Ahli") {
-                    <div class="col-12 mt-2">
-                        <label class="text-muted small">مستلمة إدارياً</label>
-                        <p class="mb-0">@(Model.IsAdminReceived == true ? "✅ نعم" : Model.IsAdminReceived == false ? "❌ لا" : "-")</p>
-                    </div>
-                    }
+                    <div class="col-12 mt-2"><label class="text-muted small">مستلمة إدارياً</label><p class="mb-0">@(Model.IsAdminReceived == true ? "✅ نعم" : Model.IsAdminReceived == false ? "❌ لا" : "-")</p></div>}
                 </div>
                 <div class="row">
-                    <div class="col-6">
-                        <label class="text-muted small"><i class="fas fa-exclamation-triangle text-danger me-1"></i>مغتصب</label>
-                        <p class="mb-0">@(Model.IsUsurped ? "<span class='badge bg-danger'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
-                    </div>
-                    <div class="col-6">
-                        <label class="text-muted small"><i class="fas fa-lock text-warning me-1"></i>مغلق</label>
-                        <p class="mb-0">@(Model.IsClosed ? "<span class='badge bg-warning text-dark'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
-                    </div>
-                    <div class="col-6 mt-2">
-                        <label class="text-muted small"><i class="fas fa-gavel text-info me-1"></i>متنازع عليه</label>
-                        <p class="mb-0">@(Model.IsContested ? "<span class='badge bg-info'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p>
-                    </div>
+                    <div class="col-6"><label class="text-muted small"><i class="fas fa-exclamation-triangle text-danger me-1"></i>مغتصب</label><p class="mb-0">@(Model.IsUsurped ? "<span class='badge bg-danger'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p></div>
+                    <div class="col-6"><label class="text-muted small"><i class="fas fa-lock text-warning me-1"></i>مغلق</label><p class="mb-0">@(Model.IsClosed ? "<span class='badge bg-warning text-dark'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p></div>
+                    <div class="col-6 mt-2"><label class="text-muted small"><i class="fas fa-gavel text-info me-1"></i>متنازع عليه</label><p class="mb-0">@(Model.IsContested ? "<span class='badge bg-info'>نعم</span>" : "<span class='badge bg-light text-dark'>لا</span>")</p></div>
                 </div>
                 @if (!string.IsNullOrEmpty(Model.WaqifName) || Model.WaqfDocumentDate.HasValue || !string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
-                <hr />
-                <h6 class="text-muted small fw-bold"><i class="fas fa-user-shield me-1"></i>بيانات الواقف الأصلي</h6>
+                <hr /><h6 class="text-muted small fw-bold"><i class="fas fa-user-shield me-1"></i>بيانات الواقف الأصلي</h6>
                 <div class="row">
-                    @if (!string.IsNullOrEmpty(Model.WaqifName)) {
-                    <div class="col-12 mb-2"><label class="text-muted small">اسم الواقف</label><p class="mb-0 fw-bold">@Model.WaqifName</p></div>
-                    }
-                    @if (Model.WaqfDocumentDate.HasValue) {
-                    <div class="col-6 mb-2"><label class="text-muted small">تاريخ الوثيقة</label><p class="mb-0">@Model.WaqfDocumentDate.Value.ToString("dd/MM/yyyy")</p></div>
-                    }
-                    @if (!string.IsNullOrEmpty(Model.WaqfDocumentNumber)) {
-                    <div class="col-6 mb-2"><label class="text-muted small">رقم الوثيقة</label><p class="mb-0 font-monospace">@Model.WaqfDocumentNumber</p></div>
-                    }
-                </div>
-                }
+                    @if (!string.IsNullOrEmpty(Model.WaqifName)) { <div class="col-12 mb-2"><label class="text-muted small">اسم الواقف</label><p class="mb-0 fw-bold">@Model.WaqifName</p></div> }
+                    @if (Model.WaqfDocumentDate.HasValue) { <div class="col-6 mb-2"><label class="text-muted small">تاريخ الوثيقة</label><p class="mb-0">@Model.WaqfDocumentDate.Value.ToString("dd/MM/yyyy")</p></div> }
+                    @if (!string.IsNullOrEmpty(Model.WaqfDocumentNumber)) { <div class="col-6 mb-2"><label class="text-muted small">رقم الوثيقة</label><p class="mb-0 font-monospace">@Model.WaqfDocumentNumber</p></div> }
+                </div>}
                 @if (Model.WaqfCondition == "WithCondition" && !string.IsNullOrEmpty(Model.WaqfConditionText)) {
                 <div class="mt-2 p-2 bg-info bg-opacity-10 border border-info rounded">
                     <small class="text-info fw-bold"><i class="fas fa-scroll me-1"></i>نص شرط الواقف:</small>
                     <p class="mb-0 mt-1 small" style="white-space:pre-wrap;">@Model.WaqfConditionText</p>
-                </div>
-                }
+                </div>}
             </div>
         </div>
 

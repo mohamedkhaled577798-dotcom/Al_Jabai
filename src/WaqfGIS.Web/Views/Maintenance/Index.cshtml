@@ -1,0 +1,265 @@
+@using WaqfGIS.Services
+@model List<WaqfGIS.Core.Entities.MaintenanceRecord>
+@{
+    ViewData["Title"] = "سجل الصيانة";
+    var summary = ViewBag.Summary as MaintenanceSummary ?? new MaintenanceSummary();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+@section Styles {
+<style>
+.maint-card { border:none; border-radius:12px; transition:.2s; }
+.maint-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.1); }
+.status-badge { font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600; }
+.priority-عاجلة  { border-right:4px solid #dc2626; }
+.priority-عالية  { border-right:4px solid #f59e0b; }
+.priority-عادية  { border-right:4px solid #3b82f6; }
+.priority-منخفضة { border-right:4px solid #6b7280; }
+</style>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="fas fa-tools me-2 text-warning"></i>سجل الصيانة</h4>
+        <small class="text-muted">إجمالي @summary.Total سجل</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Schedule")" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-calendar-alt me-1"></i>الجدول الزمني
+        </a>
+        <a href="@Url.Action("Create")" class="btn btn-warning btn-sm">
+            <i class="fas fa-plus me-1"></i>إضافة صيانة
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show">
+    <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#fef9c3,#fef08a);">
+            <div class="fs-2 fw-bold text-warning">@summary.Scheduled</div>
+            <div class="small text-muted">مجدولة</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);">
+            <div class="fs-2 fw-bold text-primary">@summary.InProgress</div>
+            <div class="small text-muted">جارية</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);">
+            <div class="fs-2 fw-bold text-success">@summary.Completed</div>
+            <div class="small text-muted">مكتملة</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#fee2e2,#fecaca);">
+            <div class="fs-2 fw-bold text-danger">@summary.Overdue</div>
+            <div class="small text-muted">متأخرة</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+            <div class="fs-2 fw-bold text-success">@summary.TotalActual.ToString("N0")</div>
+            <div class="small text-muted">تكلفة فعلية (د.ع)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="card maint-card text-center p-3" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);">
+            <div class="fs-2 fw-bold text-warning">@summary.UpcomingWeek</div>
+            <div class="small text-muted">خلال 7 أيام</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">كل الحالات</option>
+                    @foreach (var s in new[]{"مجدولة","جارية","مكتملة","متأخرة","ملغاة"})
+                    {<option value="@s" selected="@(ViewBag.StatusFilter==s?"selected":null)">@s</option>}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="entityType" class="form-select form-select-sm">
+                    <option value="">كل الكيانات</option>
+                    <option value="Mosque"       selected="@(ViewBag.TypeFilter=="Mosque"      ?"selected":null)">مساجد</option>
+                    <option value="WaqfProperty" selected="@(ViewBag.TypeFilter=="WaqfProperty"?"selected":null)">عقارات</option>
+                    <option value="WaqfLand"     selected="@(ViewBag.TypeFilter=="WaqfLand"    ?"selected":null)">أراضي</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                @Html.DropDownList("provinceId", ViewBag.Provinces as SelectList, "كل المحافظات",
+                    new { @class = "form-select form-select-sm" })
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter me-1"></i>تصفية
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- الجدول -->
+@if (!Model.Any())
+{
+<div class="text-center py-5 text-muted">
+    <i class="fas fa-tools fa-4x mb-3 opacity-25"></i>
+    <h5>لا توجد سجلات صيانة</h5>
+    <a href="@Url.Action("Create")" class="btn btn-warning mt-2">
+        <i class="fas fa-plus me-1"></i>إضافة أول سجل
+    </a>
+</div>
+}
+else
+{
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>العنوان</th>
+                        <th>الكيان</th>
+                        <th>نوع الصيانة</th>
+                        <th>الأولوية</th>
+                        <th>الحالة</th>
+                        <th>التاريخ المجدول</th>
+                        <th>المقاول</th>
+                        <th>التكلفة التقديرية</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                    <tr class="priority-@item.Priority">
+                        <td class="text-muted small">@item.Id</td>
+                        <td>
+                            <div class="fw-semibold">@item.Title</div>
+                            @if (!string.IsNullOrEmpty(item.Location))
+                            {<small class="text-muted">@item.Location</small>}
+                        </td>
+                        <td>
+                            <small class="badge bg-light text-dark">
+                                @(item.EntityType == "Mosque" ? "🕌" : item.EntityType == "WaqfProperty" ? "🏢" : "🌍")
+                                @item.EntityName
+                            </small>
+                        </td>
+                        <td><small>@item.MaintenanceType</small></td>
+                        <td>
+                            @{
+                                string priColor = item.Priority switch {
+                                    "عاجلة" => "danger", "عالية" => "warning",
+                                    "عادية" => "primary", _ => "secondary"
+                                };
+                            }
+                            <span class="badge bg-@priColor">@item.Priority</span>
+                        </td>
+                        <td>
+                            @{
+                                string stColor = item.Status switch {
+                                    "مكتملة" => "success", "جارية" => "primary",
+                                    "متأخرة" => "danger",  "ملغاة" => "secondary",
+                                    _ => "warning"
+                                };
+                            }
+                            <span class="badge bg-@stColor">@item.Status</span>
+                        </td>
+                        <td>
+                            <small class="@(item.ScheduledDate < DateTime.Today && item.Status=="مجدولة" ? "text-danger fw-bold" : "")">
+                                @item.ScheduledDate.ToString("dd/MM/yyyy")
+                            </small>
+                        </td>
+                        <td><small>@(item.ContractorName ?? "—")</small></td>
+                        <td>
+                            @if (item.EstimatedCost.HasValue)
+                            {<small class="text-success">@item.EstimatedCost.Value.ToString("N0") د.ع</small>}
+                            else
+                            {<small class="text-muted">—</small>}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="@Url.Action("Details", new {id=item.Id})" class="btn btn-sm btn-outline-info" title="تفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="@Url.Action("Edit", new {id=item.Id})" class="btn btn-sm btn-outline-warning" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @if (item.Status != "مكتملة")
+                                {
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                    data-bs-toggle="modal" data-bs-target="#completeModal"
+                                    data-id="@item.Id" data-name="@item.Title" title="إنجاز">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Modal الإنجاز -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>تسجيل اكتمال الصيانة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="completeForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <p class="text-muted small">الصيانة: <strong id="completeName"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الأعمال المنجزة</label>
+                        <textarea name="workDone" class="form-control" rows="3" placeholder="وصف مختصر للأعمال المنفذة..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">التكلفة الفعلية (د.ع)</label>
+                        <input type="number" name="actualCost" class="form-control" min="0" step="1000" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>تسجيل الاكتمال
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.getElementById('completeModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    var id = btn.dataset.id;
+    var name = btn.dataset.name;
+    document.getElementById('completeName').textContent = name;
+    document.getElementById('completeForm').action = '/Maintenance/MarkComplete/' + id;
+});
+</script>
+}

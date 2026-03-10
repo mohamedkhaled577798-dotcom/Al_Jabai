@@ -1,0 +1,229 @@
+@using WaqfGIS.Core.Entities
+@using WaqfGIS.Services
+@model List<AlertNotification>
+@{
+    ViewData["Title"] = "مركز التنبيهات";
+    var summary = ViewBag.Summary as AlertSummary ?? new AlertSummary();
+}
+
+@section Styles {
+<style>
+.alert-card { border-radius:12px; border:none; transition:.2s; }
+.alert-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.1); }
+.severity-حرج   { border-right:5px solid #dc2626 !important; }
+.severity-تحذير { border-right:5px solid #f59e0b !important; }
+.severity-تنبيه { border-right:5px solid #3b82f6 !important; }
+.severity-معلومات { border-right:5px solid #6b7280 !important; }
+.unread-dot { width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;margin-left:6px;flex-shrink:0;}
+.kpi-mini { border-radius:12px; padding:16px; text-align:center; }
+.filter-btn.active { box-shadow:inset 0 0 0 2px currentColor; font-weight:700; }
+</style>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="fas fa-bell me-2 text-warning"></i>مركز التنبيهات</h4>
+        <small class="text-muted">آخر تحديث: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.Any(a => !a.IsRead))
+        {
+        <form asp-action="MarkAllRead" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-check-double me-1"></i>تحديد الكل كمقروء
+            </button>
+        </form>
+        }
+        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+        {
+        <form asp-action="GenerateNow" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-sync me-1"></i>توليد التنبيهات الآن
+            </button>
+        </form>
+        }
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<!-- ملخص KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#fef2f2;">
+            <div class="fs-3 fw-bold text-danger">@summary.CriticalCount</div>
+            <div class="small text-muted">حرجة</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#fffbeb;">
+            <div class="fs-3 fw-bold text-warning">@summary.WarningCount</div>
+            <div class="small text-muted">تحذيرات</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#eff6ff;">
+            <div class="fs-3 fw-bold text-primary">@summary.InfoCount</div>
+            <div class="small text-muted">تنبيهات</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#f0fdf4;">
+            <div class="fs-3 fw-bold text-success">@summary.ContractAlerts</div>
+            <div class="small text-muted">عقود</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#fdf4ff;">
+            <div class="fs-3 fw-bold" style="color:#7c3aed;">@summary.LegalAlerts</div>
+            <div class="small text-muted">قانونية</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#fff7ed;">
+            <div class="fs-3 fw-bold" style="color:#ea580c;">@summary.MaintenanceAlerts</div>
+            <div class="small text-muted">صيانة</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg">
+        <div class="kpi-mini" style="background:#fef2f2;">
+            <div class="fs-3 fw-bold text-danger">@summary.EncroachAlerts</div>
+            <div class="small text-muted">تجاوزات</div>
+        </div>
+    </div>
+</div>
+
+<!-- أزرار الفلتر -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary @(ViewBag.Filter == null && ViewBag.Severity == null ? "active" : "")">
+        الكل (@Model.Count)
+    </a>
+    <a href="@Url.Action("Index", new{severity="حرج"})" class="btn btn-sm btn-outline-danger @(ViewBag.Severity=="حرج"?"active":"")">
+        <i class="fas fa-exclamation-circle me-1"></i>حرج (@summary.CriticalCount)
+    </a>
+    <a href="@Url.Action("Index", new{severity="تحذير"})" class="btn btn-sm btn-outline-warning @(ViewBag.Severity=="تحذير"?"active":"")">
+        <i class="fas fa-exclamation-triangle me-1"></i>تحذير (@summary.WarningCount)
+    </a>
+    <a href="@Url.Action("Index", new{type="ContractExpiry"})" class="btn btn-sm btn-outline-info @(ViewBag.Filter=="ContractExpiry"?"active":"")">
+        <i class="fas fa-file-contract me-1"></i>انتهاء عقود
+    </a>
+    <a href="@Url.Action("Index", new{type="LatePayment"})" class="btn btn-sm btn-outline-secondary @(ViewBag.Filter=="LatePayment"?"active":"")">
+        <i class="fas fa-coins me-1"></i>دفعات متأخرة
+    </a>
+    <a href="@Url.Action("Index", new{type="LegalHearing"})" class="btn btn-sm btn-outline-secondary @(ViewBag.Filter=="LegalHearing"?"active":"")">
+        <i class="fas fa-gavel me-1"></i>جلسات قضائية
+    </a>
+    <a href="@Url.Action("Index", new{type="MaintenanceDue"})" class="btn btn-sm btn-outline-secondary @(ViewBag.Filter=="MaintenanceDue"?"active":"")">
+        <i class="fas fa-tools me-1"></i>صيانة مجدولة
+    </a>
+    <a href="@Url.Action("Index", new{type="EncroachmentUnresolved"})" class="btn btn-sm btn-outline-secondary @(ViewBag.Filter=="EncroachmentUnresolved"?"active":"")">
+        <i class="fas fa-exclamation-triangle me-1"></i>تجاوزات
+    </a>
+</div>
+
+<!-- قائمة التنبيهات -->
+@if (!Model.Any())
+{
+<div class="text-center py-5 text-muted">
+    <i class="fas fa-bell-slash fa-4x mb-3 opacity-25"></i>
+    <h5>لا توجد تنبيهات</h5>
+    <p class="small">جميع المهام محدّثة ومتابعة</p>
+</div>
+}
+else
+{
+<div class="row g-2">
+    @foreach (var alert in Model)
+    {
+        var borderClass = $"severity-{alert.Severity}";
+        var bgClass = alert.IsRead ? "bg-white" : "bg-light";
+        string icon = alert.AlertType switch {
+            "ContractExpiry" or "ContractExpired" => "fas fa-file-contract text-info",
+            "LatePayment"     => "fas fa-coins text-warning",
+            "LegalHearing"    => "fas fa-gavel text-purple",
+            "LegalStagnant"   => "fas fa-balance-scale text-secondary",
+            "MaintenanceDue"  => "fas fa-tools text-orange",
+            "EncroachmentUnresolved" => "fas fa-exclamation-triangle text-danger",
+            _                 => "fas fa-bell text-secondary"
+        };
+        string severityBadge = alert.Severity switch {
+            "حرج"    => "danger",
+            "تحذير"  => "warning",
+            "تنبيه"  => "primary",
+            _        => "secondary"
+        };
+    <div class="col-12">
+        <div class="card alert-card @borderClass @bgClass shadow-sm">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-start gap-3">
+                    <!-- أيقونة النوع -->
+                    <div class="mt-1" style="width:32px;flex-shrink:0;text-align:center;">
+                        <i class="@icon fa-lg"></i>
+                    </div>
+
+                    <!-- المحتوى -->
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            @if (!alert.IsRead)
+                            {<span class="unread-dot"></span>}
+                            <span class="fw-semibold small">@alert.Title</span>
+                            <span class="badge bg-@severityBadge ms-1">@alert.Severity</span>
+                            @if (alert.DaysLeft.HasValue)
+                            {
+                                if (alert.DaysLeft.Value < 0)
+                                {<span class="badge bg-danger ms-1">متأخر @Math.Abs(alert.DaysLeft.Value) يوم</span>}
+                                else if (alert.DaysLeft.Value == 0)
+                                {<span class="badge bg-danger ms-1">اليوم</span>}
+                                else
+                                {<span class="badge bg-secondary ms-1">بعد @alert.DaysLeft.Value يوم</span>}
+                            }
+                        </div>
+                        <p class="mb-1 text-muted small">@alert.Message</p>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted" style="font-size:11px;">
+                                <i class="fas fa-clock me-1"></i>@alert.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                            @if (!string.IsNullOrEmpty(alert.ActionUrl))
+                            {
+                            <a href="@alert.ActionUrl" class="text-primary" style="font-size:12px;">
+                                <i class="fas fa-external-link-alt me-1"></i>عرض التفاصيل
+                            </a>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- أزرار الإجراء -->
+                    <div class="d-flex gap-1 flex-shrink-0">
+                        @if (!alert.IsRead)
+                        {
+                        <form asp-action="MarkRead" asp-route-id="@alert.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-success" title="تحديد كمقروء">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                        }
+                        <form asp-action="Dismiss" asp-route-id="@alert.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="إخفاء"
+                                    onclick="return confirm('هل تريد إخفاء هذا التنبيه؟')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+}

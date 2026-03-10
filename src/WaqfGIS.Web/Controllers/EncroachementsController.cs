@@ -7,6 +7,7 @@ using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Services.GIS;
+using WaqfGIS.Services.Storage;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -19,19 +20,22 @@ public class EncroachementsController : Controller
     private readonly AuditLogService _auditLogService;
     private readonly GeometryService _geometryService;
     private readonly ILogger<EncroachementsController> _logger;
+    private readonly SecureFileStorageService _storage;
 
     public EncroachementsController(
         IUnitOfWork unitOfWork,
         PermissionService permissionService,
         AuditLogService auditLogService,
         GeometryService geometryService,
-        ILogger<EncroachementsController> logger)
+        ILogger<EncroachementsController> logger,
+        SecureFileStorageService storage)
     {
-        _unitOfWork = unitOfWork;
+        _unitOfWork        = unitOfWork;
         _permissionService = permissionService;
-        _auditLogService = auditLogService;
-        _geometryService = geometryService;
-        _logger = logger;
+        _auditLogService   = auditLogService;
+        _geometryService   = geometryService;
+        _logger            = logger;
+        _storage           = storage;
     }
 
     // =================== INDEX ===================
@@ -325,8 +329,9 @@ public class EncroachementsController : Controller
         var photo = await _unitOfWork.Repository<EncroachmentPhoto>().GetByIdAsync(photoId);
         if (photo != null && photo.EncroachmentId == encroachmentId)
         {
-            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", photo.FilePath.TrimStart('/'));
-            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            var parts = photo.FilePath.Split('/');
+            if (parts.Length >= 2)
+                _storage.DeleteFile(_storage.GetDiskPath(parts[0], parts[1]));
             await _unitOfWork.Repository<EncroachmentPhoto>().DeleteAsync(photo);
             await _unitOfWork.SaveChangesAsync();
             TempData["Success"] = "تم حذف الصورة";
@@ -445,28 +450,24 @@ public class EncroachementsController : Controller
 
     private async Task UploadPhotosAsync(int encroachmentId, IFormFileCollection files)
     {
-        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "encroachments", encroachmentId.ToString());
-        Directory.CreateDirectory(uploadDir);
-
-        foreach (var file in files)
+        var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        foreach (var file in files.Where(f => f.Length > 0))
         {
-            if (file.Length == 0) continue;
-            var ext = Path.GetExtension(file.FileName);
-            var savedName = $"{Guid.NewGuid()}{ext}";
-            var fullPath = Path.Combine(uploadDir, savedName);
-            using var stream = System.IO.File.Create(fullPath);
-            await file.CopyToAsync(stream);
-
-            var photo = new EncroachmentPhoto
+            try
             {
-                EncroachmentId = encroachmentId,
-                FileName = file.FileName,
-                FilePath = $"/uploads/encroachments/{encroachmentId}/{savedName}",
-                FileSize = file.Length,
-                MimeType = file.ContentType,
-                CreatedBy = User.Identity?.Name
-            };
-            await _unitOfWork.Repository<EncroachmentPhoto>().AddAsync(photo);
+                var saved = await _storage.SaveFileAsync(file, "Encroachments", allowed);
+                var photo = new EncroachmentPhoto
+                {
+                    EncroachmentId = encroachmentId,
+                    FileName       = saved.OriginalName,
+                    FilePath       = saved.DbPath,
+                    FileSize       = saved.FileSize,
+                    MimeType       = saved.MimeType,
+                    CreatedBy      = User.Identity?.Name
+                };
+                await _unitOfWork.Repository<EncroachmentPhoto>().AddAsync(photo);
+            }
+            catch { /* تجاهل الملفات ذات الامتداد غير المدعوم */ }
         }
         await _unitOfWork.SaveChangesAsync();
     }

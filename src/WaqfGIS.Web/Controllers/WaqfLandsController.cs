@@ -6,6 +6,7 @@ using WaqfGIS.Core.Entities;
 using WaqfGIS.Core.Interfaces;
 using WaqfGIS.Services;
 using WaqfGIS.Services.GIS;
+using WaqfGIS.Services.Storage;
 using WaqfGIS.Web.Models;
 
 namespace WaqfGIS.Web.Controllers;
@@ -17,17 +18,20 @@ public class WaqfLandsController : Controller
     private readonly GeometryService _geometryService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly AuditLogService _auditLogService;
+    private readonly SecureFileStorageService _storage;
 
     public WaqfLandsController(
         WaqfLandService landService,
         GeometryService geometryService,
         IUnitOfWork unitOfWork,
-        AuditLogService auditLogService)
+        AuditLogService auditLogService,
+        SecureFileStorageService storage)
     {
-        _landService = landService;
+        _landService     = landService;
         _geometryService = geometryService;
-        _unitOfWork = unitOfWork;
+        _unitOfWork      = unitOfWork;
         _auditLogService = auditLogService;
+        _storage         = storage;
     }
 
     // GET: WaqfLands
@@ -190,14 +194,13 @@ public class WaqfLandsController : Controller
     [HttpPost]
     public async Task<IActionResult> DeleteRegistrationFile(int fileId, int landId)
     {
-        if (!CanEditWaqfLand())
-            return Forbid();
-
+        if (!CanEditWaqfLand()) return Forbid();
         var file = await _unitOfWork.Repository<WaqfLandRegistrationFile>().GetByIdAsync(fileId);
         if (file != null && file.WaqfLandId == landId)
         {
-            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file.FilePath.TrimStart('/'));
-            if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
+            var parts = file.FilePath.Split('/');
+            if (parts.Length >= 2)
+                _storage.DeleteFile(_storage.GetDiskPath(parts[0], parts[1]));
             await _unitOfWork.Repository<WaqfLandRegistrationFile>().DeleteAsync(file);
             await _unitOfWork.SaveChangesAsync();
             TempData["Success"] = "تم حذف الملف";
@@ -207,30 +210,21 @@ public class WaqfLandsController : Controller
 
     private async Task UploadLandRegistrationFilesAsync(int landId, IFormFileCollection files, string inputName)
     {
-        var regFiles = files.Where(f => f.Name == inputName).ToList();
+        var regFiles = files.Where(f => f.Name == inputName && f.Length > 0).ToList();
         if (!regFiles.Any()) return;
-
-        var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "land-docs", landId.ToString());
-        Directory.CreateDirectory(uploadDir);
-
+        var docType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة";
         foreach (var file in regFiles)
         {
-            if (file.Length == 0) continue;
-            var ext = Path.GetExtension(file.FileName);
-            var savedName = $"{Guid.NewGuid()}{ext}";
-            var fullPath = Path.Combine(uploadDir, savedName);
-            using var stream = System.IO.File.Create(fullPath);
-            await file.CopyToAsync(stream);
-
+            var saved = await _storage.SaveFileAsync(file, "LandDocs");
             var regFile = new WaqfLandRegistrationFile
             {
-                WaqfLandId = landId,
-                DocumentType = Request.Form["regDocType"].FirstOrDefault() ?? "وثيقة",
-                FileName = file.FileName,
-                FilePath = $"/uploads/land-docs/{landId}/{savedName}",
-                FileSize = file.Length,
-                MimeType = file.ContentType,
-                UploadedBy = User.Identity?.Name
+                WaqfLandId   = landId,
+                DocumentType = docType,
+                FileName     = saved.OriginalName,
+                FilePath     = saved.DbPath,
+                FileSize     = saved.FileSize,
+                MimeType     = saved.MimeType,
+                UploadedBy   = User.Identity?.Name
             };
             await _unitOfWork.Repository<WaqfLandRegistrationFile>().AddAsync(regFile);
         }

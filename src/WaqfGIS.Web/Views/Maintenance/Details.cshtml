@@ -1,0 +1,242 @@
+@model WaqfGIS.Core.Entities.MaintenanceRecord
+@{
+    ViewData["Title"] = "تفاصيل سجل الصيانة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="fas fa-tools me-2 text-warning"></i>@Model.Title</h4>
+        <small class="text-muted">رقم السجل: #@Model.Id</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Edit", new {id=Model.Id})" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit me-1"></i>تعديل
+        </a>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show">
+    <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+
+        <!-- بطاقة الحالة الرئيسية -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 text-center">
+                        @{
+                            string stColor = Model.Status switch {
+                                "مكتملة" => "success", "جارية" => "primary",
+                                "متأخرة" => "danger", "ملغاة" => "secondary", _ => "warning"
+                            };
+                        }
+                        <div class="badge bg-@stColor fs-6 px-3 py-2">@Model.Status</div>
+                        <div class="small text-muted mt-1">الحالة</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        @{
+                            string priColor = Model.Priority switch {
+                                "عاجلة"=>"danger","عالية"=>"warning","عادية"=>"primary",_=>"secondary"
+                            };
+                        }
+                        <div class="badge bg-@priColor fs-6 px-3 py-2">@Model.Priority</div>
+                        <div class="small text-muted mt-1">الأولوية</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="fw-bold text-warning">@Model.MaintenanceType</div>
+                        <div class="small text-muted">نوع الصيانة</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="fw-bold">@Model.ScheduledDate.ToString("dd/MM/yyyy")</div>
+                        <div class="small text-muted">التاريخ المجدول</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الكيان والوصف -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><h6 class="mb-0">تفاصيل الصيانة</h6></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">الكيان الوقفي</small>
+                        <span class="fw-semibold">
+                            @(Model.EntityType == "Mosque" ? "🕌" : Model.EntityType == "WaqfProperty" ? "🏢" : "🌍")
+                            @Model.EntityName
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Location))
+                    {
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">الموقع داخل العقار</small>
+                        <span>@Model.Location</span>
+                    </div>
+                    }
+                    <div class="col-12">
+                        <small class="text-muted d-block">الوصف</small>
+                        <p class="mb-0">@Model.Description</p>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.WorkDone))
+                    {
+                    <div class="col-12">
+                        <small class="text-muted d-block">الأعمال المنجزة</small>
+                        <p class="mb-0 text-success">@Model.WorkDone</p>
+                    </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                    <div class="col-12">
+                        <small class="text-muted d-block">ملاحظات</small>
+                        <p class="mb-0">@Model.Notes</p>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- الصور -->
+        @if (Model.Photos.Any())
+        {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="fas fa-camera me-2"></i>الصور (@Model.Photos.Count)</h6></div>
+            <div class="card-body">
+                @foreach (var grp in Model.Photos.GroupBy(p => p.PhotoType))
+                {
+                <div class="mb-3">
+                    <div class="small fw-bold text-muted mb-2">📷 صور (@grp.Key)</div>
+                    <div class="row g-2">
+                        @foreach (var photo in grp)
+                        {
+                        <div class="col-4 col-md-3">
+                            <a href="@photo.FilePath" target="_blank">
+                                <img src="@photo.FilePath" class="img-fluid rounded shadow-sm"
+                                     style="height:100px;object-fit:cover;width:100%;" />
+                            </a>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <!-- المقاول والتكاليف -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="fas fa-hard-hat me-2"></i>المقاول والتكاليف</h6></div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.ContractorName))
+                {
+                <div class="mb-2">
+                    <small class="text-muted d-block">المقاول</small>
+                    <span class="fw-semibold">@Model.ContractorName</span>
+                    @if (!string.IsNullOrEmpty(Model.ContractorCompany))
+                    {<small class="text-muted ms-1">(@Model.ContractorCompany)</small>}
+                </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ContractorPhone))
+                {
+                <div class="mb-2">
+                    <small class="text-muted d-block">الهاتف</small>
+                    <a href="tel:@Model.ContractorPhone">@Model.ContractorPhone</a>
+                </div>
+                }
+                <hr class="my-2"/>
+                <div class="row g-2 text-center">
+                    <div class="col-6">
+                        <div class="small text-muted">تقديري</div>
+                        <div class="fw-bold text-primary">
+                            @(Model.EstimatedCost.HasValue ? Model.EstimatedCost.Value.ToString("N0")+" د.ع" : "—")
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">فعلي</div>
+                        <div class="fw-bold text-success">
+                            @(Model.ActualCost.HasValue ? Model.ActualCost.Value.ToString("N0")+" د.ع" : "—")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- التواريخ -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="fas fa-calendar me-2"></i>التواريخ</h6></div>
+            <div class="card-body">
+                <div class="mb-2 d-flex justify-content-between">
+                    <small class="text-muted">مجدولة</small>
+                    <span>@Model.ScheduledDate.ToString("dd/MM/yyyy")</span>
+                </div>
+                @if (Model.StartDate.HasValue)
+                {
+                <div class="mb-2 d-flex justify-content-between">
+                    <small class="text-muted">بدء الأعمال</small>
+                    <span>@Model.StartDate.Value.ToString("dd/MM/yyyy")</span>
+                </div>
+                }
+                @if (Model.CompletionDate.HasValue)
+                {
+                <div class="mb-2 d-flex justify-content-between">
+                    <small class="text-muted">الاكتمال</small>
+                    <span class="text-success">@Model.CompletionDate.Value.ToString("dd/MM/yyyy")</span>
+                </div>
+                }
+                @if (Model.IsRecurring && Model.NextScheduledDate.HasValue)
+                {
+                <div class="mb-2 d-flex justify-content-between">
+                    <small class="text-muted">القادمة</small>
+                    <span class="text-info">@Model.NextScheduledDate.Value.ToString("dd/MM/yyyy")</span>
+                </div>
+                }
+                @if (Model.IsWarranty && Model.WarrantyMonths.HasValue)
+                {
+                <hr class="my-2"/>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted"><i class="fas fa-shield-alt text-success me-1"></i>ضمان</small>
+                    <span class="badge bg-success">@Model.WarrantyMonths أشهر</span>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- إجراء الإنجاز -->
+        @if (Model.Status != "مكتملة" && Model.Status != "ملغاة")
+        {
+        <div class="card border-success border-0 shadow-sm mb-3" style="border:1px solid #198754!important;">
+            <div class="card-body">
+                <h6 class="text-success mb-2"><i class="fas fa-check-circle me-1"></i>تسجيل الاكتمال</h6>
+                <form asp-action="MarkComplete" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2">
+                        <textarea name="workDone" class="form-control form-control-sm" rows="2"
+                                  placeholder="الأعمال المنجزة..."></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <input type="number" name="actualCost" class="form-control form-control-sm"
+                               placeholder="التكلفة الفعلية د.ع" min="0" step="1000" />
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm w-100">
+                        <i class="fas fa-check me-1"></i>تسجيل الاكتمال
+                    </button>
+                </form>
+            </div>
+        </div>
+        }
+
+    </div>
+</div>

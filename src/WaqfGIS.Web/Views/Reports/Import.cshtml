@@ -1,0 +1,280 @@
+@using WaqfGIS.Services
+@{
+    ViewData["Title"] = "استيراد / تصدير البيانات";
+    ImportResult? importResult = null;
+    var resultJson = TempData["ImportResult"] as string;
+    if (!string.IsNullOrEmpty(resultJson))
+        importResult = System.Text.Json.JsonSerializer.Deserialize<ImportResult>(resultJson);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold"><i class="fas fa-exchange-alt me-2 text-primary"></i>استيراد / تصدير البيانات</h4>
+    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-right me-1"></i>التقارير
+    </a>
+</div>
+
+@if (importResult != null)
+{
+<div class="alert alert-@(importResult.Success ? "success" : "warning") alert-dismissible fade show">
+    <h5 class="mb-2">
+        <i class="fas fa-@(importResult.Success ? "check-circle" : "exclamation-triangle") me-2"></i>
+        نتيجة الاستيراد — @importResult.EntityType
+    </h5>
+    <div class="row g-2">
+        <div class="col-auto"><span class="badge bg-success fs-6">✅ مستورد: @importResult.Imported</span></div>
+        <div class="col-auto"><span class="badge bg-warning fs-6">⚠️ مكرر: @importResult.Duplicates</span></div>
+        <div class="col-auto"><span class="badge bg-secondary fs-6">⏭️ متجاوز: @importResult.Skipped</span></div>
+        @if (importResult.Failed > 0)
+        {<div class="col-auto"><span class="badge bg-danger fs-6">❌ فشل: @importResult.Failed</span></div>}
+    </div>
+    @if (importResult.Errors.Any())
+    {
+    <div class="mt-2">
+        <strong>الأخطاء:</strong>
+        <ul class="mb-0 small">
+            @foreach (var e in importResult.Errors.Take(10))
+            {<li class="text-danger">@e</li>}
+        </ul>
+    </div>
+    }
+    @if (importResult.Warnings.Any())
+    {
+    <div class="mt-2">
+        <strong>التحذيرات (أسماء مكررة):</strong>
+        <ul class="mb-0 small">
+            @foreach (var w in importResult.Warnings.Take(10))
+            {<li class="text-warning">@w</li>}
+            @if (importResult.Warnings.Count > 10)
+            {<li class="text-muted">... و @(importResult.Warnings.Count - 10) أخرى</li>}
+        </ul>
+    </div>
+    }
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+@if (TempData["Error"] != null)
+{
+<div class="alert alert-danger alert-dismissible fade show">
+    <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<div class="row g-4">
+
+    <!-- =================== الاستيراد =================== -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>استيراد البيانات من Excel/CSV</h5>
+            </div>
+            <div class="card-body">
+
+                <!-- قواعد الاستيراد -->
+                <div class="alert alert-info py-2 mb-3">
+                    <h6 class="mb-1"><i class="fas fa-info-circle me-1"></i>تعليمات الاستيراد</h6>
+                    <ul class="mb-0 small">
+                        <li>الصف الأول يجب أن يحتوي على أسماء الأعمدة (Header Row)</li>
+                        <li>الحقل الإلزامي: <strong>الاسم بالعربية</strong></li>
+                        <li>الإحداثيات: أعمدة <strong>خط العرض</strong> و<strong>خط الطول</strong></li>
+                        <li>يتجاهل الأسماء المكررة تلقائياً</li>
+                        <li>الحد الأقصى: 10MB</li>
+                    </ul>
+                </div>
+
+                <!-- استيراد مساجد -->
+                <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary bg-opacity-10 py-2">
+                        <h6 class="mb-0 text-primary"><i class="fas fa-mosque me-1"></i>استيراد مساجد</h6>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="ImportMosques" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">الدائرة الوقفية الافتراضية <span class="text-danger">*</span></label>
+                                @Html.DropDownList("officeId", ViewBag.Offices as SelectList,
+                                    "-- اختر الدائرة --", new { @class = "form-select form-select-sm", required = "required" })
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">ملف Excel أو CSV</label>
+                                <input type="file" name="file" class="form-control form-control-sm"
+                                       accept=".xlsx,.xls,.csv" required />
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-upload me-1"></i>استيراد المساجد
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- استيراد عقارات -->
+                <div class="card border-success">
+                    <div class="card-header bg-success bg-opacity-10 py-2">
+                        <h6 class="mb-0 text-success"><i class="fas fa-building me-1"></i>استيراد عقارات</h6>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="ImportProperties" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">الدائرة الوقفية الافتراضية <span class="text-danger">*</span></label>
+                                @Html.DropDownList("officeId", ViewBag.Offices as SelectList,
+                                    "-- اختر الدائرة --", new { @class = "form-select form-select-sm", required = "required" })
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">ملف Excel أو CSV</label>
+                                <input type="file" name="file" class="form-control form-control-sm"
+                                       accept=".xlsx,.xls,.csv" required />
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm w-100">
+                                <i class="fas fa-upload me-1"></i>استيراد العقارات
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== التصدير =================== -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-file-download me-2"></i>تصدير البيانات</h5>
+            </div>
+            <div class="card-body">
+
+                <!-- تصدير Excel -->
+                <h6 class="text-success mb-2"><i class="fas fa-file-excel me-1"></i>تصدير Excel</h6>
+                <div class="row g-2 mb-4">
+                    <div class="col-4">
+                        <a href="@Url.Action("ExportMosques")" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-mosque d-block mb-1"></i>
+                            <small>المساجد</small>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="@Url.Action("ExportProperties")" class="btn btn-outline-success btn-sm w-100">
+                            <i class="fas fa-building d-block mb-1"></i>
+                            <small>العقارات</small>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="@Url.Action("ExportOffices")" class="btn btn-outline-warning btn-sm w-100">
+                            <i class="fas fa-landmark d-block mb-1"></i>
+                            <small>الدوائر</small>
+                        </a>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <!-- تصدير PDF -->
+                <h6 class="text-danger mb-2"><i class="fas fa-file-pdf me-1"></i>تصدير PDF — بطاقات رسمية</h6>
+                <div class="alert alert-secondary py-2 mb-2 small">
+                    لتصدير بطاقة PDF لمسجد أو عقار محدد، انتقل إلى صفحة التفاصيل واضغط على زر تصدير PDF
+                </div>
+
+                <!-- تصدير تقرير محافظة -->
+                <div class="card border-secondary mb-3">
+                    <div class="card-body py-2">
+                        <h6 class="small fw-bold mb-2">📋 تقرير محافظة كامل (PDF)</h6>
+                        <form asp-action="ExportProvincePdf" method="get" class="d-flex gap-2">
+                            @Html.DropDownList("provinceId",
+                                new SelectList(await (Task<IEnumerable<WaqfGIS.Core.Entities.Province>>)
+                                    ViewContext.HttpContext.RequestServices
+                                    .GetRequiredService<WaqfGIS.Core.Interfaces.IUnitOfWork>()
+                                    .Provinces.GetAllAsync(), "Id", "NameAr"),
+                                "-- اختر المحافظة --",
+                                new { @class = "form-select form-select-sm flex-grow-1", required="required" })
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-file-pdf me-1"></i>تصدير
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- تصدير تقرير الصيانة -->
+                <div class="card border-warning">
+                    <div class="card-body py-2">
+                        <h6 class="small fw-bold mb-2">🔧 تقرير سجل الصيانة (PDF)</h6>
+                        <a href="@Url.Action("ExportMaintenancePdf")" class="btn btn-outline-warning btn-sm w-100">
+                            <i class="fas fa-tools me-1"></i>تصدير سجل الصيانة
+                        </a>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <!-- قوالب الاستيراد للتحميل -->
+                <h6 class="text-secondary mb-2"><i class="fas fa-file-alt me-1"></i>قوالب الاستيراد</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="/templates/mosques_template.xlsx" class="btn btn-outline-secondary btn-sm w-100" download>
+                            <i class="fas fa-download me-1"></i>قالب المساجد
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/templates/properties_template.xlsx" class="btn btn-outline-secondary btn-sm w-100" download>
+                            <i class="fas fa-download me-1"></i>قالب العقارات
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- =================== أعمدة الاستيراد المتوقعة =================== -->
+<div class="row g-3 mt-2">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2"><h6 class="mb-0">📋 أعمدة ملف استيراد المساجد</h6></div>
+            <div class="card-body py-2">
+                <div class="row g-1 small">
+                    @foreach (var col in new[]{
+                        ("الاسم بالعربية","إلزامي","danger"),("الكود","اختياري","secondary"),
+                        ("المحافظة","اختياري","secondary"),("العنوان","اختياري","secondary"),
+                        ("الحي","اختياري","secondary"),("اسم الإمام","اختياري","secondary"),
+                        ("هاتف الإمام","اختياري","secondary"),("السعة","رقم","info"),
+                        ("صلاة الجمعة","نعم/لا","info"),("خط العرض","رقم عشري","info"),
+                        ("خط الطول","رقم عشري","info"),("ملاحظات","اختياري","secondary")
+                    })
+                    {
+                    <div class="col-6 d-flex align-items-center gap-1">
+                        <span class="badge bg-@col.Item3" style="font-size:9px;">@col.Item2</span>
+                        <span>@col.Item1</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2"><h6 class="mb-0">📋 أعمدة ملف استيراد العقارات</h6></div>
+            <div class="card-body py-2">
+                <div class="row g-1 small">
+                    @foreach (var col in new[]{
+                        ("الاسم","إلزامي","danger"),("الكود","اختياري","secondary"),
+                        ("المحافظة","اختياري","secondary"),("العنوان","اختياري","secondary"),
+                        ("الحي","اختياري","secondary"),("رقم الصك","اختياري","secondary"),
+                        ("المساحة","م²","info"),("القيمة","د.ع","info"),
+                        ("الإيجار الشهري","د.ع","info"),("حالة الإيجار","نص","secondary"),
+                        ("خط العرض","رقم عشري","info"),("خط الطول","رقم عشري","info")
+                    })
+                    {
+                    <div class="col-6 d-flex align-items-center gap-1">
+                        <span class="badge bg-@col.Item3" style="font-size:9px;">@col.Item2</span>
+                        <span>@col.Item1</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
