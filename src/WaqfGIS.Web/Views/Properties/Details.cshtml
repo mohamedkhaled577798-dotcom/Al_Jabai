@@ -1,5 +1,6 @@
-@model WaqfProperty
+﻿@model WaqfProperty
 @using WaqfGIS.Core.Entities
+@using WaqfGIS.Web.Helpers
 @{
     ViewData["Title"] = $"تفاصيل - {Model.NameAr}";
     var images = ViewBag.Images as IEnumerable<PropertyImage> ?? new List<PropertyImage>();
@@ -94,7 +95,7 @@
                                        rf.MimeType != null && rf.MimeType.Contains("sheet") ? "fa-file-excel text-success" : "fa-file text-secondary";
                             var sizeKb = rf.FileSize.HasValue ? (rf.FileSize.Value / 1024.0).ToString("F1") + " KB" : "";
                             var rfExt  = rf.MimeType?.Contains("pdf")==true ? ".pdf" : System.IO.Path.GetExtension(rf.FileName ?? "");
-                            var rfUrl  = FileUrl(rf.FilePath, rfExt, true);
+                            var rfUrl  = FileHelper.Url(rf.FilePath, rfExt, true);
                             <div class="list-group-item px-0 py-2">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>

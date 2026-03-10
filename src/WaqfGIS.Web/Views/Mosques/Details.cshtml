@@ -1,5 +1,6 @@
-@model Mosque
+﻿@model Mosque
 @using WaqfGIS.Core.Entities
+@using WaqfGIS.Web.Helpers
 @{
     ViewData["Title"] = "تفاصيل المسجد";
     var images = ViewBag.Images as IEnumerable<MosqueImage> ?? new List<MosqueImage>();
@@ -10,7 +11,7 @@
 
     // بناء URL الصورة الرئيسية
     string mainImgUrl = mainImage != null
-        ? FileUrl(mainImage.FilePath, mainImage.ContentType?.Contains("png") == true ? ".png" : ".jpg")
+        ? FileHelper.Url(mainImage.FilePath, mainImage.ContentType?.Contains("png") == true ? ".png" : ".jpg")
         : "/img/no-image.png";
 }
 
@@ -134,7 +135,7 @@
                 <div class="card-body">
                     <div class="row g-2">
                         @foreach (var img in images) {
-                            var thumbUrl = FileUrl(img.FilePath, img.ContentType?.Contains("png")==true?".png":".jpg");
+                            var thumbUrl = FileHelper.Url(img.FilePath, img.ContentType?.Contains("png")==true?".png":".jpg");
                             <div class="col-4">
                                 <img src="@thumbUrl"
                                      class="img-fluid rounded @(img.IsMain ? "border border-2 border-primary" : "")"
@@ -174,7 +175,7 @@
                             var sizeKb = rf.FileSize.HasValue ? (rf.FileSize.Value / 1024.0).ToString("F1") + " KB" : "";
                             // بناء URL التنزيل
                             var rfExt  = rf.MimeType?.Contains("pdf")==true ? ".pdf" : System.IO.Path.GetExtension(rf.FileName ?? "");
-                            var rfUrl  = FileUrl(rf.FilePath, rfExt, true);
+                            var rfUrl  = FileHelper.Url(rf.FilePath, rfExt, true);
                             <div class="list-group-item px-0 py-2">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
