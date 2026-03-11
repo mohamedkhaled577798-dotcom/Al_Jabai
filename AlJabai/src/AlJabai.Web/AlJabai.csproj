@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\WaqfGIS.Core\WaqfGIS.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\WaqfGIS.Infrastructure\WaqfGIS.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\WaqfGIS.Services\WaqfGIS.Services.csproj" />
+    <ProjectReference Include="..\AlJabai.Services\AlJabai.Services.csproj" />
+    <ProjectReference Include="..\AlJabai.Infrastructure\AlJabai.Infrastructure.csproj" />
+    <ProjectReference Include="..\AlJabai.Core\AlJabai.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
