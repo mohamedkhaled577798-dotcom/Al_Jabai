@@ -1,0 +1,59 @@
+@model WaqfSystem.Web.ViewModels.Properties.PartnershipRecordRevenueViewModel
+@{
+    ViewData["Title"] = "تسجيل توزيع الإيراد";
+}
+
+<div class="container" dir="rtl">
+    <h3 class="mb-3">تسجيل توزيع إيراد</h3>
+    <div class="card mb-3">
+        <div class="card-body">
+            <div>العقار: <strong>@Model.Partnership.PropertyNameAr</strong> - @Model.Partnership.PropertyWqfNumber</div>
+            <div>نوع الشراكة: <strong>@Model.Partnership.PartnershipType</strong></div>
+            <div>نسبة الوقف: <strong>@Model.Partnership.WaqfSharePercent.ToString("N2")%</strong></div>
+        </div>
+    </div>
+
+    <form method="post" asp-action="RecordRevenue" class="card shadow-sm">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            <input type="hidden" asp-for="Form.PartnershipId" />
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">الفترة</label><input asp-for="Form.PeriodLabel" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">من</label><input asp-for="Form.PeriodStartDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">إلى</label><input asp-for="Form.PeriodEndDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">إجمالي الإيراد</label><input asp-for="Form.TotalRevenue" id="totalRevenue" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">طريقة التحويل</label><input asp-for="Form.TransferMethod" class="form-control" placeholder="تحويل بنكي / صك / نقداً / أخرى" /></div>
+                <div class="col-md-4"><label class="form-label">نوع التوزيع</label><select asp-for="Form.DistributionType" class="form-select"><option value="Revenue">Revenue</option><option value="Harvest">Harvest</option></select></div>
+                <div class="col-12"><label class="form-label">ملاحظات</label><textarea asp-for="Form.Notes" class="form-control" rows="3"></textarea></div>
+            </div>
+
+            <div class="alert alert-light border mt-3" id="calcBox">
+                <div>حصة الوقف: <strong id="waqfAmount">0 د.ع</strong></div>
+                <div>حصة الشريك: <strong id="partnerAmount">0 د.ع</strong></div>
+                <div>طريقة الحساب: <strong id="calcMethod">-</strong></div>
+                <div id="calcDetail" class="text-muted"></div>
+            </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between">
+            <a class="btn btn-outline-secondary" href="@Url.Action("Detail", "Partnership", new { id = Model.Form.PartnershipId })">إلغاء</a>
+            <button class="btn btn-success" type="submit">تسجيل التوزيع</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+$('#totalRevenue').on('input', function(){
+    var val = $(this).val();
+    if(!val) return;
+    $.get('/Partnership/PreviewRevenue', { partnershipId: @Model.Form.PartnershipId, totalRevenue: val })
+        .done(function(r){
+            $('#waqfAmount').text(Number(r.waqfAmount).toLocaleString('en-US') + ' د.ع');
+            $('#partnerAmount').text(Number(r.partnerAmount).toLocaleString('en-US') + ' د.ع');
+            $('#calcMethod').text(r.calculationMethod);
+            $('#calcDetail').text(r.detail);
+        });
+});
+</script>
+}

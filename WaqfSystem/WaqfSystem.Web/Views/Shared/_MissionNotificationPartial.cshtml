@@ -1,0 +1,69 @@
+@using WaqfSystem.Application.Services
+@inject IMissionService MissionService
+@{
+    var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var userId = int.TryParse(userIdClaim, out var parsed) ? parsed : 0;
+    var filter = role == "FIELD_INSPECTOR"
+        ? new WaqfSystem.Application.DTOs.Mission.MissionFilterRequest { Stage = WaqfSystem.Core.Enums.MissionStage.Assigned, PageSize = 5 }
+        : new WaqfSystem.Application.DTOs.Mission.MissionFilterRequest { Stage = WaqfSystem.Core.Enums.MissionStage.SubmittedForReview, PageSize = 5 };
+    var pending = new WaqfSystem.Application.DTOs.Common.PagedResult<WaqfSystem.Application.DTOs.Mission.MissionListItemDto>
+    {
+        Items = new List<WaqfSystem.Application.DTOs.Mission.MissionListItemDto>(),
+        TotalCount = 0,
+        Page = 1,
+        PageSize = 5
+    };
+
+    try
+    {
+        pending = await MissionService.GetPagedAsync(filter, userId, role);
+    }
+    catch
+    {
+        // Keep layout rendering even if mission schema is not fully migrated.
+    }
+
+    var count = pending.TotalCount;
+}
+
+<div class="dropdown me-3">
+    <a class="nav-link position-relative" href="#" id="missionNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i>
+        @if (count > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@count</span>
+        }
+    </a>
+    <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width:340px;">
+        <div class="p-3 border-bottom">
+            @if (role == "FIELD_INSPECTOR")
+            {
+                <div class="fw-bold">@count مهام تنتظر قبولك</div>
+            }
+            else
+            {
+                <div class="fw-bold">@count مهام مُقدَّمة للمراجعة</div>
+            }
+        </div>
+        <div style="max-height:320px; overflow:auto;">
+            @if (!pending.Items.Any())
+            {
+                <div class="p-3 text-muted text-center">لا توجد إشعارات مهام حالياً</div>
+            }
+            else
+            {
+                @foreach (var n in pending.Items.Take(5))
+                {
+                    <a class="dropdown-item border-bottom py-2" asp-controller="Missions" asp-action="Detail" asp-route-id="@n.Id">
+                        <div class="fw-semibold">@n.Title</div>
+                        <div class="small text-muted">@n.StageDisplayAr - @n.MissionCode</div>
+                    </a>
+                }
+            }
+        </div>
+        <div class="p-2 text-center">
+            <a class="btn btn-sm btn-outline-primary" asp-controller="Missions" asp-action="@(role == "FIELD_INSPECTOR" ? "MyMissions" : "Index")">عرض الكل</a>
+        </div>
+    </div>
+</div>

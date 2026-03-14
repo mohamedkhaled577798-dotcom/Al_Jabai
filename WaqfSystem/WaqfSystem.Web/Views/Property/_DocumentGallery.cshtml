@@ -1,0 +1,42 @@
+@model List<WaqfSystem.Application.DTOs.Property.DocumentDto>
+
+<div class="row g-3">
+    @foreach (var doc in Model)
+    {
+        <div class="col-md-4">
+            <div class="card h-100 border-light shadow-sm">
+                <div class="card-body p-2">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3 overflow-hidden">
+                            <div class="text-truncate small fw-bold">@doc.DocumentCategory.ToString()</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">@doc.FileSizeKB KB</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 d-flex justify-content-between p-2">
+                    <a href="@doc.FileUrl" target="_blank" class="btn btn-xs btn-outline-primary py-0">عرض</a>
+                    @if (doc.IsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success small" style="font-size: 0.6rem;">موثق</span>
+                    }
+                    else
+                    {
+                        <button class="btn btn-xs btn-outline-success py-0" onclick="verifyDoc(@doc.Id)">توثيق</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    
+    <div class="col-md-4">
+        <div class="card h-100 border-dashed d-flex align-items-center justify-content-center py-4 text-muted bg-light" style="border: 2px dashed #ccc; cursor: pointer;" onclick="$('#uploadModal').modal('show')">
+            <div class="text-center">
+                <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                <p class="small mb-0">رفع مستند جديد</p>
+            </div>
+        </div>
+    </div>
+</div>

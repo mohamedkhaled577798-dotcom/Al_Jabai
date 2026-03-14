@@ -1,0 +1,112 @@
+@model WaqfSystem.Web.ViewModels.Mission.MissionDetailViewModel
+@using WaqfSystem.Core.Enums
+@{
+    ViewData["Title"] = "تفاصيل المهمة";
+}
+
+<div class="container-fluid py-3" data-mission-id="@Model.Mission.Id">
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <div class="text-monospace text-muted">@Model.Mission.MissionCode</div>
+                    <h3 class="fw-bold mb-0">@Model.Mission.Title</h3>
+                </div>
+                <div>
+                    <span class="badge fs-6" style="background:@Model.Mission.StageColor">@Model.Mission.StageDisplayAr</span>
+                    <span class="badge bg-dark fs-6">@Model.Mission.Priority</span>
+                    @if (Model.Mission.IsUrgent) { <span class="badge bg-danger fs-6">عاجلة</span> }
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="progress" style="height:14px;"><div id="progressBar" class="progress-bar" style="width:@Model.Mission.ProgressPercent%">@Model.Mission.ProgressPercent%</div></div>
+                <div class="small text-muted mt-1">@Model.Mission.EnteredPropertyCount / @Model.Mission.TargetPropertyCount عقار</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body d-flex flex-wrap gap-2">
+            @if (Model.Mission.CanAccept) { <button class="btn btn-success" id="acceptBtn">قبول المهمة</button> }
+            @if (Model.Mission.CanReject) { <button class="btn btn-outline-danger" id="rejectBtn">رفض المهمة</button> }
+            @if (Model.Mission.CanCheckin) { <button class="btn btn-primary" id="checkinBtn">تسجيل الوصول</button> }
+            @if (Model.Mission.CanSubmitReview) { <button class="btn btn-warning" id="submitReviewBtn">تقديم للمراجعة</button> }
+            @if (Model.Mission.CanApprove) { <button class="btn btn-success" id="approveBtn">اعتماد</button> }
+            @if (Model.Mission.CanSendBack) { <button class="btn btn-danger" id="sendBackBtn">إعادة للتصحيح</button> }
+            @if (Model.Mission.CanReassign) { <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#assignModal">إسناد</button> }
+            @if (Model.Mission.CanCancel) { <button class="btn btn-secondary" id="cancelBtn">إلغاء المهمة</button> }
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabOverview">نظرة عامة</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabEntries">العقارات المُدخلة</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabHistory">مسار المهمة</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabChecklist">قائمة التفتيش</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNotes">الملاحظات والتواصل</button></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tabOverview">
+                    <div class="row g-3">
+                        <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h6 class="fw-bold">بيانات المهمة</h6><div>النوع: @Model.Mission.MissionType</div><div>التاريخ: @Model.Mission.MissionDate.ToString("yyyy/MM/dd")</div><div>المنطقة: @Model.Mission.TargetArea</div><div>الوصف: @Model.Mission.Description</div></div></div></div>
+                        <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h6 class="fw-bold">المكلف</h6><div class="d-flex align-items-center gap-2"><span class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;">@Model.Mission.AssignedToAvatar</span><div>@Model.Mission.AssignedToName</div></div></div></div></div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3"><div class="card"><div class="card-body text-center"><div class="small">مستهدف</div><div class="h5">@Model.Mission.ProgressStats.TargetCount</div></div></div></div>
+                        <div class="col-md-3"><div class="card"><div class="card-body text-center"><div class="small">مدخل</div><div class="h5">@Model.Mission.ProgressStats.EnteredCount</div></div></div></div>
+                        <div class="col-md-3"><div class="card"><div class="card-body text-center"><div class="small">مراجعة</div><div class="h5">@Model.Mission.ProgressStats.ReviewedCount</div></div></div></div>
+                        <div class="col-md-3"><div class="card"><div class="card-body text-center"><div class="small">معتمد</div><div class="h5">@Model.Mission.ProgressStats.ApprovedCount</div></div></div></div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tabEntries">@await Html.PartialAsync("_PropertyEntries", Model.Mission.PropertyEntries)</div>
+                <div class="tab-pane fade" id="tabHistory">@await Html.PartialAsync("_StageHistory", Model.Mission.StageHistory)</div>
+                <div class="tab-pane fade" id="tabChecklist">
+                    @if (Model.Mission.ChecklistTemplate == null) { <div class="alert alert-light">لم يتم تعيين قائمة تفتيش</div> }
+                    else
+                    {
+                        <div class="card border-0 shadow-sm"><div class="card-body">
+                            <h6 class="fw-bold">@Model.Mission.ChecklistTemplate.TemplateName</h6>
+                            @foreach (var item in Model.Mission.ChecklistTemplate.Items)
+                            {
+                                <div class="mb-2 border rounded-3 p-2">@item.QuestionAr</div>
+                            }
+                        </div></div>
+                    }
+                </div>
+                <div class="tab-pane fade" id="tabNotes">
+                    <textarea class="form-control mb-2" rows="3" placeholder="أضف ملاحظة"></textarea>
+                    <button class="btn btn-primary btn-sm">إضافة</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3"><div class="card-body"><h6 class="fw-bold">المرحلة الحالية</h6><span class="badge" style="background:@Model.Mission.StageColor">@Model.Mission.StageDisplayAr</span></div></div>
+            <div class="card border-0 shadow-sm mb-3"><div class="card-body"><h6 class="fw-bold">تواريخ مهمة</h6><div>إنشاء: @Model.Mission.StageHistory.LastOrDefault()?.ChangedAt.ToString("yyyy/MM/dd")</div><div>إنجاز متوقع: @Model.Mission.ExpectedCompletionDate?.ToString("yyyy/MM/dd")</div></div></div>
+            <div class="card border-0 shadow-sm mb-3"><div class="card-body"><h6 class="fw-bold">إحصائيات سريعة</h6><div>التقدم: @Model.Mission.ProgressPercent%</div><div>متوسط الجودة: @Model.Mission.AverageDqsScore%</div></div></div>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_AssignModal")
+    @await Html.PartialAsync("_ApproveRejectModal")
+</div>
+
+@section Scripts {
+<script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+<script>
+    const missionId = @Model.Mission.Id;
+    const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/missions').build();
+    connection.start().then(() => connection.invoke('WatchMission', missionId));
+    connection.on('ProgressUpdated', function (payload) {
+        if (payload.missionId !== missionId) return;
+        const bar = document.getElementById('progressBar');
+        bar.style.width = payload.progressPercent + '%';
+        bar.textContent = payload.progressPercent + '%';
+    });
+    connection.on('StageChanged', function (payload) {
+        if (payload.missionId !== missionId) return;
+        location.reload();
+    });
+</script>
+}

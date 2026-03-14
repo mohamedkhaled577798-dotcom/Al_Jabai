@@ -1,0 +1,21 @@
+@model List<WaqfSystem.Application.DTOs.Partnership.PartnershipDetailDto>
+@{
+    ViewData["Title"] = "شراكات العقار";
+}
+<div class="container" dir="rtl">
+    <h3>شراكات العقار</h3>
+    <table class="table table-bordered">
+        <thead><tr><th>الشريك</th><th>النوع</th><th>نسبة الوقف</th><th>إجراءات</th></tr></thead>
+        <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.PartnerName</td>
+                <td>@p.PartnershipType</td>
+                <td>@p.WaqfSharePercent.ToString("N2")%</td>
+                <td><a class="btn btn-sm btn-outline-success" href="@Url.Action("Detail", new { id = p.Id })">عرض</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

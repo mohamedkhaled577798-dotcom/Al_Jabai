@@ -1,0 +1,46 @@
+@model WaqfSystem.Web.ViewModels.Mission.PerformanceReportViewModel
+@{
+    ViewData["Title"] = "تقرير الأداء";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0">تقرير أداء الموظفين الميدانيين</h2>
+        <a href="#" class="btn btn-outline-success">تصدير Excel</a>
+    </div>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-3"><select class="form-select" name="governorateId"><option value="">كل المحافظات</option>@foreach(var g in Model.Governorates){<option value="@g.Value" selected="@(Model.FilterGovernorateId?.ToString()==g.Value)">@g.Text</option>}</select></div>
+        <div class="col-md-3"><input type="date" class="form-control" name="from" value="@Model.FilterFrom.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-md-3"><input type="date" class="form-control" name="to" value="@Model.FilterTo.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-md-3 d-grid"><button class="btn btn-primary">تطبيق</button></div>
+    </form>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">إجمالي الموظفين</div><div class="h4">@Model.Summary.TotalEmployees</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">معدل الإنجاز في الوقت</div><div class="h4">@Model.Summary.AvgCompletionRate%</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">متوسط جودة البيانات</div><div class="h4">@Model.Summary.AvgDqsScore%</div></div></div></div>
+        <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">إجمالي المكتمل</div><div class="h4">@Model.Summary.TotalCompleted</div></div></div></div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="perfTable">
+            <thead class="table-light"><tr><th>الموظف</th><th>المسندة</th><th>المكتملة</th><th>جارية</th><th>الإنجاز في الوقت</th><th>متوسط الأيام</th><th>المدخلة</th><th>المعتمدة</th><th>متوسط DQS</th><th>التقييم</th><th>إجراءات</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Employees)
+                {
+                    var rateClass = e.PerformanceRating == "ممتاز" ? "bg-success" : e.PerformanceRating == "جيد" ? "bg-primary" : e.PerformanceRating == "متوسط" ? "bg-warning text-dark" : "bg-danger";
+                    <tr>
+                        <td><span class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">@string.Concat(e.FullName.Split(' ').Where(x=>x.Length>0).Take(2).Select(x=>x[0]))</span>@e.FullName <div class="small text-muted">@e.Role</div></td>
+                        <td>@e.TotalMissionsAssigned</td><td>@e.CompletedMissions</td><td>@e.InProgressMissions</td><td>@e.OnTimeCompletionRate%</td><td>@e.AverageCompletionDays</td><td>@e.TotalPropertiesEntered</td><td>@e.ApprovedPropertiesCount</td>
+                        <td><span class="badge @(e.AverageDqsScore<50?"bg-danger":e.AverageDqsScore<70?"bg-warning text-dark":"bg-success")">@e.AverageDqsScore%</span></td>
+                        <td><span class="badge @rateClass">@e.PerformanceRating</span></td>
+                        <td><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#employeeModal">عرض</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="employeeModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">تفاصيل الموظف</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="card"><div class="card-body">تفاصيل الأداء وآخر المهام</div></div></div></div></div></div>

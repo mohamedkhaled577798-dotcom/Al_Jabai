@@ -1,0 +1,97 @@
+@model WaqfSystem.Web.ViewModels.Properties.PartnershipIndexViewModel
+@{
+    ViewData["Title"] = "الأملاك الملحقة";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>الأملاك الملحقة <span class="badge bg-warning text-dark">@Model.Stats.TotalCount</span></h3>
+        <a class="btn btn-outline-success" href="#">تصدير Excel</a>
+    </div>
+
+    @if (Model.Stats.ExpiringIn30Days > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">@Model.Stats.ExpiringIn30Days شراكة تنتهي خلال 30 يوم — <a href="@Url.Action("Partnership", new { ExpiryDateTo = DateTime.Today.AddDays(30).ToString("yyyy-MM-dd") })">عرض</a><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (Model.Stats.ExpiringIn90Days > 0)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">@Model.Stats.ExpiringIn90Days شراكة تنتهي خلال 90 يوم<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (Model.Stats.ExpiredCount > 0)
+    {
+        <div class="alert alert-dark alert-dismissible fade show" role="alert">@Model.Stats.ExpiredCount شراكة منتهية الصلاحية<button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button></div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-2"><div class="card bg-light"><div class="card-body"><small>إجمالي الشراكات</small><h5>@Model.Stats.TotalCount</h5></div></div></div>
+        <div class="col-md-2"><div class="card bg-light"><div class="card-body"><small>نشطة</small><h5>@Model.Stats.ActiveCount</h5></div></div></div>
+        <div class="col-md-3"><div class="card bg-light"><div class="card-body"><small>إيراد الوقف هذا الشهر</small><h5>@Model.Stats.TotalWaqfRevenueThisMonth.ToString("N0") د.ع</h5></div></div></div>
+        <div class="col-md-3"><div class="card bg-light"><div class="card-body"><small>قيد التحويل</small><h5>@Model.Stats.TotalPendingTransfers.ToString("N0") د.ع</h5></div></div></div>
+        <div class="col-md-2"><div class="card bg-light"><div class="card-body"><small>تنتهي قريباً</small><h5>@Model.Stats.ExpiringIn90Days</h5></div></div></div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            @foreach (var stat in Model.Stats.ByPartnershipType)
+            {
+                <span class="badge bg-secondary me-1">@stat.Key: @stat.Value</span>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header"><button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#filterPanel">مرشحات</button></div>
+        <div class="collapse show" id="filterPanel">
+            <div class="card-body">
+                <form method="get" asp-action="Partnership" class="row g-2">
+                    <div class="col-md-2"><select name="GovernorateId" class="form-select"><option value="">المحافظة</option>@foreach (var g in Model.Governorates){<option value="@g.Value">@g.Text</option>}</select></div>
+                    <div class="col-md-2"><select name="PartnershipType" class="form-select"><option value="">نوع الشراكة</option>@foreach(var t in Enum.GetValues<WaqfSystem.Core.Enums.PartnershipType>()){<option value="@t">@t</option>}</select></div>
+                    <div class="col-md-2"><select name="PartnerType" class="form-select"><option value="">نوع الشريك</option>@foreach(var t in Enum.GetValues<WaqfSystem.Core.Enums.PartnerType>()){<option value="@t">@t</option>}</select></div>
+                    <div class="col-md-2"><select name="IsActive" class="form-select"><option value="">الحالة</option><option value="true">نشطة</option><option value="false">غير نشطة</option></select></div>
+                    <div class="col-md-2"><input type="date" name="ExpiryDateFrom" class="form-control" /></div>
+                    <div class="col-md-2"><input type="date" name="ExpiryDateTo" class="form-control" /></div>
+                    <div class="col-md-8"><input name="SearchTerm" class="form-control" placeholder="بحث" /></div>
+                    <div class="col-md-4 d-flex gap-2"><button class="btn btn-success" type="submit">بحث</button><a class="btn btn-outline-secondary" href="@Url.Action("Partnership")">إعادة ضبط</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light"><tr><th>العقار</th><th>نوع الشراكة</th><th>الشريك</th><th>نسبة الوقف</th><th>حصة الشهر</th><th>تاريخ الانتهاء</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+            <tbody>
+            @foreach (var row in Model.Partnerships.Items)
+            {
+                var expiryClass = row.IsExpired ? "bg-danger" : row.DaysUntilExpiry <= 30 ? "bg-warning text-dark" : row.DaysUntilExpiry <= 90 ? "bg-info text-dark" : row.PartnershipEndDate.HasValue ? "bg-success" : "bg-secondary";
+                <tr>
+                    <td>@row.PropertyNameAr<br /><small class="text-muted">@row.PropertyWqfNumber</small></td>
+                    <td>@row.PartnershipType</td>
+                    <td>@row.PartnerName</td>
+                    <td>
+                        <div class="progress" style="height:16px;"><div class="progress-bar bg-success" style="width:@row.WaqfSharePercent%"></div><div class="progress-bar bg-success-subtle" style="width:@row.PartnerSharePercent%"></div></div>
+                        <small>@row.WaqfSharePercent.ToString("N2")%</small>
+                    </td>
+                    <td>@row.TotalDistributed.ToString("N0") د.ع</td>
+                    <td><span class="badge @expiryClass">@(row.PartnershipEndDate?.ToString("yyyy/MM/dd") ?? "لا يوجد")</span></td>
+                    <td><span class="badge @(row.IsActive ? "bg-success" : "bg-secondary")">@(row.IsExpired ? "منتهية" : row.IsActive ? "نشطة" : "موقوفة")</span></td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Detail", "Partnership", new { id = row.Id })">عرض الشراكة</a>
+                        <a class="btn btn-sm btn-outline-success" href="@Url.Action("RecordRevenue", "Partnership", new { partnershipId = row.Id })">إضافة توزيع</a>
+                        <a class="btn btn-sm btn-outline-info" href="@Url.Action("Detail", "Partnership", new { id = row.Id, tab = "contact" })">تواصل مع الشريك</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <nav>
+        <ul class="pagination justify-content-center">
+            @for (var i = 1; i <= Model.Partnerships.TotalPages; i++)
+            {
+                <li class="page-item @(Model.Partnerships.Page == i ? "active" : "")"><a class="page-link" href="@Url.Action("Partnership", new { Page = i })">@i</a></li>
+            }
+        </ul>
+    </nav>
+</div>

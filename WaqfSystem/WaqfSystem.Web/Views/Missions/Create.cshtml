@@ -1,0 +1,120 @@
+@using WaqfSystem.Core.Enums
+@model WaqfSystem.Web.ViewModels.Mission.MissionCreateViewModel
+@{
+    ViewData["Title"] = "إنشاء مهمة";
+}
+
+<div class="container-fluid py-3">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">الرئيسية</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">المهام</a></li>
+            <li class="breadcrumb-item active">إنشاء</li>
+        </ol>
+    </nav>
+
+    <h2 class="fw-bold mb-3">إنشاء مهمة ميدانية جديدة</h2>
+
+    <form asp-action="Create" method="post" class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">1) معلومات المهمة الأساسية</h5>
+            <div class="row g-3 mb-3">
+                <div class="col-md-8"><label class="form-label">العنوان</label><input asp-for="Mission.Title" class="form-control" required /></div>
+                <div class="col-md-4">
+                    <label class="form-label">الأولوية</label>
+                    <div class="d-grid gap-2">
+                        @foreach(var p in Enum.GetValues<MissionPriority>())
+                        {
+                            <label class="border rounded-3 p-2"><input type="radio" asp-for="Mission.Priority" value="@p" /> @p</label>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label d-block">نوع المهمة</label>
+                <div class="row g-2">
+                    @foreach (var t in Enum.GetValues<MissionType>())
+                    {
+                        <div class="col-md-2">
+                            <label class="border rounded-3 p-2 d-block text-center"><input type="radio" asp-for="Mission.MissionType" value="@t" /> @t</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4"><label class="form-label">تاريخ المهمة</label><input type="date" asp-for="Mission.MissionDate" class="form-control" required /></div>
+                <div class="col-md-4"><label class="form-label">تاريخ الإنجاز المتوقع</label><input type="date" asp-for="Mission.ExpectedCompletionDate" class="form-control" /></div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch"><input asp-for="Mission.IsUrgent" class="form-check-input" /><label class="form-check-label">عاجلة</label></div></div>
+            </div>
+            <div class="mb-4"><label class="form-label">الوصف</label><textarea asp-for="Mission.Description" class="form-control" rows="3"></textarea></div>
+
+            <h5 class="fw-bold mb-3">2) الموقع الجغرافي</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4"><label class="form-label">المحافظة</label><select asp-for="Mission.GovernorateId" asp-items="Model.Governorates" class="form-select" id="govSelect"></select></div>
+                <div class="col-md-4"><label class="form-label">القضاء</label><select asp-for="Mission.DistrictId" class="form-select" id="districtSelect"><option value="">اختر القضاء</option></select></div>
+                <div class="col-md-4"><label class="form-label">الناحية</label><select asp-for="Mission.SubDistrictId" class="form-select" id="subDistrictSelect"><option value="">اختر الناحية</option></select></div>
+                <div class="col-md-8"><label class="form-label">المنطقة المستهدفة</label><input asp-for="Mission.TargetArea" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">عدد العقارات المستهدفة</label><input asp-for="Mission.TargetPropertyCount" type="number" class="form-control" /></div>
+            </div>
+
+            <h5 class="fw-bold mb-3">3) التكليف</h5>
+            <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="assignNowToggle" checked><label class="form-check-label">هل تريد الإسناد الآن؟</label></div>
+            <div id="assignmentSection" class="row g-3 mb-4">
+                <div class="col-md-6"><label class="form-label">الموظف المكلف</label><select asp-for="Mission.AssignedToUserId" asp-items="Model.Employees" class="form-select" id="employeeSelect"><option value="">اختر الموظف</option></select></div>
+                <div class="col-md-6"><label class="form-label">الفريق</label><select asp-for="Mission.AssignedToTeamId" asp-items="Model.Teams" class="form-select" id="teamSelect"><option value="">اختر الفريق</option></select></div>
+                <div class="col-md-8"><label class="form-label">ملاحظات الإسناد</label><textarea asp-for="Mission.AssignmentNotes" class="form-control"></textarea></div>
+                <div class="col-md-4"><label class="form-label">المراجع</label><select asp-for="Mission.ReviewerUserId" asp-items="Model.Employees" class="form-select"><option value="">اختر المراجع</option></select></div>
+            </div>
+
+            <h5 class="fw-bold mb-3">4) إعدادات المهمة</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6"><label class="form-label">قائمة التفتيش</label><select asp-for="Mission.ChecklistTemplateId" asp-items="Model.ChecklistTemplates" class="form-select"></select></div>
+                <div class="col-md-6"><label class="form-label">ربط عقارات (اختياري)</label><input type="text" class="form-control" placeholder="أدخل معرفات العقارات مفصولة بفاصلة" id="propertyIdsRaw" /></div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-light">إلغاء</a>
+                <button type="submit" class="btn btn-outline-primary">حفظ كمسودة</button>
+                <button type="submit" class="btn btn-primary">إنشاء وإسناد</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    function toggleAssignment() {
+        const on = $('#assignNowToggle').is(':checked');
+        $('#assignmentSection').toggle(on);
+    }
+    function loadDistricts(govId) {
+        $('#districtSelect').html('<option value="">تحميل...</option>');
+        setTimeout(function(){ $('#districtSelect').html('<option value="">اختر القضاء</option>'); }, 250);
+    }
+    function loadSubDistricts(distId) {
+        $('#subDistrictSelect').html('<option value="">تحميل...</option>');
+        setTimeout(function(){ $('#subDistrictSelect').html('<option value="">اختر الناحية</option>'); }, 250);
+    }
+    function loadEmployees(govId) {
+        $.get('@Url.Action("GetEmployeesForAssignment")', { governorateId: govId }, function(res){
+            if (!res.success) return;
+            let html = '<option value="">اختر الموظف</option>';
+            res.data.forEach(e => html += '<option value="'+e.id+'">'+e.name+' - '+e.activeMissionCount+' مهام نشطة</option>');
+            $('#employeeSelect').html(html);
+        });
+        $.get('@Url.Action("GetTeams")', { governorateId: govId }, function(res){
+            if (!res.success) return;
+            let html = '<option value="">اختر الفريق</option>';
+            res.data.forEach(t => html += '<option value="'+t.id+'">'+t.name+' ('+t.code+')</option>');
+            $('#teamSelect').html(html);
+        });
+    }
+
+    $('#assignNowToggle').on('change', toggleAssignment);
+    $('#govSelect').on('change', function(){ loadDistricts(this.value); loadEmployees(this.value); });
+    $('#districtSelect').on('change', function(){ loadSubDistricts(this.value); });
+    toggleAssignment();
+</script>
+}

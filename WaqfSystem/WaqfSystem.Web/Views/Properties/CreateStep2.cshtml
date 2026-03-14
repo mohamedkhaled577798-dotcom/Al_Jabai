@@ -1,0 +1,441 @@
+@model WaqfSystem.Web.ViewModels.Properties.PropertyCreateViewModel
+@{
+    ViewData["Title"] = "إضافة بناية — الخطوة 2: الموقع الجغرافي";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    .geo-chain {
+        position: relative;
+        padding-right: 0;
+    }
+    .geo-chain::before {
+        content: '';
+        position: absolute;
+        right: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #0D5C3A 0%, #dee2e6 100%);
+        z-index: 0;
+    }
+    .geo-level {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 14px;
+        position: relative;
+        z-index: 1;
+    }
+    .geo-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        z-index: 1;
+    }
+    .geo-icon-l1 { background: #6c757d; }
+    .geo-icon-l2 { background: #0D5C3A; }
+    .geo-icon-l3 { background: #1D9E75; }
+    .geo-icon-l4 { background: #2dc98a; }
+    .geo-icon-l5 { background: #84dbb5; }
+    .geo-icon-l6 { background: #b4e8d4; color: #0D5C3A; }
+    .geo-content {
+        flex: 1;
+    }
+    .geo-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .geo-badge {
+        font-size: 9px;
+        background: #e9ecef;
+        color: #495057;
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .geo-select-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    select:disabled {
+        opacity: 0.45;
+    }
+    .address-preview {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1px solid #86efac;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 13px;
+        color: #0D5C3A;
+    }
+    .address-preview .preview-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .form-section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid #f0f0f0;
+    }
+    .section-heading {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0D5C3A;
+        border-bottom: 2px solid #dcfce7;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .loading-option {
+        color: #6c757d;
+        font-style: italic;
+    }
+    .required-star { color: #dc3545; }
+</style>
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">الأملاك</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Properties" asp-action="Create">إضافة بناية</a></li>
+        <li class="breadcrumb-item active">الموقع الجغرافي</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-3">
+    <h5 class="mb-0 fw-bold">
+        <i class="bi bi-geo-alt-fill text-success me-2"></i>
+        الموقع الجغرافي للبناية
+    </h5>
+</div>
+
+@await Html.PartialAsync("_WizardPartials", Model)
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>يوجد أخطاء:</strong>
+        <div asp-validation-summary="All" class="mt-1 mb-0" style="font-size:13px"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-controller="Properties" asp-action="CreateStep2" method="post" id="step2Form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DraftKey" />
+    <input type="hidden" asp-for="CurrentStep" value="2" />
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+
+            @* SECTION: الموقع الإداري *@
+            <div class="form-section">
+                <div class="section-heading">
+                    <i class="bi bi-pin-map-fill"></i> الموقع الإداري
+                </div>
+
+                <div class="geo-chain">
+
+                    @* L1: Country *@
+                    <div class="geo-level">
+                        <div class="geo-icon geo-icon-l1">🌍</div>
+                        <div class="geo-content">
+                            <div class="geo-label">الدولة <span class="geo-badge">L1</span></div>
+                            <select class="form-select form-select-sm" disabled>
+                                <option selected>جمهورية العراق</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    @* L2: Governorate *@
+                    <div class="geo-level">
+                        <div class="geo-icon geo-icon-l2">م</div>
+                        <div class="geo-content">
+                            <div class="geo-label">
+                                المحافظة <span class="required-star">*</span>
+                                <span class="geo-badge">L2</span>
+                            </div>
+                            <select asp-for="Geographic.GovernorateId"
+                                    asp-items="Model.Geographic.Governorates"
+                                    class="form-select form-select-sm"
+                                    id="govSel"
+                                    onchange="cascadeLoad('districts', this.value, 'distSel', 'القضاء')">
+                            </select>
+                            <span asp-validation-for="Geographic.GovernorateId" class="text-danger" style="font-size:12px"></span>
+                        </div>
+                    </div>
+
+                    @* L3: District *@
+                    <div class="geo-level">
+                        <div class="geo-icon geo-icon-l3">ق</div>
+                        <div class="geo-content">
+                            <div class="geo-label">
+                                القضاء <span class="required-star">*</span>
+                                <span class="geo-badge">L3</span>
+                            </div>
+                            <select asp-for="Geographic.DistrictId"
+                                    asp-items="Model.Geographic.Districts"
+                                    class="form-select form-select-sm"
+                                    id="distSel"
+                                    disabled="@(Model.Geographic.GovernorateId == 0 ? "disabled" : null)"
+                                    onchange="cascadeLoad('subdistricts', this.value, 'subSel', 'الناحية')">
+                            </select>
+                            <span asp-validation-for="Geographic.DistrictId" class="text-danger" style="font-size:12px"></span>
+                        </div>
+                    </div>
+
+                    @* L4: SubDistrict *@
+                    <div class="geo-level">
+                        <div class="geo-icon geo-icon-l4">ن</div>
+                        <div class="geo-content">
+                            <div class="geo-label">
+                                الناحية <span class="required-star">*</span>
+                                <span class="geo-badge">L4</span>
+                            </div>
+                            <select asp-for="Geographic.SubDistrictId"
+                                    asp-items="Model.Geographic.SubDistricts"
+                                    class="form-select form-select-sm"
+                                    id="subSel"
+                                    disabled="@(Model.Geographic.DistrictId == 0 ? "disabled" : null)"
+                                    onchange="cascadeLoad('neighborhoods', this.value, 'neighSel', 'الحي')">
+                            </select>
+                            <span asp-validation-for="Geographic.SubDistrictId" class="text-danger" style="font-size:12px"></span>
+                        </div>
+                    </div>
+
+                    @* L5: Neighborhood *@
+                    <div class="geo-level">
+                        <div class="geo-icon geo-icon-l5">ح</div>
+                        <div class="geo-content">
+                            <div class="geo-label">الحي / القرية <span class="geo-badge">L5</span></div>
+                            <select asp-for="Geographic.NeighborhoodId"
+                                    asp-items="Model.Geographic.Neighborhoods"
+                                    class="form-select form-select-sm"
+                                    id="neighSel"
+                                    disabled="@(Model.Geographic.SubDistrictId == 0 ? "disabled" : null)"
+                                    onchange="cascadeLoad('streets', this.value, 'streetSel', 'الشارع')">
+                            </select>
+                            <span asp-validation-for="Geographic.NeighborhoodId" class="text-danger" style="font-size:12px"></span>
+                        </div>
+                    </div>
+
+                    @* L6: Street *@
+                    <div class="geo-level mb-0">
+                        <div class="geo-icon geo-icon-l6">ش</div>
+                        <div class="geo-content">
+                            <div class="geo-label">الشارع <span class="geo-badge">L6</span></div>
+                            <select asp-for="Geographic.StreetId"
+                                    asp-items="Model.Geographic.Streets"
+                                    class="form-select form-select-sm"
+                                    id="streetSel"
+                                    disabled="@(Model.Geographic.NeighborhoodId == null ? "disabled" : null)">
+                            </select>
+                            <span asp-validation-for="Geographic.StreetId" class="text-danger" style="font-size:12px"></span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            @* SECTION: تفاصيل العنوان *@
+            <div class="form-section">
+                <div class="section-heading">
+                    <i class="bi bi-house-fill"></i> تفاصيل العنوان الكامل
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label asp-for="Geographic.BuildingNumber" class="form-label fw-semibold">رقم البناية</label>
+                        <input asp-for="Geographic.BuildingNumber" class="form-control form-control-sm"
+                               id="buildingNoInput" placeholder="مثال: 12" />
+                        <span asp-validation-for="Geographic.BuildingNumber" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Geographic.PlotNumber" class="form-label fw-semibold">رقم القطعة</label>
+                        <input asp-for="Geographic.PlotNumber" class="form-control form-control-sm"
+                               id="plotNoInput" placeholder="مثال: 45" />
+                        <span asp-validation-for="Geographic.PlotNumber" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Geographic.BlockNumber" class="form-label fw-semibold">رقم المحلة</label>
+                        <input asp-for="Geographic.BlockNumber" class="form-control form-control-sm"
+                               placeholder="مثال: 929" />
+                        <span asp-validation-for="Geographic.BlockNumber" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Geographic.ZoneNumber" class="form-label fw-semibold">رقم المنطقة</label>
+                        <input asp-for="Geographic.ZoneNumber" class="form-control form-control-sm"
+                               placeholder="مثال: 214" />
+                        <span asp-validation-for="Geographic.ZoneNumber" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Geographic.NearestLandmark" class="form-label fw-semibold">أقرب معلم</label>
+                        <input asp-for="Geographic.NearestLandmark" class="form-control form-control-sm"
+                               id="landmarkInput" placeholder="مثال: بجانب جامع النور" maxlength="500" />
+                        <span asp-validation-for="Geographic.NearestLandmark" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Geographic.AlternativeAddress" class="form-label fw-semibold">عنوان بديل</label>
+                        <input asp-for="Geographic.AlternativeAddress" class="form-control form-control-sm"
+                               placeholder="عنوان بديل للتحقق" />
+                        <span asp-validation-for="Geographic.AlternativeAddress" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Geographic.What3Words" class="form-label fw-semibold">
+                            <i class="bi bi-three-dots"></i> What3Words
+                        </label>
+                        <input asp-for="Geographic.What3Words" class="form-control form-control-sm"
+                               dir="ltr" placeholder="///كلمة.كلمة.كلمة" />
+                        <div style="font-size:11px; color:#6c757d; margin-top:2px">نظام العنونة بثلاث كلمات</div>
+                        <span asp-validation-for="Geographic.What3Words" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                </div>
+            </div>
+
+            @* Address Preview *@
+            <div id="addressPreview" class="address-preview mb-3" style="display:none">
+                <div class="preview-label"><i class="bi bi-eye me-1"></i> معاينة العنوان المُجمَّع</div>
+                <div id="addressPreviewText" class="fw-semibold"></div>
+            </div>
+
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <a asp-controller="Properties" asp-action="Create" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-right me-1"></i> السابق
+            </a>
+            <button type="submit" class="btn btn-success px-4">
+                التالي: الخريطة والحدود
+                <i class="bi bi-arrow-left ms-1"></i>
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    const cascadeUrls = {
+        districts:     '@Url.Action("GetDistricts", "Properties")',
+        subdistricts:  '@Url.Action("GetSubDistricts", "Properties")',
+        neighborhoods: '@Url.Action("GetNeighborhoods", "Properties")',
+        streets:       '@Url.Action("GetStreets", "Properties")'
+    };
+
+    const paramNames = {
+        districts:     'governorateId',
+        subdistricts:  'districtId',
+        neighborhoods: 'subDistrictId',
+        streets:       'neighborhoodId'
+    };
+
+    const chainOrder = ['govSel', 'distSel', 'subSel', 'neighSel', 'streetSel'];
+
+    async function cascadeLoad(resource, parentId, targetId, placeholder) {
+        const targetSel = document.getElementById(targetId);
+        if (!targetSel) return;
+
+        // disable and show loading
+        targetSel.disabled = true;
+        targetSel.innerHTML = `<option class="loading-option">جارٍ التحميل...</option>`;
+
+        // labels for placeholders
+        const labels = {
+            'distSel': 'القضاء',
+            'subSel': 'الناحية',
+            'neighSel': 'الحي',
+            'streetSel': 'الشارع'
+        };
+
+        // reset all selects that come after this one in the chain
+        const targetIdx = chainOrder.indexOf(targetId);
+        for (let i = targetIdx + 1; i < chainOrder.length; i++) {
+            const nextId = chainOrder[i];
+            const nextSel = document.getElementById(nextId);
+            if (nextSel) {
+                const lbl = labels[nextId] || '...';
+                nextSel.innerHTML = `<option value="">-- ${lbl} --</option>`;
+                nextSel.disabled = true;
+            }
+        }
+
+        if (!parentId || parentId === '0' || parentId === '') {
+            targetSel.innerHTML = `<option value="0">-- ${placeholder} --</option>`;
+            return;
+        }
+
+        try {
+            const param = paramNames[resource];
+            const url = `${cascadeUrls[resource]}?${param}=${parentId}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('فشل الطلب');
+            const data = await resp.json();
+
+            targetSel.innerHTML = `<option value="0">-- ${placeholder} --</option>`;
+            data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.text;
+                targetSel.appendChild(opt);
+            });
+
+            targetSel.disabled = data.length === 0;
+        } catch (e) {
+            targetSel.innerHTML = `<option value="0">-- خطأ في التحميل --</option>`;
+            console.error(e);
+        }
+
+        updateAddressPreview();
+    }
+
+    function updateAddressPreview() {
+        const building = document.getElementById('buildingNoInput')?.value ?? '';
+        const plot = document.getElementById('plotNoInput')?.value ?? '';
+        const landmark = document.getElementById('landmarkInput')?.value ?? '';
+
+        const parts = [];
+        if (building.trim()) parts.push(`بناية ${building.trim()}`);
+        if (plot.trim()) parts.push(`قطعة ${plot.trim()}`);
+        if (landmark.trim()) parts.push(landmark.trim());
+
+        const preview = document.getElementById('addressPreview');
+        const previewText = document.getElementById('addressPreviewText');
+        if (parts.length > 0) {
+            preview.style.display = '';
+            previewText.textContent = parts.join('، ');
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    // attach preview listeners
+    ['buildingNoInput', 'plotNoInput', 'landmarkInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateAddressPreview);
+    });
+
+    // init on load
+    updateAddressPreview();
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

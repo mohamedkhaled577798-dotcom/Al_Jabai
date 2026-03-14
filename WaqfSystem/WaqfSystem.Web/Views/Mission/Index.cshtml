@@ -1,0 +1,68 @@
+@model WaqfSystem.Web.ViewModels.MissionIndexViewModel
+@{
+    ViewData["Title"] = "المهام الميدانية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800"><i class="fas fa-tasks me-2"></i> المهام الميدانية</h2>
+    <a href="#" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus-circle fa-sm me-1"></i> إنشاء مهمة جديدة
+    </a>
+</div>
+
+<div class="row">
+    @if (!Model.MissionList.Any())
+    {
+        <div class="col-12 text-center py-5">
+            <div class="text-muted">
+                <i class="fas fa-clipboard-list fa-4x mb-3 opacity-25"></i>
+                <p>لا توجد مهام ميدانية نشطة حالياً.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var mission in Model.MissionList)
+        {
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm border-0 border-start border-4 @(mission.Status == MissionStatus.Completed ? "border-success" : (mission.Status == MissionStatus.InProgress ? "border-primary" : "border-warning"))">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge @(mission.Status == MissionStatus.Completed ? "bg-success" : (mission.Status == MissionStatus.InProgress ? "bg-primary" : "bg-warning text-dark")) mb-2">
+                                @mission.Status.ToString()
+                            </span>
+                            <small class="text-muted">#@mission.MissionNumber</small>
+                        </div>
+                        <h5 class="card-title text-truncate">@mission.Title</h5>
+                        <p class="card-text small text-muted mb-3">
+                            <i class="fas fa-map-marker-alt me-1"></i> @(mission.Governorate?.NameAr ?? "غير محدد") - @(mission.District?.NameAr ?? "")
+                        </p>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>التقدم</span>
+                                <span>@mission.ProgressPercent%</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar @(mission.Status == MissionStatus.Completed ? "bg-success" : "bg-primary")" role="progressbar" style="width: @mission.ProgressPercent%"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center small text-muted">
+                            <div class="me-3">
+                                <i class="fas fa-user-circle me-1"></i> @(mission.AssignedTo?.FullNameAr ?? "غ/م")
+                            </div>
+                            <div>
+                                <i class="fas fa-calendar-alt me-1"></i> @mission.ScheduledDate.ToString("yyyy/MM/dd")
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pt-0 pb-3 hstack gap-2">
+                        <a asp-action="Details" asp-route-id="@mission.Id" class="btn btn-sm btn-outline-secondary w-100">التفاصيل</a>
+                        <button class="btn btn-sm btn-light w-auto"><i class="fas fa-ellipsis-v"></i></button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

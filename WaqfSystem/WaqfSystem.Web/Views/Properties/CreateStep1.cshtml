@@ -1,0 +1,495 @@
+@model WaqfSystem.Web.ViewModels.Properties.PropertyCreateViewModel
+@{
+    ViewData["Title"] = "إضافة بناية جديدة — الخطوة 1: البيانات الأساسية";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    .ownership-card {
+        border: 2px solid #dee2e6;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        background: #fff;
+        text-align: center;
+        padding: 20px 12px;
+        height: 100%;
+        user-select: none;
+    }
+    .ownership-card:hover {
+        border-color: #0D5C3A;
+        background: #f0fdf4;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(13,92,58,0.12);
+    }
+    .ownership-card.selected {
+        border-color: #0D5C3A;
+        background: #dcfce7;
+        box-shadow: 0 4px 16px rgba(13,92,58,0.18);
+    }
+    .ownership-card .card-emoji {
+        font-size: 36px;
+        display: block;
+        margin-bottom: 8px;
+    }
+    .ownership-card .card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a2e3b;
+        margin-bottom: 4px;
+    }
+    .ownership-card .card-sub {
+        font-size: 11px;
+        color: #6c757d;
+    }
+    .ownership-card.selected .card-title {
+        color: #0D5C3A;
+    }
+    .section-heading {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0D5C3A;
+        border-bottom: 2px solid #dcfce7;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .required-star {
+        color: #dc3545;
+    }
+    .field-hint {
+        font-size: 11px;
+        color: #6c757d;
+        margin-top: 2px;
+    }
+    .form-section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid #f0f0f0;
+    }
+</style>
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">الأملاك</a></li>
+        <li class="breadcrumb-item active">إضافة بناية جديدة</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-3">
+    <h5 class="mb-0 fw-bold">
+        <i class="bi bi-building-add text-success me-2"></i>
+        تسجيل بناية وقفية جديدة
+    </h5>
+</div>
+
+@await Html.PartialAsync("_WizardPartials", Model)
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>يوجد أخطاء في البيانات:</strong>
+        <div asp-validation-summary="All" class="mt-1 mb-0" style="font-size:13px"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-controller="Properties" asp-action="CreateStep1" method="post" id="step1Form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DraftKey" />
+    <input type="hidden" asp-for="CurrentStep" value="1" />
+    <input type="hidden" asp-for="BasicInfo.OwnershipType" id="ownershipTypeInput" />
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+
+            @* SECTION: نوع الملكية *@
+            <div class="form-section">
+                <div class="section-heading">
+                    <i class="bi bi-tag-fill"></i> نوع الملكية <span class="required-star">*</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="ownership-card @(Model.BasicInfo.OwnershipType == "FULL_WAQF" ? "selected" : "")"
+                             onclick="selectOwnership('FULL_WAQF', this)"
+                             id="card-FULL_WAQF">
+                            <span class="card-emoji">🏛️</span>
+                            <div class="card-title">مضبوطة</div>
+                            <div class="card-sub">ملكية كاملة 100%</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="ownership-card @(Model.BasicInfo.OwnershipType == "PARTNERSHIP" ? "selected" : "")"
+                             onclick="selectOwnership('PARTNERSHIP', this)"
+                             id="card-PARTNERSHIP">
+                            <span class="card-emoji">🤝</span>
+                            <div class="card-title">ملحقة</div>
+                            <div class="card-sub">شراكة بنسبة محددة</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="ownership-card @(Model.BasicInfo.OwnershipType == "AGRICULTURAL" ? "selected" : "")"
+                             onclick="selectOwnership('AGRICULTURAL', this)"
+                             id="card-AGRICULTURAL">
+                            <span class="card-emoji">🌾</span>
+                            <div class="card-title">زراعية</div>
+                            <div class="card-sub">أرض زراعية</div>
+                        </div>
+                    </div>
+                </div>
+                <span asp-validation-for="BasicInfo.OwnershipType" class="text-danger d-block mt-2" style="font-size:12px"></span>
+            </div>
+
+            @* SECTION: معلومات البناية *@
+            <div class="form-section">
+                <div class="section-heading">
+                    <i class="bi bi-info-circle-fill"></i> معلومات البناية
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="BasicInfo.NameAr" class="form-label fw-semibold">
+                            اسم البناية <span class="required-star">*</span>
+                        </label>
+                        <input asp-for="BasicInfo.NameAr" class="form-control" id="nameArInput"
+                               placeholder="مثال: بناية الوقف المركزية" />
+                        <span asp-validation-for="BasicInfo.NameAr" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.PropertyTypeId" class="form-label fw-semibold">
+                            تصنيف العقار <span class="required-star">*</span>
+                        </label>
+                        <select asp-for="BasicInfo.PropertyTypeId"
+                                asp-items="Model.BasicInfo.PropertyTypeOptions"
+                                class="form-select form-select-sm"
+                                id="propertyTypeSelect">
+                        </select>
+                        <span asp-validation-for="BasicInfo.PropertyTypeId" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.WaqfType" class="form-label fw-semibold">
+                            نوع الوقف <span class="required-star">*</span>
+                        </label>
+                        <select asp-for="BasicInfo.WaqfType"
+                                asp-items="Model.BasicInfo.WaqfTypeOptions"
+                                class="form-select form-select-sm"
+                                id="waqfTypeSelect">
+                        </select>
+                        <span asp-validation-for="BasicInfo.WaqfType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.FounderName" class="form-label fw-semibold">اسم الواقف</label>
+                        <input asp-for="BasicInfo.FounderName" class="form-control form-control-sm"
+                               placeholder="اسم الواقف الأصلي" />
+                        <span asp-validation-for="BasicInfo.FounderName" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.FoundingYear" class="form-label fw-semibold">سنة التأسيس</label>
+                        <input asp-for="BasicInfo.FoundingYear" type="number"
+                               class="form-control form-control-sm" min="1800" max="2025"
+                               placeholder="مثال: 1950" />
+                        <span asp-validation-for="BasicInfo.FoundingYear" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.StructuralCondition" class="form-label fw-semibold">
+                            الحالة الإنشائية <span class="required-star">*</span>
+                        </label>
+                        <select asp-for="BasicInfo.StructuralCondition"
+                                asp-items="Model.BasicInfo.StructuralConditionOptions"
+                                class="form-select form-select-sm"
+                                id="structCondSelect">
+                        </select>
+                        <span asp-validation-for="BasicInfo.StructuralCondition" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.EstimatedValue" class="form-label fw-semibold">
+                            القيمة التقديرية (دينار) <span class="required-star">*</span>
+                        </label>
+                        <input asp-for="BasicInfo.EstimatedValue" type="number" step="1000"
+                               class="form-control form-control-sm" id="estimatedValueInput"
+                               placeholder="مثال: 150000000" />
+                        <span asp-validation-for="BasicInfo.EstimatedValue" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.TotalAreaSqm" class="form-label fw-semibold">
+                            المساحة الكلية (م²) <span class="required-star">*</span>
+                        </label>
+                        <input asp-for="BasicInfo.TotalAreaSqm" type="number" step="0.01"
+                               class="form-control form-control-sm" id="totalAreaInput"
+                               placeholder="مثال: 450.5" />
+                        <span asp-validation-for="BasicInfo.TotalAreaSqm" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="BasicInfo.Notes" class="form-label fw-semibold">ملاحظات</label>
+                        <textarea asp-for="BasicInfo.Notes" class="form-control form-control-sm"
+                                  rows="3" placeholder="أي ملاحظات إضافية عن البناية..."></textarea>
+                        <span asp-validation-for="BasicInfo.Notes" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                </div>
+            </div>
+
+            @* SECTION: بيانات الشراكة *@
+            <div class="form-section @(Model.BasicInfo.OwnershipType == "PARTNERSHIP" ? "" : "d-none")"
+                 id="partnershipFields">
+                <div class="section-heading">
+                    <i class="bi bi-people-fill"></i> بيانات الشراكة
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.WaqfSharePercent" class="form-label fw-semibold">
+                            نسبة الوقف (%) <span class="required-star">*</span>
+                        </label>
+                        <input asp-for="BasicInfo.WaqfSharePercent" type="number" step="0.01"
+                               min="1" max="99"
+                               class="form-control form-control-sm"
+                               id="waqfShareInput"
+                               placeholder="مثال: 60" />
+                        <div class="field-hint">مثال: 60 يعني الوقف 60% والشريك 40%</div>
+                        <div class="mt-1" id="partnerShareDisplay" style="font-size:12px; color:#0D5C3A;"></div>
+                        <span asp-validation-for="BasicInfo.WaqfSharePercent" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.PartnerName" class="form-label fw-semibold">اسم الشريك</label>
+                        <input asp-for="BasicInfo.PartnerName" class="form-control form-control-sm"
+                               placeholder="الاسم الكامل للشريك" />
+                        <span asp-validation-for="BasicInfo.PartnerName" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.PartnerType" class="form-label fw-semibold">نوع الشريك</label>
+                        <select asp-for="BasicInfo.PartnerType"
+                                asp-items="Model.BasicInfo.PartnerTypeOptions"
+                                class="form-select form-select-sm">
+                        </select>
+                        <span asp-validation-for="BasicInfo.PartnerType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                </div>
+            </div>
+
+            @* SECTION: بيانات الأرض الزراعية *@
+            <div class="form-section @(Model.BasicInfo.OwnershipType == "AGRICULTURAL" ? "" : "d-none")"
+                 id="agriculturalFields">
+                <div class="section-heading">
+                    <i class="bi bi-tree-fill"></i> بيانات الأرض الزراعية
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.TotalAreaDunum" class="form-label fw-semibold">
+                            المساحة الكلية (دونم) <span class="required-star">*</span>
+                        </label>
+                        <input asp-for="BasicInfo.TotalAreaDunum" type="number" step="0.01"
+                               class="form-control form-control-sm" placeholder="مثال: 12.5" />
+                        <div class="field-hint">1 دونم = 2500 م²</div>
+                        <span asp-validation-for="BasicInfo.TotalAreaDunum" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.CultivatedAreaDunum" class="form-label fw-semibold">المساحة المزروعة (دونم)</label>
+                        <input asp-for="BasicInfo.CultivatedAreaDunum" type="number" step="0.01"
+                               class="form-control form-control-sm" placeholder="مثال: 10" />
+                        <span asp-validation-for="BasicInfo.CultivatedAreaDunum" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BasicInfo.SoilType" class="form-label fw-semibold">نوع التربة</label>
+                        <select asp-for="BasicInfo.SoilType"
+                                asp-items="Model.BasicInfo.SoilTypeOptions"
+                                class="form-select form-select-sm"></select>
+                        <span asp-validation-for="BasicInfo.SoilType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.WaterSourceType" class="form-label fw-semibold">مصدر المياه</label>
+                        <select asp-for="BasicInfo.WaterSourceType"
+                                asp-items="Model.BasicInfo.WaterSourceOptions"
+                                class="form-select form-select-sm"></select>
+                        <span asp-validation-for="BasicInfo.WaterSourceType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.IrrigationMethod" class="form-label fw-semibold">طريقة الري</label>
+                        <select asp-for="BasicInfo.IrrigationMethod"
+                                asp-items="Model.BasicInfo.IrrigationMethodOptions"
+                                class="form-select form-select-sm"></select>
+                        <span asp-validation-for="BasicInfo.IrrigationMethod" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.PrimaryHarvestType" class="form-label fw-semibold">نوع المحصول الرئيسي</label>
+                        <input asp-for="BasicInfo.PrimaryHarvestType" class="form-control form-control-sm"
+                               placeholder="مثال: حنطة، رز، تمر..." />
+                        <span asp-validation-for="BasicInfo.PrimaryHarvestType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="BasicInfo.SeasonType" class="form-label fw-semibold">الموسم الزراعي</label>
+                        <select asp-for="BasicInfo.SeasonType"
+                                asp-items="Model.BasicInfo.SeasonTypeOptions"
+                                class="form-select form-select-sm"></select>
+                        <span asp-validation-for="BasicInfo.SeasonType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="BasicInfo.FarmingContractType" class="form-label fw-semibold">نوع عقد الزراعة</label>
+                        <select asp-for="BasicInfo.FarmingContractType"
+                                asp-items="Model.BasicInfo.FarmingContractOptions"
+                                class="form-select form-select-sm"
+                                id="farmingContractSelect">
+                        </select>
+                        <span asp-validation-for="BasicInfo.FarmingContractType" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6" id="waqfHarvestField" style="display:none">
+                        <label asp-for="BasicInfo.WaqfShareOfHarvest" class="form-label fw-semibold">نسبة الوقف من الحصاد (%)</label>
+                        <input asp-for="BasicInfo.WaqfShareOfHarvest" type="number" step="0.01" min="0" max="100"
+                               class="form-control form-control-sm" placeholder="مثال: 50" />
+                        <span asp-validation-for="BasicInfo.WaqfShareOfHarvest" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.FarmerName" class="form-label fw-semibold">اسم المزارع</label>
+                        <input asp-for="BasicInfo.FarmerName" class="form-control form-control-sm"
+                               placeholder="الاسم الكامل للمزارع" />
+                        <span asp-validation-for="BasicInfo.FarmerName" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BasicInfo.FarmerNationalId" class="form-label fw-semibold">رقم هوية المزارع</label>
+                        <input asp-for="BasicInfo.FarmerNationalId" class="form-control form-control-sm"
+                               placeholder="رقم الهوية الوطنية" />
+                        <span asp-validation-for="BasicInfo.FarmerNationalId" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <a asp-controller="Property" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i> إلغاء
+            </a>
+            <button type="submit" class="btn btn-success px-4">
+                التالي: الموقع الجغرافي
+                <i class="bi bi-arrow-left ms-1"></i>
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    /* ── Ownership card selection ─────────────────────────────────────── */
+    function selectOwnership(type, el) {
+        document.querySelectorAll('.ownership-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('ownershipTypeInput').value = type;
+
+        document.getElementById('partnershipFields').classList.toggle('d-none', type !== 'PARTNERSHIP');
+        document.getElementById('agriculturalFields').classList.toggle('d-none', type !== 'AGRICULTURAL');
+
+        updateDqsLive();
+    }
+
+    /* ── Waqf share % → auto-show partner share ──────────────────────── */
+    const waqfShareInput = document.getElementById('waqfShareInput');
+    if (waqfShareInput) {
+        waqfShareInput.addEventListener('input', function () {
+            const val = parseFloat(this.value);
+            const display = document.getElementById('partnerShareDisplay');
+            if (!isNaN(val) && val >= 1 && val <= 99) {
+                const partner = (100 - val).toFixed(2);
+                display.textContent = `نسبة الشريك: ${partner}%`;
+            } else {
+                display.textContent = '';
+            }
+        });
+    }
+
+    /* ── Muzaraa → show harvest share field ─────────────────────────── */
+    const farmingContractSelect = document.getElementById('farmingContractSelect');
+    if (farmingContractSelect) {
+        farmingContractSelect.addEventListener('change', function () {
+            const harvestField = document.getElementById('waqfHarvestField');
+            if (harvestField) harvestField.style.display = this.value === 'Muzaraa' ? '' : 'none';
+        });
+        // Init on load
+        if (farmingContractSelect.value === 'Muzaraa') {
+            const harvestField = document.getElementById('waqfHarvestField');
+            if (harvestField) harvestField.style.display = '';
+        }
+    }
+
+    /* ── Live DQS update ─────────────────────────────────────────────── */
+    function updateDqsLive() {
+        const nameAr = document.getElementById('nameArInput')?.value ?? '';
+        const waqfType = document.getElementById('waqfTypeSelect')?.value ?? '';
+        const propertyTypeId = parseInt(document.getElementById('propertyTypeSelect')?.value ?? '0');
+        const structCond = document.getElementById('structCondSelect')?.value ?? '';
+        const estimatedVal = parseFloat(document.getElementById('estimatedValueInput')?.value ?? '0');
+        const totalArea = parseFloat(document.getElementById('totalAreaInput')?.value ?? '0');
+
+        let dqs = 0;
+        // Step-1 criteria only
+        if (nameAr.trim().length >= 5) dqs += 5;    // PropertyName +5%
+        if (waqfType)                   dqs += 5;    // WaqfType +5%
+        if (propertyTypeId > 0)         dqs += 5;    // PropertyType +5%
+        if (structCond)                 dqs += 0;    // StructuralCondition — weight not shown here (handled at full score)
+        if (estimatedVal > 0)           dqs += 5;    // EstimatedValue +5%
+        if (totalArea > 0)              dqs += 5;    // TotalAreaSqm +5%
+
+        // Also restore existing score from server
+        const serverScore = @Model.DqsScore;
+        // Merge: use max of computed step-1 and anything already achieved
+        const displayScore = Math.max(dqs, 0);
+
+        const bar = document.getElementById('dqsProgressBar');
+        const label = document.getElementById('dqsScoreLabel');
+        if (bar) {
+            bar.style.width = displayScore + '%';
+            bar.className = 'progress-bar ' + (displayScore >= 70 ? 'bg-success' : displayScore >= 50 ? 'bg-warning' : 'bg-danger');
+        }
+        if (label) {
+            label.textContent = displayScore + '%';
+            label.style.color = displayScore >= 50 ? '#0D5C3A' : '#dc3545';
+        }
+    }
+
+    /* ── Attach live listeners ───────────────────────────────────────── */
+    ['nameArInput', 'waqfTypeSelect', 'propertyTypeSelect', 'structCondSelect',
+        'estimatedValueInput', 'totalAreaInput'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', updateDqsLive);
+            el.addEventListener('change', updateDqsLive);
+        }
+    });
+
+    // Init ownership cards
+    (function () {
+        const savedType = document.getElementById('ownershipTypeInput').value;
+        if (savedType) {
+            const card = document.getElementById('card-' + savedType);
+            if (card) card.classList.add('selected');
+            document.getElementById('partnershipFields').classList.toggle('d-none', savedType !== 'PARTNERSHIP');
+            document.getElementById('agriculturalFields').classList.toggle('d-none', savedType !== 'AGRICULTURAL');
+        }
+    })();
+
+    updateDqsLive();
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

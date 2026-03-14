@@ -1,0 +1,129 @@
+@model WaqfSystem.Web.ViewModels.LoginViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الدخول - نظام حصر الأملاك</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0c63e4;
+        }
+        body { 
+            font-family: 'Inter', 'Segoe UI', Tahoma;
+            background: url('https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.4) 100%);
+            z-index: 1;
+        }
+        .container-login { position: relative; z-index: 2; width: 100%; max-width: 450px; padding: 20px; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem;
+            color: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+        }
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: none;
+        }
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .input-group-text {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+        }
+        .btn-login {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 15px -3px rgba(12, 99, 228, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(12, 99, 228, 0.4);
+            background: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-login text-center">
+        <div class="mb-4">
+            <div class="bg-primary d-inline-block p-3 rounded-4 shadow-lg mb-3">
+                <i class="fas fa-mosque fa-3x text-white"></i>
+            </div>
+            <h2 class="fw-bold text-white mb-1">نظام حصر الأملاك</h2>
+            <p class="text-white text-opacity-75">هيئة إدارة واستثمار أموال الوقف السني</p>
+        </div>
+
+        <div class="card glass-card text-start">
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Login" method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">البريد الإلكتروني</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" placeholder="user@waqf.gov.iq" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">كلمة المرور</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label class="form-check-label small" asp-for="RememberMe">تذكرني</label>
+                        </div>
+                        <a href="#" class="text-white text-opacity-75 small text-decoration-none">نسيت كلمة المرور؟</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-login w-100 text-white">تسجيل الدخول</button>
+                </form>
+            </div>
+        </div>
+        
+        <p class="mt-4 text-white text-opacity-50 small">
+            &copy; @DateTime.Now.Year جميع الحقوق محفوظة لهيئة إدارة واستثمار أموال الوقف السني
+        </p>
+    </div>
+</body>
+</html>

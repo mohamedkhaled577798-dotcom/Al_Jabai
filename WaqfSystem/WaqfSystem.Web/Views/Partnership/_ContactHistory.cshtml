@@ -1,0 +1,46 @@
+@model List<WaqfSystem.Application.DTOs.Partnership.PartnerContactDto>
+
+<div class="timeline">
+    @foreach (var item in Model)
+    {
+        var icon = item.ContactType switch
+        {
+            WaqfSystem.Core.Enums.ContactType.SMS => "💬",
+            WaqfSystem.Core.Enums.ContactType.WhatsApp => "📱",
+            WaqfSystem.Core.Enums.ContactType.Email => "📧",
+            WaqfSystem.Core.Enums.ContactType.Phone => "📞",
+            WaqfSystem.Core.Enums.ContactType.Meeting => "🤝",
+            WaqfSystem.Core.Enums.ContactType.Letter => "📨",
+            _ => "📄"
+        };
+
+        <div class="card mb-2 @(item.IsAutomatic ? "bg-light" : "")">
+            <div class="card-body p-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="me-1">@icon</span>
+                        <span class="badge bg-secondary">@item.ContactType</span>
+                        <small class="text-muted ms-2">@(item.ContactDirection == WaqfSystem.Core.Enums.ContactDirection.Outgoing ? "↗" : "↘")</small>
+                    </div>
+                    <small class="text-muted">@item.SentAt.ToString("yyyy/MM/dd HH:mm")</small>
+                </div>
+                <div class="mt-1"><strong>@item.PartnerName</strong> - مرسل بواسطة #@item.SentById</div>
+                <div class="text-muted">@item.MessageBody</div>
+                <div><small>الحالة: @item.DeliveryStatus</small></div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="text-center mt-2">
+    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="loadMoreContacts()">تحميل المزيد</button>
+</div>
+
+<script>
+function loadMoreContacts() {
+    if (typeof window.currentContactPage === 'undefined') window.currentContactPage = 1;
+    window.currentContactPage += 1;
+    var partnershipId = $('#msgPartnershipId').val();
+    $('#contactTimeline').load('/Partnership/ContactHistory?partnershipId=' + partnershipId + '&page=' + window.currentContactPage);
+}
+</script>

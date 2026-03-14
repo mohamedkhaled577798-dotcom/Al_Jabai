@@ -14,12 +14,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("WaqfGISConnection"),
-        x => x.UseNetTopologySuite()));
+        x =>
+        {
+            x.UseNetTopologySuite();
+            x.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        }));
 
 // 2. Add AlJabai DbContext (Independent Database)
 builder.Services.AddDbContext<AlJabaiDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("AlJabaiConnection")));
+        builder.Configuration.GetConnectionString("AlJabaiConnection"),
+        x => x.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)));
 
 // Add Identity using the GIS database (common users)
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -56,7 +61,33 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var gisDb = services.GetRequiredService<ApplicationDbContext>();
+    var alJabaiDb = services.GetRequiredService<AlJabaiDbContext>();
+
+    if (gisDb.Database.GetMigrations().Any())
+    {
+        gisDb.Database.Migrate();
+    }
+    else
+    {
+        gisDb.Database.EnsureCreated();
+    }
+
+    if (alJabaiDb.Database.GetMigrations().Any())
+    {
+        alJabaiDb.Database.Migrate();
+    }
+    else
+    {
+        alJabaiDb.Database.EnsureCreated();
+    }
+}
 
 app.MapControllerRoute(
     name: "default",

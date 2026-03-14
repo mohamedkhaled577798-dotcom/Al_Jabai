@@ -1,0 +1,109 @@
+@using WaqfSystem.Core.Enums
+@model WaqfSystem.Web.ViewModels.Mission.MissionIndexViewModel
+@{
+    ViewData["Title"] = "المهام الميدانية";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0">المهام الميدانية</h2>
+        @if (Model.CurrentUserRole is "SYS_ADMIN" or "AUTH_DIRECTOR" or "REGIONAL_MGR")
+        {
+            <a asp-action="Create" class="btn btn-primary rounded-pill">إنشاء مهمة</a>
+        }
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+        <span class="badge bg-info">@Model.TotalActive نشطة</span>
+        <span class="badge bg-danger">@Model.TotalOverdue متأخرة</span>
+        <span class="badge bg-success">@Model.TotalCompletedThisMonth مكتملة الشهر</span>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white">
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#filterPanel">إظهار/إخفاء الفلاتر</button>
+        </div>
+        <div id="filterPanel" class="collapse show">
+            <div class="card-body">
+                <form method="get" class="row g-2">
+                    <div class="col-md-3"><input name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control" placeholder="بحث" /></div>
+                    <div class="col-md-2"><select name="GovernorateId" class="form-select"><option value="">المحافظة</option>@foreach(var g in Model.Governorates){<option value="@g.Value" selected="@(Model.Filter.GovernorateId?.ToString()==g.Value)">@g.Text</option>}</select></div>
+                    <div class="col-md-2"><select name="Stage" class="form-select"><option value="">المرحلة</option>@foreach(var s in Enum.GetValues<MissionStage>()){<option value="@s" selected="@(Model.Filter.Stage==s)">@s</option>}</select></div>
+                    <div class="col-md-2"><select name="MissionType" class="form-select"><option value="">النوع</option>@foreach(var t in Enum.GetValues<MissionType>()){<option value="@t" selected="@(Model.Filter.MissionType==t)">@t</option>}</select></div>
+                    <div class="col-md-1"><input type="date" name="DateFrom" value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                    <div class="col-md-1"><input type="date" name="DateTo" value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+                    <div class="col-md-1 d-grid"><button class="btn btn-primary">بحث</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-3" id="viewTabs">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#kanbanPane">كانبان</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tablePane">جدول</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="kanbanPane">
+            <div class="d-flex gap-3 overflow-auto pb-2">
+                @foreach (var stageGroup in Model.Missions.Items.GroupBy(x => x.Stage))
+                {
+                    <div class="border rounded-3 p-2" style="min-width:280px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">@stageGroup.Key</span><span class="badge bg-secondary">@stageGroup.Count()</span></div>
+                        @foreach (var item in stageGroup)
+                        {
+                            <a asp-action="Detail" asp-route-id="@item.Id" class="d-block text-decoration-none text-dark border rounded-3 p-2 mb-2">
+                                <div class="small text-muted">@item.MissionCode</div>
+                                <div class="fw-bold">@item.Title</div>
+                                <div class="small">@item.EnteredPropertyCount/@item.TargetPropertyCount عقار</div>
+                                <div class="progress mt-1" style="height:6px;"><div class="progress-bar" style="width:@item.ProgressPercent%"></div></div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tablePane">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light"><tr><th>#</th><th>كود</th><th>العنوان</th><th>النوع</th><th>المرحلة</th><th>الأولوية</th><th>المكلّف</th><th>المحافظة</th><th>التاريخ</th><th>التقدم</th><th>إجراءات</th></tr></thead>
+                    <tbody>
+                        @{ var idx = 1; }
+                        @foreach (var item in Model.Missions.Items)
+                        {
+                            <tr>
+                                <td>@idx</td>
+                                <td>@item.MissionCode</td>
+                                <td>@item.Title</td>
+                                <td>@item.MissionType</td>
+                                <td><span class="badge" style="background:@item.StageColor">@item.StageDisplayAr</span></td>
+                                <td><span class="badge @(item.Priority==MissionPriority.Urgent?"bg-danger":item.Priority==MissionPriority.High?"bg-warning text-dark":item.Priority==MissionPriority.Normal?"bg-primary":"bg-secondary")">@item.Priority</span></td>
+                                <td><span class="rounded-circle bg-light border d-inline-flex align-items-center justify-content-center me-1" style="width:28px;height:28px;">@item.AssignedToAvatar</span>@item.AssignedToName</td>
+                                <td>@item.GovernorateNameAr</td>
+                                <td>@item.MissionDate.ToString("yyyy/MM/dd")</td>
+                                <td><div class="progress" style="height:8px;"><div class="progress-bar" style="width:@item.ProgressPercent%"></div></div></td>
+                                <td>
+                                    <a asp-action="Detail" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    @if (Model.CurrentUserRole is "SYS_ADMIN" or "AUTH_DIRECTOR" or "REGIONAL_MGR")
+                                    {<a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">تعديل</a>}
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label>حجم الصفحة</label>
+            <select name="PageSize" class="form-select form-select-sm" style="width:90px;">
+                @foreach(var s in new[]{10,20,50}){<option value="@s" selected="@(Model.Filter.PageSize==s)">@s</option>}
+            </select>
+            <button class="btn btn-sm btn-outline-primary">تطبيق</button>
+        </form>
+        <div>صفحة @Model.Missions.Page من @Model.Missions.TotalPages</div>
+    </div>
+</div>
