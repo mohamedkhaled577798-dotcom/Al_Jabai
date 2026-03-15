@@ -1,0 +1,125 @@
+@using WaqfSystem.Core.Enums
+@model WaqfSystem.Web.ViewModels.Properties.PartnerCreateViewModel
+@{
+    ViewData["Title"] = "إضافة شريك جديد";
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-user-plus me-2"></i> إضافة بيانات شريك أو مستثمر جديد</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small mb-4">أدخل البيانات الأساسية للشريك أدناه. سيتم حفظ هذا الشريك في النظام ليظهر في قائمة البحث عند إنشاء عقود شراكة جديدة.</p>
+
+                    <form asp-action="CreatePartner" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <!-- Partner Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small">نوع الشريك</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check custom-option border p-3 rounded-4 flex-grow-1 transition-all">
+                                    <input class="form-check-input" type="radio" asp-for="Form.PartnerType" value="@PartnerType.Individual" id="typeIndividual" checked onchange="toggleFormMode('Individual')">
+                                    <label class="form-check-label w-100" for="typeIndividual">
+                                        <div class="fw-bold">فرد / مستثمر</div>
+                                        <div class="x-small text-muted">شخص طبيعي ببطاقة وطنية</div>
+                                    </label>
+                                </div>
+                                <div class="form-check custom-option border p-3 rounded-4 flex-grow-1 transition-all">
+                                    <input class="form-check-input" type="radio" asp-for="Form.PartnerType" value="@PartnerType.Company" id="typeCompany" onchange="toggleFormMode('Company')">
+                                    <label class="form-check-label w-100" for="typeCompany">
+                                        <div class="fw-bold">شركة / مؤسسة</div>
+                                        <div class="x-small text-muted">كيان معنوي بسجل تجاري</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small" id="partnerNameLabel">الاسم الكامل للشريك</label>
+                                <input asp-for="Form.PartnerName" class="form-control rounded-pill px-3" placeholder="أدخل الاسم الرباعي واللقب" required />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small" id="partnerIdLabel">رقم البطاقة الوطنية</label>
+                                <input asp-for="Form.PartnerNationalId" class="form-control rounded-pill px-3" placeholder="الرقم الوطني الموحد" />
+                            </div>
+
+                            <div class="col-md-6 company-field" style="display:none;">
+                                <label class="form-label fw-bold small">رقم السجل التجاري</label>
+                                <input asp-for="Form.PartnerRegistrationNo" class="form-control rounded-pill px-3" placeholder="رقم التسجيل في الغرفة التجارية" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">رقم الهاتف الأساسي</label>
+                                <input asp-for="Form.PartnerPhone" class="form-control rounded-pill px-3" dir="ltr" placeholder="07xxxxxxxxx" required />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">واتساب (اختياري)</label>
+                                <input asp-for="Form.PartnerWhatsApp" class="form-control rounded-pill px-3" dir="ltr" placeholder="07xxxxxxxxx" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">البريد الإلكتروني</label>
+                                <input asp-for="Form.PartnerEmail" type="email" class="form-control rounded-pill px-3" placeholder="example@mail.com" />
+                            </div>
+
+                            <div class="col-md-12 company-field" style="display:none;">
+                                <label class="form-label fw-bold small">اسم المدير المفوض / الممثل</label>
+                                <input asp-for="Form.PartnerNameEn" class="form-control rounded-pill px-3" placeholder="الاسم الكامل للممثل القانوني" />
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small">عنوان السكن / المقر</label>
+                                <textarea asp-for="Form.PartnerAddress" class="form-control rounded-4" rows="2" placeholder="المحافظة، الحي، رقم الدار..."></textarea>
+                            </div>
+                        </div>
+
+                        <hr class="my-4 opacity-50">
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("Partners")" class="btn btn-light rounded-pill px-4">إلغاء</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">حفظ بيانات الشريك</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-option {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .custom-option:hover {
+        background-color: #f8f9fa;
+        border-color: #0d6efd !important;
+    }
+    .form-check-input:checked + .form-check-label {
+        color: #0d6efd;
+    }
+    .x-small { font-size: 0.75rem; }
+</style>
+
+@section Scripts {
+    <script>
+        function toggleFormMode(type) {
+            if (type === 'Company') {
+                $('.company-field').slideDown();
+                $('#partnerNameLabel').text('اسم الشركة / المؤسسة');
+                $('#partnerIdLabel').text('الرقم الضريبي للهيئة');
+            } else {
+                $('.company-field').slideUp();
+                $('#partnerNameLabel').text('الاسم الكامل للشريك');
+                $('#partnerIdLabel').text('رقم البطاقة الوطنية');
+            }
+        }
+    </script>
+}

@@ -1,0 +1,600 @@
+@model WaqfSystem.Web.ViewModels.Properties.PropertyCreateViewModel
+@{
+    ViewData["Title"] = "إضافة بناية — الخطوة 5: المستندات والصور";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    .doc-card {
+        border: 1.5px solid #dee2e6;
+        border-radius: 12px;
+        padding: 16px;
+        background: #fff;
+        margin-bottom: 14px;
+        transition: box-shadow 0.2s;
+    }
+    .doc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .doc-card.required { border-color: #86efac; border-width: 2px; }
+    .doc-badge { display: inline-block; font-size: 10px; padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+    .doc-badge.required { background: #dcfce7; color: #0D5C3A; }
+    .doc-badge.optional { background: #e9ecef; color: #6c757d; }
+    .doc-badge.uploaded { background: #0D5C3A; color: #fff; }
+    .doc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .doc-title { font-size: 14px; font-weight: 700; color: #1a2e3b; }
+
+    .dropzone-box {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 18px 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        background: #fafafa;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .dropzone-box:hover { border-color: #0D5C3A; background: #f0fdf4; }
+    .dropzone-box.dragover { border-color: #0D5C3A; background: #dcfce7; }
+    .dropzone-box.has-file { border-color: #0D5C3A; background: #f0fdf4; border-style: solid; }
+    .dropzone-box input[type=file] { display: none; }
+    .dropzone-icon { font-size: 24px; margin-bottom: 4px; }
+    .dropzone-text { font-size: 12px; color: #6c757d; }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+    @@media (max-width: 768px) {
+        .photo-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @@media (max-width: 480px) {
+        .photo-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .photo-slot {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        min-height: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        padding: 8px;
+        text-align: center;
+    }
+    .photo-slot:hover { border-color: #0D5C3A; background: #f0fdf4; }
+    .photo-slot.done { border-color: #0D5C3A; background: #dcfce7; border-style: solid; }
+    .photo-slot input[type=file] { display: none; }
+    .photo-slot-icon { font-size: 22px; margin-bottom: 4px; }
+    .photo-slot-label { font-size: 10px; font-weight: 600; color: #495057; }
+    .photo-slot.done .photo-slot-icon { font-size: 20px; }
+    .photo-slot.done .photo-slot-label { color: #0D5C3A; }
+
+    .dqs-summary-card {
+        background: linear-gradient(135deg, #0D5C3A 0%, #1D9E75 100%);
+        border-radius: 14px;
+        color: #fff;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    .dqs-summary-card .dqs-label { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+    .dqs-summary-card .dqs-score-num { font-size: 48px; font-weight: 800; line-height: 1; }
+    .dqs-bar {
+        height: 8px;
+        background: rgba(255,255,255,0.25);
+        border-radius: 4px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+    .dqs-bar-fill {
+        height: 100%;
+        background: #fff;
+        border-radius: 4px;
+        transition: width 0.4s ease;
+    }
+    .form-section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid #f0f0f0;
+    }
+    .section-heading {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0D5C3A;
+        border-bottom: 2px solid #dcfce7;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">الأملاك</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Properties" asp-action="Create">إضافة بناية</a></li>
+        <li class="breadcrumb-item active">المستندات والصور</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-3">
+    <h5 class="mb-0 fw-bold">
+        <i class="bi bi-file-earmark-check-fill text-success me-2"></i>
+        المستندات والصور الميدانية
+    </h5>
+</div>
+
+@await Html.PartialAsync("_WizardPartials", Model)
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>يوجد أخطاء في البيانات:</strong>
+        <div asp-validation-summary="All" class="mt-1 mb-0" style="font-size:13px"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+
+    @* LEFT COLUMN — form *@
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-folder2-open me-2 text-success"></i>
+                    المستندات والوثائق الرسمية
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form asp-controller="Properties" asp-action="CreateStep5"
+                      method="post"
+                      enctype="multipart/form-data"
+                      id="step5Form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DraftKey" />
+                    <input type="hidden" asp-for="CurrentStep" value="5" />
+
+                    @* SECTION: وثائق الملكية *@
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <i class="bi bi-file-earmark-text-fill"></i> وثائق الملكية
+                        </div>
+
+                        @* Deed *@
+                        <div class="doc-card required">
+                            <div class="doc-header">
+                                <div class="doc-title">📜 صك الملكية / حجة الوقف</div>
+                                <span class="doc-badge required" id="deedBadge">مطلوب</span>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-5">
+                                    <label asp-for="Documents.DeedNumber" class="form-label fw-semibold" style="font-size:12px">رقم الصك / الحجة</label>
+                                    <input asp-for="Documents.DeedNumber"
+                                           class="form-control form-control-sm"
+                                           placeholder="مثال: 2134/1998" />
+                                    <span asp-validation-for="Documents.DeedNumber" class="text-danger" style="font-size:11px"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Documents.DeedDate" class="form-label fw-semibold" style="font-size:12px">تاريخ الصك</label>
+                                    <input asp-for="Documents.DeedDate" type="date"
+                                           class="form-control form-control-sm" />
+                                    <span asp-validation-for="Documents.DeedDate" class="text-danger" style="font-size:11px"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Documents.DeedCourt" class="form-label fw-semibond" style="font-size:12px">محكمة الإصدار</label>
+                                    <input asp-for="Documents.DeedCourt"
+                                           class="form-control form-control-sm"
+                                           placeholder="مثال: محكمة الكرخ" />
+                                    <span asp-validation-for="Documents.DeedCourt" class="text-danger" style="font-size:11px"></span>
+                                </div>
+                            </div>
+                            <div class="dropzone-box" id="deedDz"
+                                 onclick="document.getElementById('deedFile').click()"
+                                 ondragover="dzDrag(event, this)"
+                                 ondragleave="dzLeave(this)"
+                                 ondrop="dzDrop(event, this, 'deedFile', 'deedBadge', 'deedDz')">
+                                <input type="file" id="deedFile" asp-for="Documents.DeedFile"
+                                       accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                       onchange="fileSelected(this,'deedBadge','deedDz')" />
+                                <div class="dropzone-icon">📄</div>
+                                <div class="dropzone-text">
+                                    اسحب الملف هنا أو <strong>اضغط لاختياره</strong><br>
+                                    <small>PDF, JPG, PNG, TIFF — حد أقصى 10 ميغابايت</small>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Documents.DeedFile" class="text-danger" style="font-size:11px"></span>
+                        </div>
+
+                        @* Cadastral *@
+                        <div class="doc-card required">
+                            <div class="doc-header">
+                                <div class="doc-title">🗺️ وثيقة الكاداسترو / الطابو</div>
+                                <span class="doc-badge required" id="cadBadge">مطلوب</span>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Documents.CadastralNumber" class="form-label fw-semibold" style="font-size:12px">رقم الكاداسترو</label>
+                                    <input asp-for="Documents.CadastralNumber"
+                                           class="form-control form-control-sm"
+                                           placeholder="رقم الكاداسترو" />
+                                    <span asp-validation-for="Documents.CadastralNumber" class="text-danger" style="font-size:11px"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Documents.TabuNumber" class="form-label fw-semibold" style="font-size:12px">رقم الطابو</label>
+                                    <input asp-for="Documents.TabuNumber"
+                                           class="form-control form-control-sm"
+                                           placeholder="رقم الطابو" />
+                                    <span asp-validation-for="Documents.TabuNumber" class="text-danger" style="font-size:11px"></span>
+                                </div>
+                            </div>
+                            <div class="dropzone-box" id="cadDz"
+                                 onclick="document.getElementById('cadFile').click()"
+                                 ondragover="dzDrag(event, this)"
+                                 ondragleave="dzLeave(this)"
+                                 ondrop="dzDrop(event, this, 'cadFile', 'cadBadge', 'cadDz')">
+                                <input type="file" id="cadFile" asp-for="Documents.CadastralFile"
+                                       accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                       onchange="fileSelected(this,'cadBadge','cadDz')" />
+                                <div class="dropzone-icon">🗂️</div>
+                                <div class="dropzone-text">
+                                    اسحب ملف كاداسترو / طابو هنا أو <strong>اضغط لاختياره</strong>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Documents.CadastralFile" class="text-danger" style="font-size:11px"></span>
+                        </div>
+                    </div>
+
+                    @* SECTION: وثائق إضافية *@
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <i class="bi bi-file-earmark-plus"></i> وثائق إضافية (اختيارية)
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="doc-card h-100">
+                                    <div class="doc-header">
+                                        <div class="doc-title" style="font-size:13px">🏗️ رخصة البناء</div>
+                                        <span class="doc-badge optional">اختياري</span>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-7">
+                                            <input asp-for="Documents.BuildingPermitNumber"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="رقم رخصة البناء" />
+                                        </div>
+                                        <div class="col-5">
+                                            <input asp-for="Documents.BuildingPermitDate" type="date"
+                                                   class="form-control form-control-sm" />
+                                        </div>
+                                    </div>
+                                    <div class="dropzone-box" style="padding:10px"
+                                         onclick="document.getElementById('permitFile').click()"
+                                         ondragover="dzDrag(event, this)"
+                                         ondragleave="dzLeave(this)"
+                                         ondrop="dzDrop(event, this, 'permitFile', '', 'permitDz')"
+                                         id="permitDz">
+                                        <input type="file" id="permitFile" asp-for="Documents.BuildingPermitFile"
+                                               accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                               onchange="fileSelected(this,'','permitDz')" />
+                                        <div style="font-size:18px">📋</div>
+                                        <div class="dropzone-text">اختر ملف رخصة البناء</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="doc-card h-100">
+                                    <div class="doc-header">
+                                        <div class="doc-title" style="font-size:13px">✅ شهادة الإنجاز</div>
+                                        <span class="doc-badge optional">اختياري</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <input asp-for="Documents.CompletionCertNumber"
+                                               class="form-control form-control-sm"
+                                               placeholder="رقم شهادة الإنجاز" />
+                                    </div>
+                                    <div class="dropzone-box" style="padding:10px"
+                                         onclick="document.getElementById('certFile').click()"
+                                         ondragover="dzDrag(event, this)"
+                                         ondragleave="dzLeave(this)"
+                                         ondrop="dzDrop(event, this, 'certFile', '', 'certDz')"
+                                         id="certDz">
+                                        <input type="file" id="certFile" asp-for="Documents.CompletionCertFile"
+                                               accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                               onchange="fileSelected(this,'','certDz')" />
+                                        <div style="font-size:18px">📑</div>
+                                        <div class="dropzone-text">اختر ملف شهادة الإنجاز</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* SECTION: صور العقار *@
+                    <div class="form-section">
+                        <div class="section-heading">
+                            <i class="bi bi-camera-fill"></i> صور العقار الميدانية
+                        </div>
+                        <div id="photoReqLabel" class="mb-3 small"
+                             style="color: @(Model.Documents.UploadedPhotoCount >= 4 ? "#0D5C3A" : "#dc3545"); font-weight:600">
+                            @if (Model.Documents.UploadedPhotoCount >= 4)
+                            {
+                                <i class="bi bi-check-circle-fill me-1"></i><text>تم رفع </text>@Model.Documents.UploadedPhotoCount <text> صور ✓</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-exclamation-circle me-1"></i><text>مطلوب 4 صور على الأقل (تم: </text>@Model.Documents.UploadedPhotoCount<text>)</text>
+                            }
+                        </div>
+
+                        <div class="photo-grid">
+                            @* Front *@
+                            <div class="photo-slot @(Model.Documents.PhotoFront != null ? "done" : "")"
+                                 id="slot_PhotoFront"
+                                 onclick="document.getElementById('PhotoFront').click()">
+                                <input type="file" id="PhotoFront" asp-for="Documents.PhotoFront"
+                                       accept="image/*"
+                                       onchange="photoSelected(this, 'slot_PhotoFront')" />
+                                <div class="photo-slot-icon" id="icon_PhotoFront">📸</div>
+                                <div class="photo-slot-label">الواجهة الأمامية</div>
+                            </div>
+                            @* Right *@
+                            <div class="photo-slot @(Model.Documents.PhotoRight != null ? "done" : "")"
+                                 id="slot_PhotoRight"
+                                 onclick="document.getElementById('PhotoRight').click()">
+                                <input type="file" id="PhotoRight" asp-for="Documents.PhotoRight"
+                                       accept="image/*"
+                                       onchange="photoSelected(this, 'slot_PhotoRight')" />
+                                <div class="photo-slot-icon" id="icon_PhotoRight">📸</div>
+                                <div class="photo-slot-label">الجانب الأيمن</div>
+                            </div>
+                            @* Left *@
+                            <div class="photo-slot @(Model.Documents.PhotoLeft != null ? "done" : "")"
+                                 id="slot_PhotoLeft"
+                                 onclick="document.getElementById('PhotoLeft').click()">
+                                <input type="file" id="PhotoLeft" asp-for="Documents.PhotoLeft"
+                                       accept="image/*"
+                                       onchange="photoSelected(this, 'slot_PhotoLeft')" />
+                                <div class="photo-slot-icon" id="icon_PhotoLeft">📸</div>
+                                <div class="photo-slot-label">الجانب الأيسر</div>
+                            </div>
+                            @* Back *@
+                            <div class="photo-slot @(Model.Documents.PhotoBack != null ? "done" : "")"
+                                 id="slot_PhotoBack"
+                                 onclick="document.getElementById('PhotoBack').click()">
+                                <input type="file" id="PhotoBack" asp-for="Documents.PhotoBack"
+                                       accept="image/*"
+                                       onchange="photoSelected(this, 'slot_PhotoBack')" />
+                                <div class="photo-slot-icon" id="icon_PhotoBack">📸</div>
+                                <div class="photo-slot-label">الجانب الخلفي</div>
+                            </div>
+                            @* Inside *@
+                            <div class="photo-slot @(Model.Documents.PhotoInside != null ? "done" : "")"
+                                 id="slot_PhotoInside"
+                                 onclick="document.getElementById('PhotoInside').click()">
+                                <input type="file" id="PhotoInside" asp-for="Documents.PhotoInside"
+                                       accept="image/*"
+                                       onchange="photoSelected(this, 'slot_PhotoInside')" />
+                                <div class="photo-slot-icon" id="icon_PhotoInside">📸</div>
+                                <div class="photo-slot-label">صورة داخلية</div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-muted" style="font-size:11px">
+                            <i class="bi bi-info-circle me-1"></i>
+                            كل صورة تُحفظ تلقائياً مع إحداثيات GPS وتاريخ الالتقاط
+                        </div>
+                    </div>
+
+                    @* Footer Buttons *@
+                    <div class="d-flex justify-content-between align-items-center pt-2">
+                        <a asp-controller="Properties" asp-action="CreateStep4"
+                           asp-route-draftKey="@Model.DraftKey"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-right me-1"></i> السابق
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="draft"
+                                    class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-floppy me-1"></i> حفظ مسودة
+                            </button>
+                            <button type="submit" name="action" value="submit"
+                                    class="btn btn-success px-4" id="submitBtn"
+                                    @(Model.DqsScore < 50 ? "disabled" : "")>
+                                <i class="bi bi-send-fill me-1"></i> حفظ وإرسال للمشرف
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* RIGHT COLUMN — DQS Summary (OUTSIDE form) *@
+    <div class="col-lg-4">
+
+        @* DQS Summary Card *@
+        <div class="dqs-summary-card">
+            <div class="dqs-label">مؤشر جودة البيانات</div>
+            <div class="dqs-score-num" id="finalDqsScore">@Model.DqsScore%</div>
+            <div class="mt-2">
+                @if (Model.DqsScore >= 70)
+                {
+                    <span class="badge bg-success py-1 px-3" style="font-size:12px">
+                        <i class="bi bi-patch-check me-1"></i> جاهز للاعتماد
+                    </span>
+                }
+                else if (Model.DqsScore >= 50)
+                {
+                    <span class="badge bg-warning text-dark py-1 px-3" style="font-size:12px">
+                        <i class="bi bi-check-circle me-1"></i> يمكن الإرسال
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-danger py-1 px-3" style="font-size:12px">
+                        <i class="bi bi-x-circle me-1"></i> غير مكتمل
+                    </span>
+                }
+            </div>
+            <div class="dqs-bar mt-3">
+                <div class="dqs-bar-fill" id="finalDqsFill" style="width:@Model.DqsScore%"></div>
+            </div>
+            <div class="mt-2" style="font-size:10px; opacity:0.7">
+                الحد الأدنى للإرسال: 50% | الاعتماد النهائي: 70%
+            </div>
+        </div>
+
+        @* Criteria Details *@
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom py-2">
+                <h6 class="mb-0 fw-bold" style="font-size:13px">
+                    <i class="bi bi-list-check me-1 text-success"></i> تفاصيل المؤشر
+                </h6>
+            </div>
+            <div class="card-body p-3">
+                @foreach (var c in Model.DqsCriteria)
+                {
+                    <div class="d-flex align-items-center gap-2 py-1">
+                        <i class="bi @(c.Achieved ? "bi-check-circle-fill text-success" : "bi-circle text-muted")"
+                           style="font-size:13px; flex-shrink:0"></i>
+                        <span style="font-size:11px; flex-grow:1">@c.Label</span>
+                        <span class="badge" style="font-size:9px; background:@(c.Achieved ? "#dcfce7" : "#f3f4f6"); color:@(c.Achieved ? "#0D5C3A" : "#6c757d")">
+                            @(c.Achieved ? "+" : "")@c.Weight%
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Warning Card *@
+        <div class="card border-warning border-2 shadow-sm">
+            <div class="card-header bg-warning bg-opacity-10 py-2">
+                <h6 class="mb-0 fw-bold text-warning" style="font-size:13px">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> تنبيه مهم
+                </h6>
+            </div>
+            <div class="card-body p-3" style="font-size:12px; color:#495057;">
+                <p class="mb-2">
+                    <strong>بعد الحفظ:</strong> تنتقل البناية إلى حالة <strong>"مسودة"</strong>,
+                    ولا تعتبر معتمدة حتى يراجعها المشرف الميداني.
+                </p>
+                <p class="mb-0">
+                    سيرسل النظام إشعاراً للمشرف المختص، وسترى تحديث الحالة في صفحة تفاصيل العقار.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let uploadedPhotos = @Model.Documents.UploadedPhotoCount;
+
+    // ── fileSelected ───────────────────────────────────────────────────────────
+    function fileSelected(input, badgeId, dzId) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const friendlyName = file.name.length > 25 ? file.name.substring(0, 22) + '...' : file.name;
+
+        // Update badge
+        if (badgeId) {
+            const badge = document.getElementById(badgeId);
+            if (badge) {
+                badge.textContent = `✓ ${friendlyName}`;
+                badge.className = 'doc-badge uploaded';
+            }
+        }
+
+        // Update dropzone
+        if (dzId) {
+            const dz = document.getElementById(dzId);
+            if (dz) {
+                dz.classList.add('has-file');
+                const txt = dz.querySelector('.dropzone-text');
+                if (txt) txt.innerHTML = `<strong style="color:#0D5C3A">✓ ${friendlyName}</strong>`;
+            }
+        }
+    }
+
+    // ── photoSelected ──────────────────────────────────────────────────────────
+    function photoSelected(input, slotId) {
+        if (!input.files || input.files.length === 0) return;
+        const slot = document.getElementById(slotId);
+        if (!slot) return;
+
+        const wasAlready = slot.classList.contains('done');
+        slot.classList.add('done');
+
+        const icon = slot.querySelector('.photo-slot-icon');
+        if (icon) icon.textContent = '✓';
+
+        if (!wasAlready) {
+            uploadedPhotos++;
+            updatePhotoLabel();
+        }
+    }
+
+    function updatePhotoLabel() {
+        const label = document.getElementById('photoReqLabel');
+        if (!label) return;
+        if (uploadedPhotos >= 4) {
+            label.style.color = '#0D5C3A';
+            label.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>تم رفع ${uploadedPhotos} صور ✓`;
+            // Enable submit btn if DQS ok
+        } else {
+            label.style.color = '#dc3545';
+            label.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>مطلوب 4 صور على الأقل (تم: ${uploadedPhotos})`;
+        }
+    }
+
+    // ── Drag & Drop helpers ────────────────────────────────────────────────────
+    function dzDrag(e, el) {
+        e.preventDefault();
+        e.stopPropagation();
+        el.classList.add('dragover');
+    }
+
+    function dzLeave(el) {
+        el.classList.remove('dragover');
+    }
+
+    function dzDrop(e, el, inputId, badgeId, dzId) {
+        e.preventDefault();
+        e.stopPropagation();
+        el.classList.remove('dragover');
+
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (!files || files.length === 0) return;
+
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        // Set files on input via DataTransfer
+        try {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            input.files = dataTransfer.files;
+        } catch (ex) {
+            // Fallback for browsers that don't support DataTransfer constructor
+            console.warn('DataTransfer not supported, use click to select files');
+        }
+
+        fileSelected(input, badgeId, dzId);
+    }
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

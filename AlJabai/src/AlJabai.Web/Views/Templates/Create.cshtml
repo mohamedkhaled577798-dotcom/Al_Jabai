@@ -1,0 +1,213 @@
+@using PropertyManagement.Application.Constants
+@model PropertyManagement.Web.Models.Templates.CreateTemplateViewModel
+@{
+    ViewData["Title"] = "إنشاء قالب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">إنشاء قالب عقد من ملف Word</h4>
+    <a class="btn btn-outline-secondary" asp-action="Index">الرجوع للقائمة</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="row g-4">
+    @Html.AntiForgeryToken()
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Template.Name" class="form-label">الاسم</label>
+                        <input asp-for="Template.Name" class="form-control" />
+                        <span asp-validation-for="Template.Name" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Template.ContractType" class="form-label">النوع</label>
+                        <select asp-for="Template.ContractType" asp-items="Model.ContractTypes" class="form-select"></select>
+                        <span asp-validation-for="Template.ContractType" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <input asp-for="Template.DocxFile" type="file" id="docxFileInput" accept=".docx" class="d-none" />
+
+                <div id="docxDropZone" class="docx-drop-zone mb-3" role="button" tabindex="0">
+                    <div class="drop-icon"><i class="bi bi-file-earmark-word"></i></div>
+                    <div class="drop-text">اسحب ملف Word هنا أو انقر للاختيار</div>
+                    <div class="drop-size">صيغة .docx فقط - الحد الأقصى 10 ميجابايت</div>
+                </div>
+                <span asp-validation-for="Template.DocxFile" class="text-danger small d-block mb-3"></span>
+
+                <div id="parseSpinner" class="d-none text-center my-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted">جار تحليل الملف...</div>
+                </div>
+
+                <div id="parseResultPanel" class="d-none">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3 col-6">
+                            <div class="parse-stat-card bg-success-subtle">
+                                <div id="statFound" class="stat-num text-success">0</div>
+                                <div class="stat-label">المتغيرات الموجودة</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="parse-stat-card bg-warning-subtle">
+                                <div id="statMissing" class="stat-num text-warning">0</div>
+                                <div class="stat-label">المتغيرات المفقودة</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="parse-stat-card bg-info-subtle">
+                                <div id="statCustom" class="stat-num text-info">0</div>
+                                <div class="stat-label">متغيرات مخصصة</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="parse-stat-card bg-light">
+                                <div id="statTotal" class="stat-num text-secondary">0</div>
+                                <div class="stat-label">إجمالي الاستخدام</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion" id="parseAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button bg-success-subtle" type="button" data-bs-toggle="collapse" data-bs-target="#foundSection">
+                                    المتغيرات الموجودة في الملف
+                                </button>
+                            </h2>
+                            <div id="foundSection" class="accordion-collapse collapse show" data-bs-parent="#parseAccordion">
+                                <div class="accordion-body p-0">
+                                    <div class="table-responsive">
+                                        <table id="foundVarsTable" class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>المتغير</th>
+                                                    <th>الاسم</th>
+                                                    <th>التصنيف</th>
+                                                    <th>قيمة تجريبية</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-warning-subtle" type="button" data-bs-toggle="collapse" data-bs-target="#missingSection">
+                                    المتغيرات المفقودة
+                                </button>
+                            </h2>
+                            <div id="missingSection" class="accordion-collapse collapse" data-bs-parent="#parseAccordion">
+                                <div class="accordion-body">
+                                    <p class="text-muted">هذه المتغيرات معرّفة في النظام لكنها غير موجودة في ملفك</p>
+                                    <div class="table-responsive">
+                                        <table id="missingVarsTable" class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>المتغير</th>
+                                                    <th>الاسم</th>
+                                                    <th>التصنيف</th>
+                                                    <th>قيمة تجريبية</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-info-subtle" type="button" data-bs-toggle="collapse" data-bs-target="#customSection">
+                                    متغيرات مخصصة
+                                </button>
+                            </h2>
+                            <div id="customSection" class="accordion-collapse collapse" data-bs-parent="#parseAccordion">
+                                <div class="accordion-body">
+                                    <p class="text-muted">هذه المتغيرات موجودة في ملفك لكنها غير معرّفة في النظام</p>
+                                    <div class="table-responsive">
+                                        <table id="customVarsTable" class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>المتغير</th>
+                                                    <th>ملاحظة</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="missingWarning" class="alert alert-warning d-none mt-3"></div>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="Template.RequiredFieldsJson" class="form-label">الحقول المطلوبة JSON</label>
+                    <textarea asp-for="Template.RequiredFieldsJson" class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="Template.DefaultClausesJson" class="form-label">بنود افتراضية JSON</label>
+                    <textarea asp-for="Template.DefaultClausesJson" class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button id="templateSubmitBtn" type="submit" class="btn btn-primary" disabled>حفظ القالب</button>
+                    <a class="btn btn-light" asp-action="Index">إلغاء</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+            <div class="card-body var-ref-panel">
+                <h5 class="mb-1">📋 المتغيرات المتاحة</h5>
+                <p class="text-muted small mb-3">انسخ أي متغير وضعه في ملف الوورد</p>
+                <input id="varSearch" type="text" class="form-control form-control-sm mb-3" placeholder="ابحث عن متغير..." />
+
+                <div class="accordion" id="varsAccordion">
+                    @for (var i = 0; i < TemplateVariables.Groups.Count(); i++)
+                    {
+                        var group = TemplateVariables.Groups.ElementAt(i);
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-@i">
+                                <button class="accordion-button @(i > 0 ? "collapsed" : string.Empty)" type="button" data-bs-toggle="collapse" data-bs-target="#group-@i">
+                                    @group
+                                </button>
+                            </h2>
+                            <div id="group-@i" class="accordion-collapse collapse @(i == 0 ? "show" : string.Empty)" data-bs-parent="#varsAccordion">
+                                <div class="accordion-body p-2">
+                                    @foreach (var variable in Model.AllVariables.Where(v => v.Group == group))
+                                    {
+                                        <div class="var-ref-item">
+                                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                                <span class="var-key var-chip">@variable.Placeholder</span>
+                                                <button type="button" class="btn btn-sm btn-link py-0 copy-btn" data-value="@variable.Placeholder">نسخ</button>
+                                            </div>
+                                            <div class="var-label">@variable.Label</div>
+                                            <div class="var-sample">@variable.SampleValue</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

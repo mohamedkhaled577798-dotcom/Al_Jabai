@@ -1,0 +1,129 @@
+@model WaqfSystem.Web.ViewModels.PropertyIndexViewModel
+@{
+    ViewData["Title"] = "إدارة العقارات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800"><i class="fas fa-building me-2"></i> إدارة العقارات</h2>
+    <a asp-controller="Properties" asp-action="Create" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus-circle me-1"></i> إضافة عقار جديد
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 rounded-4">
+    <div class="card-body p-4">
+        <!-- Advanced Filter -->
+        <form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light bg-opacity-50 rounded-4 border">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">المحافظة</label>
+                <select asp-for="Filter.GovernorateId" asp-items="Model.Governorates" class="form-select form-select-sm rounded-3">
+                    <option value="">كل المحافظات</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">نوع العقار</label>
+                <select asp-for="Filter.PropertyType" asp-items="Model.PropertyTypes" class="form-select form-select-sm rounded-3">
+                    <option value="">كل الأنواع</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">نوع الملكية</label>
+                <select asp-for="Filter.OwnershipType" asp-items="Model.OwnershipTypes" class="form-select form-select-sm rounded-3">
+                    <option value="">الكل (مضبوط/ملحق)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">بحث سريع</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="fas fa-search text-muted"></i></span>
+                    <input asp-for="Filter.SearchTerm" class="form-control border-start-0 rounded-end-3" placeholder="الاسم، الرقم، الملاحظات..." />
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary w-100 rounded-3 shadow-sm">
+                    تطبيق الفلتر
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light text-secondary small text-uppercase">
+                    <tr>
+                        <th class="ps-3">رقم الوقف</th>
+                        <th>اسم العقار</th>
+                        <th>المحافظة والنوع</th>
+                        <th>المساحة</th>
+                        <th>جودة البيانات</th>
+                        <th>الحالة</th>
+                        <th class="text-center pe-3">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    @foreach (var item in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="ps-3">
+                                <span class="badge bg-white text-primary border border-primary border-opacity-25 px-2 py-1 font-monospace">@item.WqfNumber</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@item.PropertyName</div>
+                            </td>
+                            <td>
+                                <div class="small">@item.GovernorateName</div>
+                                <span class="badge bg-secondary-subtle text-secondary small rounded-pill mt-1">@item.PropertyTypeDisplay</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@item.TotalAreaSqm?.ToString("N0")</div>
+                                <div class="small text-muted">مترمربع</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center" style="width: 100px;">
+                                    <div class="progress flex-grow-1 h-px-5 me-2" style="height: 6px;">
+                                        <div class="progress-bar @(item.DqsScore >= 70 ? "bg-success" : (item.DqsScore >= 50 ? "bg-warning" : "bg-danger"))" 
+                                             role="progressbar" style="width: @(item.DqsScore)%"></div>
+                                    </div>
+                                    <small class="fw-bold">@item.DqsScore%</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge @(item.ApprovalStage == WaqfSystem.Core.Enums.ApprovalStage.Approved ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning") rounded-pill px-3">
+                                    @item.ApprovalStageDisplay
+                                </span>
+                            </td>
+                            <td class="text-center pe-3">
+                                <div class="btn-group shadow-sm rounded-3 overflow-hidden">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-white border-end" title="تفاصيل">
+                                        <i class="fas fa-eye text-primary"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-white border-end" title="تعديل">
+                                        <i class="fas fa-edit text-info"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-white" title="حذف" onclick="confirmDelete(@item.Id)">
+                                        <i class="fas fa-trash text-danger"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+            <div class="text-muted small">إظهار <strong>@Model.Results.Items.Count</strong> من إجمالي <strong>@Model.Results.TotalCount</strong> عقار</div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0 gap-1">
+                    <li class="page-item @(Model.Results.Page == 1 ? "disabled" : "")">
+                        <a class="page-link rounded-circle border-0" href="#"><i class="fas fa-chevron-right small"></i></a>
+                    </li>
+                    <li class="page-item active"><a class="page-link rounded-circle border-0" href="#">1</a></li>
+                    <li class="page-item @(Model.Results.Page * Model.Results.PageSize >= Model.Results.TotalCount ? "disabled" : "")">
+                        <a class="page-link rounded-circle border-0" href="#"><i class="fas fa-chevron-left small"></i></a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>

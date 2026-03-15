@@ -1,0 +1,80 @@
+@model WaqfSystem.Web.ViewModels.GisExplorerViewModel
+@{
+    ViewData["Title"] = "مستكشف الخرائط الجغرافي";
+}
+
+<div class="card shadow mb-4 h-100">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-satellite me-2"></i> الخارطة التفاعلية للأملاك الوقفية</h6>
+        <div class="d-flex gap-2">
+            <select id="govFilter" class="form-select form-select-sm" style="width: 150px;">
+                <option value="">كل المحافظات</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" onclick="refreshMap()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </div>
+    <div class="card-body p-0 position-relative" style="height: calc(100vh - 200px);">
+        <!-- Sidebar Map Filter -->
+        <div class="position-absolute top-0 start-0 m-3 z-3 bg-white p-3 rounded shadow" style="width: 250px; opacity: 0.9;">
+            <h6 class="border-bottom pb-2">طبقات العرض</h6>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" checked id="layerProperties">
+                <label class="form-check-label small" for="layerProperties">العقارات المسجلة</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="layerMissions">
+                <label class="form-check-label small" for="layerMissions">المسحات الميدانية</label>
+            </div>
+            <hr>
+            <div class="small">
+                <strong>عدد العقارات المعروضة:</strong> <span id="propCount">@Model.ActiveProperties.Count</span>
+            </div>
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div id="mainMap" style="width: 100%; height: 100%;"></div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #mainMap { background: #eef1f5; }
+        .leaflet-popup-content { font-family: 'Inter', sans-serif; text-align: right; direction: rtl; }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('mainMap').setView([33.3152, 44.3661], 6); // Center of Iraq
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        var markers = L.layerGroup().addTo(map);
+
+        function loadPoints() {
+            var points = @Html.Raw(Json.Serialize(Model.ActiveProperties));
+            markers.clearLayers();
+            points.forEach(p => {
+                if (p.latitude && p.longitude) {
+                    var marker = L.marker([p.latitude, p.longitude])
+                        .bindPopup(`
+                            <div class="p-1">
+                                <h6 class="mb-1">${p.propertyName}</h6>
+                                <p class="small mb-2 text-muted">${p.wqfNumber}</p>
+                                <a href="/Property/Details/${p.id}" class="btn btn-xs btn-primary d-block">تفاصيل العقار</a>
+                            </div>
+                        `);
+                    markers.addLayer(marker);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            loadPoints();
+        });
+    </script>
+}

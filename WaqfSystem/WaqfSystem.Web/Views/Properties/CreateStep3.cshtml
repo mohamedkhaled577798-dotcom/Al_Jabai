@@ -1,0 +1,418 @@
+@model WaqfSystem.Web.ViewModels.Properties.PropertyCreateViewModel
+@{
+    ViewData["Title"] = "إضافة بناية — الخطوة 3: الخريطة والإحداثيات";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+<style>
+    #mapContainer {
+        height: 420px;
+        border-radius: 12px;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .map-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+        align-items: center;
+    }
+    .status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: #f3f4f6;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    .status-tag.ok {
+        background: #dcfce7;
+        color: #0D5C3A;
+        border-color: #86efac;
+    }
+    .form-section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 16px;
+        border: 1px solid #f0f0f0;
+    }
+    .section-heading {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0D5C3A;
+        border-bottom: 2px solid #dcfce7;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .toolbar-btn {
+        font-size: 13px;
+        padding: 5px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+</style>
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">الأملاك</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Properties" asp-action="Create">إضافة بناية</a></li>
+        <li class="breadcrumb-item active">الخريطة والحدود</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-3">
+    <h5 class="mb-0 fw-bold">
+        <i class="bi bi-map-fill text-success me-2"></i>
+        تحديد الموقع والحدود على الخريطة
+    </h5>
+</div>
+
+@await Html.PartialAsync("_WizardPartials", Model)
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>يوجد أخطاء:</strong>
+        <div asp-validation-summary="All" class="mt-1 mb-0" style="font-size:13px"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-controller="Properties" asp-action="CreateStep3" method="post" id="step3Form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DraftKey" />
+    <input type="hidden" asp-for="CurrentStep" value="3" />
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+
+            @* Map Toolbar *@
+            <div class="map-toolbar">
+                <button type="button" class="btn btn-outline-success toolbar-btn" id="btnPin" onclick="setMode('pin')">
+                    📍 تحديد نقطة
+                </button>
+                <button type="button" class="btn btn-outline-success toolbar-btn" id="btnPoly" onclick="setMode('poly')">
+                    ⬡ رسم حدود القطعة
+                </button>
+                <button type="button" class="btn btn-outline-primary toolbar-btn" id="btnGps" onclick="detectGps()">
+                    🛰️ موقعي الحالي
+                </button>
+                <button type="button" class="btn btn-outline-danger toolbar-btn" onclick="resetMap()">
+                    <i class="bi bi-arrow-counterclockwise"></i> إعادة تعيين
+                </button>
+                <div class="ms-auto d-flex gap-2 flex-wrap">
+                    <span class="status-tag" id="tagGps">
+                        <i class="bi bi-crosshair"></i> GPS: غير محدد
+                    </span>
+                    <span class="status-tag" id="tagPoly">
+                        <i class="bi bi-pentagon"></i> حدود: غير محددة
+                    </span>
+                    <span class="status-tag" id="tagArea">
+                        <i class="bi bi-rulers"></i> المساحة: —
+                    </span>
+                </div>
+            </div>
+
+            @* Map Container *@
+            <div id="mapContainer"></div>
+
+            @* Coordinates *@
+            <div class="form-section">
+                <div class="section-heading">
+                    <i class="bi bi-crosshair2"></i> الإحداثيات الجغرافية
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="MapLocation.Latitude" class="form-label fw-semibold">خط العرض (Latitude)</label>
+                        <input asp-for="MapLocation.Latitude" type="number" step="0.000001"
+                               class="form-control form-control-sm" id="latInput"
+                               dir="ltr" placeholder="33.315200" />
+                        <span asp-validation-for="MapLocation.Latitude" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="MapLocation.Longitude" class="form-label fw-semibold">خط الطول (Longitude)</label>
+                        <input asp-for="MapLocation.Longitude" type="number" step="0.000001"
+                               class="form-control form-control-sm" id="lngInput"
+                               dir="ltr" placeholder="44.366100" />
+                        <span asp-validation-for="MapLocation.Longitude" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="MapLocation.GpsAccuracyMeters" class="form-label fw-semibold">دقة GPS (متر)</label>
+                        <input asp-for="MapLocation.GpsAccuracyMeters" type="number" step="0.1"
+                               class="form-control form-control-sm" id="accuracyInput"
+                               dir="ltr" placeholder="5.0" />
+                        <span asp-validation-for="MapLocation.GpsAccuracyMeters" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="MapLocation.GisPolygon" class="form-label fw-semibold">
+                            حدود المضلع (GeoJSON)
+                        </label>
+                        <textarea asp-for="MapLocation.GisPolygon"
+                                  class="form-control form-control-sm font-monospace"
+                                  id="geoJsonInput" rows="3" dir="ltr"
+                                  placeholder='{"type":"Polygon","coordinates":[[...]]}'>
+                        </textarea>
+                        <div style="font-size:11px; color:#6c757d; margin-top:2px">
+                            يُعبَأ تلقائياً عند رسم الحدود على الخريطة
+                        </div>
+                        <span asp-validation-for="MapLocation.GisPolygon" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="MapLocation.GisLayerName" class="form-label fw-semibold">اسم الطبقة في GIS</label>
+                        <input asp-for="MapLocation.GisLayerName"
+                               class="form-control form-control-sm"
+                               dir="ltr" placeholder="waqf_properties_baghdad" />
+                        <span asp-validation-for="MapLocation.GisLayerName" class="text-danger" style="font-size:12px"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="MapLocation.CalculatedAreaSqm" class="form-label fw-semibold">
+                            المساحة المحسوبة (م²) — تلقائي
+                        </label>
+                        <input asp-for="MapLocation.CalculatedAreaSqm"
+                               type="number" step="0.01"
+                               class="form-control form-control-sm"
+                               id="areaInput" readonly />
+                        <span asp-validation-for="MapLocation.CalculatedAreaSqm" class="text-danger" style="font-size:12px"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+            <a asp-controller="Properties" asp-action="CreateStep2"
+               asp-route-draftKey="@Model.DraftKey"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-right me-1"></i> السابق
+            </a>
+            <button type="submit" class="btn btn-success px-4">
+                التالي: تفاصيل البناية
+                <i class="bi bi-arrow-left ms-1"></i>
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/@@turf/turf@6.5.0/turf.min.js"></script>
+<script>
+    // ── Map Init ─────────────────────────────────────────────────────────────
+    const defaultCenter = @Html.Raw(Model.MapLocation.DefaultMapCenter);
+    const defaultZoom   = @Model.MapLocation.DefaultZoom;
+
+    const map = L.map('mapContainer').setView(defaultCenter, defaultZoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 20
+    }).addTo(map);
+
+    let marker        = null;
+    let drawnLayer    = null;
+    let drawControl   = null;
+    let currentMode   = 'pin';
+
+    const editableFeatures = new L.FeatureGroup().addTo(map);
+
+    // ── Restore existing coordinates ──────────────────────────────────────────
+    @if (Model.MapLocation.Latitude.HasValue && Model.MapLocation.Longitude.HasValue)
+    {
+        <text>
+        marker = L.marker([@Model.MapLocation.Latitude, @Model.MapLocation.Longitude]).addTo(map);
+        map.setView([@Model.MapLocation.Latitude, @Model.MapLocation.Longitude], 16);
+        setTagOk('tagGps', '✓ GPS محدد');
+        </text>
+    }
+
+    // ── Restore existing polygon ──────────────────────────────────────────────
+    @if (!string.IsNullOrWhiteSpace(Model.MapLocation.GisPolygon))
+    {
+        <text>
+        try {
+            const existingGeoJson = @Html.Raw(Model.MapLocation.GisPolygon);
+            const layer = L.geoJSON(existingGeoJson).addTo(editableFeatures);
+            map.fitBounds(layer.getBounds());
+            setTagOk('tagPoly', '✓ حدود محددة');
+        } catch(e) { console.warn('فشل تحميل المضلع:', e); }
+        </text>
+    }
+
+    // ── Map click handler ─────────────────────────────────────────────────────
+    map.on('click', function(e) {
+        if (currentMode !== 'pin') return;
+        if (marker) map.removeLayer(marker);
+        marker = L.marker(e.latlng).addTo(map);
+        setCoords(e.latlng.lat, e.latlng.lng);
+    });
+
+    // ── setCoords ─────────────────────────────────────────────────────────────
+    function setCoords(lat, lng) {
+        document.getElementById('latInput').value = parseFloat(lat).toFixed(7);
+        document.getElementById('lngInput').value = parseFloat(lng).toFixed(7);
+        setTagOk('tagGps', `✓ ${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}`);
+    }
+
+    function setTagOk(id, text) {
+        const tag = document.getElementById(id);
+        if (tag) { tag.textContent = text; tag.classList.add('ok'); }
+    }
+
+    // ── setMode ───────────────────────────────────────────────────────────────
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('btnPin').classList.toggle('btn-success', mode === 'pin');
+        document.getElementById('btnPin').classList.toggle('btn-outline-success', mode !== 'pin');
+        document.getElementById('btnPoly').classList.toggle('btn-success', mode === 'poly');
+        document.getElementById('btnPoly').classList.toggle('btn-outline-success', mode !== 'poly');
+
+        if (mode === 'poly') {
+            if (!drawControl) {
+                drawControl = new L.Control.Draw({
+                    draw: {
+                        polygon: { allowIntersection: false, showArea: true },
+                        polyline: false,
+                        rectangle: false,
+                        circle: false,
+                        circlemarker: false,
+                        marker: false
+                    },
+                    edit: { featureGroup: editableFeatures }
+                });
+                drawControl.addTo(map);
+            }
+            new L.Draw.Polygon(map).enable();
+        } else {
+            if (drawControl) {
+                drawControl.remove();
+                drawControl = null;
+            }
+        }
+    }
+
+    // ── Draw created event ─────────────────────────────────────────────────────
+    map.on(L.Draw.Event.CREATED, function(e) {
+        editableFeatures.clearLayers();
+        drawnLayer = e.layer;
+        editableFeatures.addLayer(drawnLayer);
+
+        const geoJson = drawnLayer.toGeoJSON().geometry;
+        document.getElementById('geoJsonInput').value = JSON.stringify(geoJson);
+        setTagOk('tagPoly', '✓ حدود محددة');
+
+        // Calculate area via turf.js
+        try {
+            const feature = drawnLayer.toGeoJSON();
+            const areaSqm = turf.area(feature);
+            document.getElementById('areaInput').value = areaSqm.toFixed(2);
+            const areaTag = document.getElementById('tagArea');
+            if (areaTag) { areaTag.textContent = `${(areaSqm).toLocaleString('ar-IQ', {maximumFractionDigits:0})} م²`; areaTag.classList.add('ok'); }
+
+            // Set centroid as GPS
+            const centroid = turf.centroid(feature);
+            const [lng, lat] = centroid.geometry.coordinates;
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lng]).addTo(map);
+            setCoords(lat, lng);
+        } catch(e) { console.warn('خطأ في حساب المساحة:', e); }
+
+        // Switch back to pin mode
+        setMode('pin');
+    });
+
+    // ── detectGps ─────────────────────────────────────────────────────────────
+    function detectGps() {
+        if (!navigator.geolocation) {
+            alert('المتصفح لا يدعم خدمة GPS');
+            return;
+        }
+        const btn = document.getElementById('btnGps');
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري التحديد...';
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const acc = pos.coords.accuracy;
+
+                setCoords(lat, lng);
+                document.getElementById('accuracyInput').value = acc.toFixed(2);
+
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lng]).addTo(map);
+                map.flyTo([lat, lng], 17);
+
+                btn.disabled = false;
+                btn.textContent = '🛰️ موقعي الحالي';
+            },
+            function(err) {
+                alert(`تعذّر تحديد الموقع: ${err.message}`);
+                btn.disabled = false;
+                btn.textContent = '🛰️ موقعي الحالي';
+            },
+            { enableHighAccuracy: true, timeout: 15000 }
+        );
+    }
+
+    // ── resetMap ──────────────────────────────────────────────────────────────
+    function resetMap() {
+        if (marker) { map.removeLayer(marker); marker = null; }
+        editableFeatures.clearLayers();
+        drawnLayer = null;
+
+        document.getElementById('latInput').value = '';
+        document.getElementById('lngInput').value = '';
+        document.getElementById('accuracyInput').value = '';
+        document.getElementById('geoJsonInput').value = '';
+        document.getElementById('areaInput').value = '';
+
+        ['tagGps', 'tagPoly', 'tagArea'].forEach(id => {
+            const t = document.getElementById(id);
+            if (t) { t.classList.remove('ok'); }
+        });
+        document.getElementById('tagGps').textContent = 'GPS: غير محدد';
+        document.getElementById('tagPoly').textContent = 'حدود: غير محددة';
+        document.getElementById('tagArea').textContent = 'المساحة: —';
+
+        map.setView(defaultCenter, defaultZoom);
+        setMode('pin');
+    }
+
+    // ── Manual coord input → move marker ─────────────────────────────────────
+    ['latInput', 'lngInput'].forEach(id => {
+        document.getElementById(id).addEventListener('change', function() {
+            const lat = parseFloat(document.getElementById('latInput').value);
+            const lng = parseFloat(document.getElementById('lngInput').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lng]).addTo(map);
+                map.setView([lat, lng], 16);
+                setTagOk('tagGps', `✓ ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+            }
+        });
+    });
+
+    // Init pin mode
+    setMode('pin');
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

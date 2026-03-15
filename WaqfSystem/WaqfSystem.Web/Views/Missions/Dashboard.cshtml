@@ -1,0 +1,139 @@
+@model WaqfSystem.Web.ViewModels.Mission.MissionDashboardViewModel
+@{
+    ViewData["Title"] = "لوحة تحكم المهام";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">لوحة تحكم المهام الميدانية</h2>
+            <div class="text-muted" id="liveDateTime"></div>
+        </div>
+        @if (Model.CurrentUserRole is "SYS_ADMIN" or "AUTH_DIRECTOR" or "REGIONAL_MGR")
+        {
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-4"><i class="bi bi-plus-circle me-2"></i>إنشاء مهمة جديدة</a>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">إجمالي المهام</div><div class="h4 fw-bold">@Model.Stats.TotalMissions</div></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">نشطة الآن</div><div class="h4 fw-bold">@Model.Stats.ActiveMissions</div></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">مكتملة هذا الشهر</div><div class="h4 fw-bold">@Model.Stats.CompletedThisMonth</div></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0 @(Model.Stats.OverdueMissions > 0 ? "bg-danger text-white" : "")"><div class="card-body"><div class="small @(Model.Stats.OverdueMissions > 0 ? "text-white-50" : "text-muted")">متأخرة</div><div class="h4 fw-bold">@Model.Stats.OverdueMissions</div></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">موظفون نشطون</div><div class="h4 fw-bold">@Model.Stats.ActiveEmployees</div></div></div></div>
+        <div class="col-md-2"><div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">متوسط جودة البيانات</div><div class="h4 fw-bold">@Model.Stats.AverageDqsScore%</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-bold">توزيع مراحل المهام</div>
+                <div class="card-body">
+                    @{ var total = Math.Max(Model.Stats.TotalMissions, 1); }
+                    @foreach (var pair in Model.Stats.MissionsByStage)
+                    {
+                        var percent = Math.Round((pair.Value * 100.0) / total, 1);
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between"><span>@pair.Key</span><span>@pair.Value (@percent%)</span></div>
+                            <div class="progress" style="height:8px;"><div class="progress-bar" role="progressbar" style="width:@percent%"></div></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-bold">أنواع المهام</div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    @{ 
+                        var byType = Model.Stats.MissionsByType;
+                        var sum = Math.Max(byType.Values.Sum(), 1);
+                        var c1 = byType.TryGetValue("PropertyCensus", out var v1) ? (v1 * 100 / sum) : 0;
+                        var c2 = byType.TryGetValue("PeriodicInspection", out var v2) ? (v2 * 100 / sum) : 0;
+                        var c3 = byType.TryGetValue("DocumentVerification", out var v3) ? (v3 * 100 / sum) : 0;
+                        var c4 = byType.TryGetValue("EmergencyAssessment", out var v4) ? (v4 * 100 / sum) : 0;
+                        var c5 = 100 - c1 - c2 - c3 - c4;
+                    }
+                    <div style="width:220px;height:220px;border-radius:50%;background:conic-gradient(#2563eb 0 @c1%, #16a34a @c1% @(c1+c2)%, #d97706 @(c1+c2)% @(c1+c2+c3)%, #dc2626 @(c1+c2+c3)% @(c1+c2+c3+c4)%, #7c3aed @(c1+c2+c3+c4)% 100%);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100"><div class="card-header bg-white fw-bold">أفضل الموظفين</div><div class="card-body">
+                @foreach (var e in Model.Stats.TopPerformers)
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div><span class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">@string.Concat(e.FullName.Split(' ').Where(x=>x.Length>0).Take(2).Select(x=>x[0]))</span>@e.FullName</div>
+                        <span class="badge bg-success">@e.AverageDqsScore%</span>
+                    </div>
+                }
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100"><div class="card-header bg-white fw-bold">المهام القادمة</div><div class="card-body">
+                @foreach (var m in Model.Stats.UpcomingMissions)
+                {
+                    <a asp-action="Detail" asp-route-id="@m.Id" class="d-block text-decoration-none text-dark border rounded-3 p-2 mb-2">
+                        <div class="small text-muted">@m.MissionDate.ToString("yyyy/MM/dd")</div>
+                        <div class="fw-bold">@m.Title</div>
+                        <span class="badge bg-warning text-dark">@m.Priority</span>
+                    </a>
+                }
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100"><div class="card-header bg-white fw-bold">آخر الأنشطة</div><div class="card-body" id="recentActivityFeed">
+                @foreach (var a in Model.Stats.RecentActivity)
+                {
+                    <div class="border rounded-3 p-2 mb-2">
+                        <div class="fw-bold">@a.FromStageAr → @a.ToStageAr</div>
+                        <div class="small text-muted">@a.ChangedByName - @a.ChangedAt.ToString("yyyy/MM/dd HH:mm")</div>
+                    </div>
+                }
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-bold">المهام قيد التنفيذ الآن</div>
+        <div class="card-body">
+            <div id="liveMissionsGrid" class="row g-3"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+<script>
+    function tickClock() {
+        const now = new Date();
+        document.getElementById('liveDateTime').textContent = now.toLocaleString('ar-IQ');
+    }
+    setInterval(tickClock, 1000);
+    tickClock();
+
+    const connection = new signalR.HubConnectionBuilder().withUrl('/hubs/missions').build();
+    connection.on('ProgressUpdated', function (payload) {
+        const card = document.querySelector('[data-mission-id="' + payload.missionId + '"]');
+        if (card) {
+            const bar = card.querySelector('.progress-bar');
+            bar.style.width = payload.progressPercent + '%';
+            bar.textContent = payload.progressPercent + '%';
+        }
+    });
+    connection.on('StageChanged', function (payload) {
+        const feed = document.getElementById('recentActivityFeed');
+        const div = document.createElement('div');
+        div.className = 'border rounded-3 p-2 mb-2';
+        div.innerHTML = '<div class="fw-bold">تحديث مرحلة: ' + payload.newStage + '</div><div class="small text-muted">' + payload.changedByName + '</div>';
+        feed.prepend(div);
+    });
+    connection.on('NewNotification', function (payload) {
+        alert(payload.title + ': ' + payload.body);
+    });
+    connection.start();
+</script>
+}

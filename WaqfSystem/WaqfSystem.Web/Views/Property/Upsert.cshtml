@@ -1,0 +1,119 @@
+@model WaqfSystem.Web.ViewModels.PropertyUpsertViewModel
+@{
+    ViewData["Title"] = Model.IsEdit ? "تعديل العقار" : "إضافة عقار جديد";
+}
+
+<div class="container-narrow py-4">
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">@(Model.IsEdit ? "تعديل بيانات العقار" : "تسجيل عقار جديد في المنظومة")</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="@(Model.IsEdit ? "Edit" : "Create")" method="post">
+                <div asp-validation-summary="All" class="alert alert-danger mb-3" style="@(!ViewData.ModelState.IsValid ? "display:block;" : "display:none;")"></div>
+                <input type="hidden" asp-for="Property.Id" />
+
+                <!-- Basic Info Segment -->
+                <h5 class="section-title mb-3">1. المعلومات الأساسية</h5>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label asp-for="Property.PropertyName" class="form-label">اسم العقار / المسجد</label>
+                            <input asp-for="Property.PropertyName" class="form-control" placeholder="أدخل اسم العقار الكامل كما في السجل" />
+                            <span asp-validation-for="Property.PropertyName" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                         <div class="mb-3">
+                            <label asp-for="Property.GovernorateId" class="form-label">المحافظة</label>
+                            <select asp-for="Property.GovernorateId" asp-items="Model.Governorates" class="form-select">
+                                <option value="">اختر المحافظة...</option>
+                            </select>
+                            <span asp-validation-for="Property.GovernorateId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Property.PropertyType" class="form-label">نوع العقار</label>
+                        <select asp-for="Property.PropertyType" asp-items="Model.PropertyTypes" class="form-select"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Property.PropertyCategory" class="form-label">فئة العقار</label>
+                        <select asp-for="Property.PropertyCategory" asp-items="Model.PropertyCategories" class="form-select"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Property.WaqfType" class="form-label">نوع الوقف</label>
+                        <select asp-for="Property.WaqfType" asp-items="Model.WaqfTypes" class="form-select"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Property.OwnershipType" class="form-label">نوع الملكية</label>
+                        <select asp-for="Property.OwnershipType" asp-items="Model.OwnershipTypes" class="form-select"></select>
+                    </div>
+                </div>
+
+                <!-- Technical Details Segment -->
+                <h5 class="section-title mt-4 mb-3">2. التفاصيل الفنية والمساحة</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Property.TotalAreaSqm" class="form-label">المساحة الكلية (م2)</label>
+                        <div class="input-group">
+                            <input asp-for="Property.TotalAreaSqm" class="form-control" type="number" step="0.01" />
+                            <span class="input-group-text">مترمربع</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Property.ConstructionType" class="form-label">نوع البناء</label>
+                        <select asp-for="Property.ConstructionType" asp-items="Model.ConstructionTypes" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Property.StructuralCondition" class="form-label">الحالة الإنشائية</label>
+                        <select asp-for="Property.StructuralCondition" asp-items="Model.StructuralConditions" class="form-select"></select>
+                    </div>
+                </div>
+
+                <!-- GIS Segment -->
+                <h5 class="section-title mt-4 mb-3">3. الموقع الجغرافي (GIS)</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Property.Latitude" class="form-label">خط العرض (Latitude)</label>
+                            <input asp-for="Property.Latitude" class="form-control" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Property.Longitude" class="form-label">خط الطول (Longitude)</label>
+                            <input asp-for="Property.Longitude" class="form-control" readonly />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="mapContainer" class="rounded bg-light d-flex align-items-center justify-content-center text-muted" style="height: 200px; border: 2px dashed #ddd;">
+                            <div class="text-center">
+                                <i class="fas fa-map-marked-alt fa-2x mb-2"></i>
+                                <p class="small mb-0">انقر لتحديد الموقع على الخارطة</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-3 border-top d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary px-5">@(Model.IsEdit ? "حفظ التعديلات" : "إضافة العقار")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .section-title {
+        border-right: 4px solid var(--primary-color);
+        padding-right: 15px;
+        color: var(--primary-color);
+        font-weight: 700;
+        background: #f8f9fc;
+        padding: 5px 15px;
+        border-radius: 0 5px 5px 0;
+    }
+    .container-narrow {
+        max-width: 900px;
+        margin: auto;
+    }
+</style>

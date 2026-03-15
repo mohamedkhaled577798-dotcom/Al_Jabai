@@ -1,0 +1,22 @@
+@model WaqfSystem.Application.DTOs.Mission.UpdateMissionDto
+@{
+    ViewData["Title"] = "تعديل المهمة";
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold mb-3">تعديل المهمة</h3>
+    <form method="post" class="card border-0 shadow-sm">
+        <div class="card-body">
+            <input asp-for="Id" type="hidden" />
+            <div class="row g-3">
+                <div class="col-md-8"><label class="form-label">العنوان</label><input asp-for="Title" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">الأولوية</label><select asp-for="Priority" class="form-select">@foreach(var p in Enum.GetValues<WaqfSystem.Core.Enums.MissionPriority>()){<option value="@p">@p</option>}</select></div>
+                <div class="col-md-4"><label class="form-label">تاريخ المهمة</label><input asp-for="MissionDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">الإنجاز المتوقع</label><input asp-for="ExpectedCompletionDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">عدد العقارات</label><input asp-for="TargetPropertyCount" type="number" class="form-control" /></div>
+                <div class="col-12"><label class="form-label">الوصف</label><textarea asp-for="Description" class="form-control" rows="3"></textarea></div>
+            </div>
+            <div class="mt-3 d-flex justify-content-end gap-2"><a asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-light">إلغاء</a><button class="btn btn-primary">حفظ</button></div>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,234 @@
+@model WaqfSystem.Web.ViewModels.Properties.PartnershipIndexViewModel
+@{
+    ViewData["Title"] = "الأملاك الملحقة والشراكات";
+}
+
+<div class="container-fluid" dir="rtl">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800"><i class="fas fa-handshake me-2"></i> إدارة الشركاء والأملاك الملحقة</h2>
+    <div class="d-flex align-items-center gap-3">
+        <a href="@Url.Action("Create")" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+            <i class="fas fa-plus-circle me-1"></i> إضافة شراكة جديدة
+        </a>
+        <div class="badge bg-primary rounded-pill px-3 py-2">إجمالي الشراكات: @Model.Partnerships.TotalCount</div>
+    </div>
+</div>
+
+@if (Model.Stats.ExpiredCount > 0 || Model.Stats.ExpiringIn30Days > 0)
+{
+    <div class="row g-3 mb-4">
+        @if (Model.Stats.ExpiredCount > 0)
+        {
+            <div class="col-md-6">
+                <a href="@Url.Action("Index", new { IsActive = false })" class="alert alert-danger d-flex align-items-center border-0 shadow-sm rounded-4 text-decoration-none py-2 mb-0">
+                    <i class="fas fa-exclamation-circle fs-4 me-3"></i>
+                    <div>
+                        <div class="fw-bold">تنبيه انتهاء الصلاحية</div>
+                        <div class="small">هناك @Model.Stats.ExpiredCount شراكة منتهية الصلاحية تتطلب إجراءً.</div>
+                    </div>
+                </a>
+            </div>
+        }
+        @if (Model.Stats.ExpiringIn30Days > 0)
+        {
+            <div class="col-md-6">
+                <div class="alert alert-warning d-flex align-items-center border-0 shadow-sm rounded-4 py-2 mb-0">
+                    <i class="fas fa-clock fs-4 me-3"></i>
+                    <div>
+                        <div class="fw-bold">تنبيه اقتراب الانتهاء</div>
+                        <div class="small">هناك @Model.Stats.ExpiringIn30Days شراكة ستنتهي خلال 30 يوم.</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-gradient-primary text-white h-100" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
+            <div class="card-body">
+                <div class="text-white-50 small fw-bold">إيراد الوقف (الشهر الحالي)</div>
+                <div class="h4 mb-0 fw-bold">@Model.Stats.TotalWaqfRevenueThisMonth.ToString("N0") <small class="fs-6">د.ع</small></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+            <div class="card-body">
+                <div class="text-muted small fw-bold">مبالغ قيد التحويل</div>
+                <div class="h4 mb-0 fw-bold text-primary">@Model.Stats.TotalPendingTransfers.ToString("N0") <small class="fs-6">د.ع</small></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+            <div class="card-body">
+                <div class="text-muted small fw-bold">الشراكات النشطة</div>
+                <div class="h4 mb-0 fw-bold text-success">@Model.Stats.ActiveCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+            <div class="card-body">
+                <div class="text-muted small fw-bold">منتهية / متوقفة</div>
+                <div class="h4 mb-0 fw-bold text-danger">@Model.Stats.ExpiredCount</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 rounded-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 mb-4 p-3 bg-light bg-opacity-50 rounded-4 border">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">المحافظة</label>
+                <select class="form-select form-select-sm rounded-3" name="GovernorateId">
+                    <option value="">الكل</option>
+                    @foreach (var item in Model.Governorates)
+                    {
+                        <option value="@item.Value" selected="@(Model.Filter.GovernorateId?.ToString() == item.Value)">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">نوع الشراكة</label>
+                <select class="form-select form-select-sm rounded-3" name="PartnershipType">
+                    <option value="">الكل</option>
+                    @foreach (var t in Enum.GetValues<WaqfSystem.Core.Enums.PartnershipType>())
+                    {
+                        <option value="@t" selected="@(Model.Filter.PartnershipType == t)">@t</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">الحالة</label>
+                <select class="form-select form-select-sm rounded-3" name="IsActive">
+                    <option value="">الكل</option>
+                    <option value="true" selected="@(Model.Filter.IsActive == true)">نشطة</option>
+                    <option value="false" selected="@(Model.Filter.IsActive == false)">موقوفة</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">البحث</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="fas fa-search text-muted"></i></span>
+                    <input class="form-control border-start-0 rounded-end-3" name="SearchTerm" value="@Model.Filter.SearchTerm" placeholder="اسم الشريك، العقار..." />
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary w-100 rounded-3 shadow-sm">تطبيق الفلتر</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light text-secondary small text-uppercase">
+                    <tr>
+                        <th class="ps-3">العقار</th>
+                        <th>الشريك</th>
+                        <th>نوع الشراكة</th>
+                        <th>توزيع الحصص</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>الحالة</th>
+                        <th class="text-center pe-3">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Partnerships.Items)
+                    {
+                        var expiryClass = row.IsExpired ? "text-danger" : row.DaysUntilExpiry.HasValue && row.DaysUntilExpiry <= 30 ? "text-warning" : "text-success";
+                        <tr>
+                            <td class="ps-3">
+                                <div class="fw-bold">@row.PropertyNameAr</div>
+                                <div class="small text-primary font-monospace">@row.PropertyWqfNumber</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@row.PartnerName</div>
+                                <div class="small text-muted"><i class="fas fa-phone-alt me-1"></i> @row.PartnerPhone</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill">@row.PartnershipType</span>
+                            </td>
+                            <td style="min-width:150px;">
+                                <div class="small mb-1 d-flex justify-content-between">
+                                    <span>الوقف: @row.WaqfSharePercent.ToString("N0")%</span>
+                                    <span>@row.PartnerSharePercent.ToString("N0")%</span>
+                                </div>
+                                <div class="progress" style="height:6px;">
+                                    <div class="progress-bar bg-success" style="width:@row.WaqfSharePercent%"></div>
+                                    <div class="progress-bar bg-light shadow-inner" style="width:@row.PartnerSharePercent%"></div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (row.PartnershipEndDate.HasValue)
+                                {
+                                    <div class="small fw-bold @expiryClass">
+                                        <i class="fas fa-calendar-alt me-1"></i> @row.PartnershipEndDate.Value.ToString("yyyy/MM/dd")
+                                    </div>
+                                    @if (!row.IsExpired && row.DaysUntilExpiry.HasValue)
+                                    {
+                                        <div class="x-small text-muted">يتبقي @row.DaysUntilExpiry يوم</div>
+                                    }
+                                }
+                                else { <span class="text-muted small">دائم / غير محدد</span> }
+                            </td>
+                            <td>
+                                <span class="badge @(row.IsExpired ? "bg-danger-subtle text-danger" : row.IsActive ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") rounded-pill px-3">
+                                    @(row.IsExpired ? "منتهية" : row.IsActive ? "نشطة" : "موقوفة")
+                                </span>
+                            </td>
+                            <td class="text-center pe-3">
+                                <div class="btn-group shadow-sm rounded-3 overflow-hidden">
+                                    <a class="btn btn-sm btn-white border-end" href="@Url.Action("Detail", "Partnership", new { id = row.Id })" title="عرض">
+                                        <i class="fas fa-eye text-primary"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-white border-end" href="@Url.Action("Edit", "Partnership", new { id = row.Id })" title="تعديل">
+                                        <i class="fas fa-edit text-info"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-white" title="تعليق" onclick="deactivate(@row.Id)">
+                                        <i class="fas fa-pause-circle text-warning"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+            <div class="text-muted small">إظهار <strong>@Model.Partnerships.Items.Count</strong> من إجمالي <strong>@Model.Partnerships.TotalCount</strong> شراكة</div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0 gap-1">
+                    @for (var i = 1; i <= Model.Partnerships.TotalPages; i++)
+                    {
+                        <li class="page-item @(Model.Partnerships.Page == i ? "active" : "")">
+                            <a class="page-link rounded-circle border-0 @(Model.Partnerships.Page == i ? "" : "bg-white text-dark") shadow-sm" href="@Url.Action("Index", new { Page = i, SearchTerm = Model.Filter.SearchTerm })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+<script>
+function deactivate(id) {
+    var reason = prompt('أدخل سبب التعليق');
+    if (!reason) return;
+    $.post('/Partnership/Deactivate', { id: id, reason: reason })
+        .done(function (res) {
+            if (res.success) {
+                location.reload();
+            } else {
+                alert(res.message);
+            }
+        });
+}
+</script>
+}

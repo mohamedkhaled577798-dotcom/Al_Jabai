@@ -1,0 +1,35 @@
+<div class="modal fade" id="approveRejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">قرار المراجعة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label d-block">القرار</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="reviewDecision" id="decisionApprove" value="approve" checked>
+                        <label class="form-check-label" for="decisionApprove">اعتماد</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="reviewDecision" id="decisionReject" value="reject">
+                        <label class="form-check-label" for="decisionReject">إعادة للتصحيح</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الملاحظات</label>
+                    <textarea class="form-control" id="reviewNotes" rows="4" placeholder="مطلوبة عند الإعادة للتصحيح"></textarea>
+                </div>
+                <div class="p-3 rounded-3 bg-light border">
+                    <div>عدد الإدخالات: <span id="reviewEntriesCount" class="fw-bold">0</span></div>
+                    <div>متوسط الجودة: <span id="reviewAvgDqs" class="fw-bold">0%</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-success" id="confirmReviewDecisionBtn">تأكيد القرار</button>
+            </div>
+        </div>
+    </div>
+</div>

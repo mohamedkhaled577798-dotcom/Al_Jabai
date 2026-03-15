@@ -1,4 +1,4 @@
-﻿namespace AlJabai.Core;
+namespace AlJabai.Core;
 
 public class Class1
 {

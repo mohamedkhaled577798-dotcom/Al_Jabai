@@ -1,0 +1,178 @@
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+@* PARTIAL 1: _WizardStepsBar                                                *@
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+@model WaqfSystem.Web.ViewModels.Properties.PropertyCreateViewModel
+
+@{
+    var steps = new[]
+    {
+        new { Num = 1, Label = "البيانات الأساسية",    Icon = "bi-building" },
+        new { Num = 2, Label = "الموقع الجغرافي",      Icon = "bi-geo-alt" },
+        new { Num = 3, Label = "الخريطة والحدود",       Icon = "bi-map" },
+        new { Num = 4, Label = "تفاصيل البناية",        Icon = "bi-layers" },
+        new { Num = 5, Label = "المستندات",             Icon = "bi-file-earmark-check" }
+    };
+}
+
+<div class="wizard-steps-bar mb-4">
+    <div class="d-flex align-items-center justify-content-between position-relative">
+        @* Connecting line background *@
+        <div class="wizard-line-bg"></div>
+        @* Connecting line progress *@
+        <div class="wizard-line-progress" style="width: @(Model.CurrentStep > 1 ? ((Model.CurrentStep - 1) * 100 / (Model.TotalSteps - 1)) : 0)%"></div>
+
+        @foreach (var step in steps)
+        {
+            string state = step.Num < Model.CurrentStep ? "done" :
+                           step.Num == Model.CurrentStep ? "active" : "pending";
+            <div class="wizard-step @state" title="@step.Label">
+                <div class="wizard-step-circle">
+                    @if (state == "done")
+                    {
+                        <i class="bi bi-check-lg"></i>
+                    }
+                    else
+                    {
+                        <span>@step.Num</span>
+                    }
+                </div>
+                <div class="wizard-step-label d-none d-md-block">@step.Label</div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .wizard-steps-bar {
+        padding: 0 8px;
+    }
+    .wizard-steps-bar > div {
+        position: relative;
+    }
+    .wizard-line-bg {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        left: 30px;
+        height: 3px;
+        background: #dee2e6;
+        z-index: 0;
+    }
+    .wizard-line-progress {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        height: 3px;
+        background: linear-gradient(to left, #0D5C3A, #1D9E75);
+        z-index: 1;
+        transition: width 0.4s ease;
+    }
+    .wizard-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        z-index: 2;
+        position: relative;
+        flex: 1;
+    }
+    .wizard-step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        border: 2px solid #dee2e6;
+        background: #fff;
+        color: #6c757d;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .wizard-step.done .wizard-step-circle {
+        background: #0D5C3A;
+        border-color: #0D5C3A;
+        color: #fff;
+    }
+    .wizard-step.active .wizard-step-circle {
+        background: #0D5C3A;
+        border-color: #0D5C3A;
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(13,92,58,0.18);
+    }
+    .wizard-step.pending .wizard-step-circle {
+        background: #fff;
+        border-color: #dee2e6;
+        color: #adb5bd;
+    }
+    .wizard-step-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-align: center;
+        color: #6c757d;
+        white-space: nowrap;
+    }
+    .wizard-step.active .wizard-step-label {
+        color: #0D5C3A;
+    }
+    .wizard-step.done .wizard-step-label {
+        color: #0D5C3A;
+    }
+</style>
+
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+@* PARTIAL 2: _DqsMeter                                                       *@
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+
+@{
+    int score = Model.DqsScore;
+    string barColor = score >= 70 ? "bg-success" : score >= 50 ? "bg-warning" : "bg-danger";
+}
+
+<div class="card border-0 shadow-sm mb-4 dqs-meter-card">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="flex-shrink-0">
+                <span class="fw-bold text-muted" style="font-size:12px">مؤشر الجودة</span>
+            </div>
+            <div class="flex-grow-1">
+                <div class="progress" style="height:10px; border-radius:8px;">
+                    <div class="progress-bar @barColor"
+                         id="dqsProgressBar"
+                         role="progressbar"
+                         style="width:@score%; transition: width 0.4s ease;"
+                         aria-valuenow="@score"
+                         aria-valuemin="0"
+                         aria-valuemax="100"></div>
+                </div>
+            </div>
+            <div class="flex-shrink-0 d-flex align-items-center gap-2">
+                <span class="fw-bold" id="dqsScoreLabel" style="font-size:16px; color: @(score >= 50 ? "#0D5C3A" : "#dc3545")">@score%</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary py-0 px-2"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#dqsDetails"
+                        aria-expanded="false">
+                    <i class="bi bi-chevron-down" style="font-size:11px"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="collapse mt-2" id="dqsDetails">
+            <div class="row g-1 mt-1">
+                @foreach (var c in Model.DqsCriteria)
+                {
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2 py-1 px-2 rounded" style="background:@(c.Achieved ? "#f0fdf4" : "#fafafa")">
+                            <i class="bi @(c.Achieved ? "bi-check-circle-fill text-success" : "bi-circle text-muted")" style="font-size:13px; flex-shrink:0"></i>
+                            <span style="font-size:11px; flex-grow:1">@c.Label</span>
+                            <span class="badge" style="font-size:10px; background:@(c.Achieved ? "#dcfce7" : "#f3f4f6"); color:@(c.Achieved ? "#0D5C3A" : "#6c757d")">+@c.Weight%</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

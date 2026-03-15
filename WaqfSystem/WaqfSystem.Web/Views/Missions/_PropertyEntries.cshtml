@@ -1,0 +1,57 @@
+@using WaqfSystem.Core.Enums
+@model List<WaqfSystem.Application.DTOs.Mission.MissionPropertyEntryDto>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>رقم العقار</th>
+                <th>الاسم</th>
+                <th>المدخل</th>
+                <th>وقت الإدخال</th>
+                <th>درجة الجودة</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">لا يوجد إدخالات حتى الآن</td>
+                </tr>
+            }
+            else
+            {
+                var i = 1;
+                foreach (var item in Model)
+                {
+                    var dqsClass = item.DqsAtEntry is null ? "bg-secondary" : item.DqsAtEntry < 50 ? "bg-danger" : item.DqsAtEntry < 70 ? "bg-warning text-dark" : "bg-success";
+                    var statusClass = item.EntryStatus switch
+                    {
+                        EntryStatus.Approved => "bg-success",
+                        EntryStatus.Rejected => "bg-danger",
+                        EntryStatus.UnderReview => "bg-warning text-dark",
+                        EntryStatus.Submitted => "bg-primary",
+                        _ => "bg-secondary"
+                    };
+                    <tr>
+                        <td>@i</td>
+                        <td>@(item.PropertyWqfNumber ?? item.LocalId ?? "-")</td>
+                        <td>@(item.PropertyNameAr ?? "غير مسمى")</td>
+                        <td>@item.EnteredByName</td>
+                        <td>@item.EntryStartedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                        <td><span class="badge @dqsClass">@(item.DqsAtEntry?.ToString("0.##") ?? "-")</span></td>
+                        <td><span class="badge @statusClass">@item.EntryStatus</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-success">اعتماد</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger">إعادة</button>
+                        </td>
+                    </tr>
+                    i++;
+                }
+            }
+        </tbody>
+    </table>
+</div>

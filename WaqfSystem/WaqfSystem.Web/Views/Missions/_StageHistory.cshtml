@@ -1,0 +1,39 @@
+@model List<WaqfSystem.Application.DTOs.Mission.MissionStageHistoryDto>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light border text-center py-4">لا يوجد سجل تغييرات بعد</div>
+}
+else
+{
+    <div class="timeline-vertical">
+        @foreach (var item in Model.OrderByDescending(x => x.ChangedAt))
+        {
+            <div class="d-flex gap-3 mb-3">
+                <div class="rounded-circle border border-2 border-primary d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                    <i class="bi bi-arrow-repeat text-primary"></i>
+                </div>
+                <div class="flex-grow-1 border rounded-3 p-3 bg-white">
+                    <div class="fw-bold text-dark">@item.FromStageAr <i class="bi bi-arrow-left-right mx-2"></i> @item.ToStageAr</div>
+                    <div class="small text-muted">@item.ChangedByName قام بـ @item.TriggerAction</div>
+                    <div class="small text-muted">@ToRelativeTime(item.ChangedAt)</div>
+                    @if (!string.IsNullOrWhiteSpace(item.Notes))
+                    {
+                        <div class="mt-2 text-secondary">@item.Notes</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    private string ToRelativeTime(DateTime date)
+    {
+        var span = DateTime.Now - date;
+        if (span.TotalMinutes < 1) return "الآن";
+        if (span.TotalMinutes < 60) return $"منذ {(int)span.TotalMinutes} دقيقة";
+        if (span.TotalHours < 24) return $"منذ {(int)span.TotalHours} ساعة";
+        return $"منذ {(int)span.TotalDays} يوم";
+    }
+}

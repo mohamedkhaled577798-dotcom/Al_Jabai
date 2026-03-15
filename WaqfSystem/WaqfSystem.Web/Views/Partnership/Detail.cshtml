@@ -1,0 +1,296 @@
+@model WaqfSystem.Web.ViewModels.Properties.PartnershipDetailViewModel
+@{
+    ViewData["Title"] = "تفاصيل الشراكة";
+    var p = Model.Partnership;
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">@p.PropertyNameAr <small class="text-muted">@p.PropertyWqfNumber</small></h3>
+            <span class="badge bg-success">@p.PartnershipType</span>
+            @if (p.IsExpired)
+            {
+                <span class="badge bg-danger">منتهية</span>
+            }
+            else if (p.DaysUntilExpiry.HasValue)
+            {
+                <span class="badge bg-warning text-dark">متبقي @p.DaysUntilExpiry يوم</span>
+            }
+            else
+            {
+                <span class="badge bg-success">نشطة</span>
+            }
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-success" href="@Url.Action("Edit", new { id = p.Id })">تعديل</a>
+            <button class="btn btn-outline-danger" onclick="deactivate(@p.Id)">تعليق الشراكة</button>
+            <button class="btn btn-success" onclick="generateStatement()">توليد كشف حساب</button>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+        <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab1" type="button">بيانات الشريك</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab2" type="button">الإيرادات والتوزيعات</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab3" type="button">التواصل مع الشريك</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab4" type="button">الاتفاقية والوثائق</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab5" type="button">سجل التغييرات</button></li>
+    </ul>
+
+    <div class="tab-content border border-top-0 p-3 bg-white">
+        <div class="tab-pane fade show active" id="tab1">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">بيانات الشريك</div>
+                        <div class="card-body">
+                            <p><strong>الاسم:</strong> @p.PartnerName</p>
+                            <p><strong>النوع:</strong> @p.PartnerType</p>
+                            <p><strong>الهاتف:</strong> @p.PartnerPhone</p>
+                            <p><strong>واتساب:</strong> @p.PartnerWhatsApp</p>
+                            <p><strong>البريد:</strong> @p.PartnerEmail</p>
+                            <p><strong>العنوان:</strong> @p.PartnerAddress</p>
+                            <div class="btn-group">
+                                <a class="btn btn-sm btn-outline-success" href="tel:@p.PartnerPhone">📞 اتصال</a>
+                                <a class="btn btn-sm btn-outline-success" href="https://wa.me/@p.PartnerWhatsApp">💬 واتساب</a>
+                                <a class="btn btn-sm btn-outline-success" href="mailto:@p.PartnerEmail">📧 إيميل</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">شكل الشراكة</div>
+                        <div class="card-body">
+                            @if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.RevenuePercent)
+                            {
+                                <div class="donut" style="--p:@p.WaqfSharePercent"></div>
+                                <p class="text-center mt-2">الوقف @p.WaqfSharePercent.ToString("N0")%</p>
+                            }
+                            else if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.FloorOwnership)
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var f in p.OwnedFloorNumbersList)
+                                    {
+                                        <span class="badge bg-success">طابق @f</span>
+                                    }
+                                </div>
+                            }
+                            else if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.UnitOwnership)
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var u in p.OwnedUnitsList)
+                                    {
+                                        <span class="badge bg-success">وحدة @u</span>
+                                    }
+                                </div>
+                            }
+                            else if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.UsufructRight)
+                            {
+                                <div class="progress" style="height:20px;"><div class="progress-bar bg-warning" style="width:100%">حق انتفاع حتى @p.UsufructEndDate?.ToString("yyyy/MM/dd")</div></div>
+                            }
+                            else if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.TimedPartnership)
+                            {
+                                <h4>متبقي @p.DaysUntilExpiry يوم</h4>
+                                <div class="progress" style="height:18px;"><div class="progress-bar bg-success" style="width:@(p.IsExpired ? 100 : 50)%"></div></div>
+                            }
+                            else if (p.PartnershipType == WaqfSystem.Core.Enums.PartnershipType.LandPercent)
+                            {
+                                <div class="progress" style="height:20px;"><div class="progress-bar bg-success" style="width:@(p.LandSharePercentWaqf ?? 0)%">@(p.LandSharePercentWaqf ?? 0)%</div></div>
+                            }
+                            else
+                            {
+                                <h5>🌾 نسبة الوقف من المحصول: @(p.WaqfHarvestPercent ?? 0)%</h5>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab2">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><div class="card"><div class="card-body"><small>إجمالي الإيرادات</small><h5>@p.TotalDistributed.ToString("N0") د.ع</h5></div></div></div>
+                <div class="col-md-4"><div class="card"><div class="card-body"><small>حصة الوقف المحصلة</small><h5>@p.TotalWaqfReceived.ToString("N0") د.ع</h5></div></div></div>
+                <div class="col-md-4"><div class="card"><div class="card-body"><small>قيد التحويل</small><h5>@p.PendingTransferAmount.ToString("N0") د.ع</h5></div></div></div>
+            </div>
+
+            <p><a class="btn btn-success" data-bs-toggle="collapse" href="#newDist">تسجيل توزيع جديد</a></p>
+            <div class="collapse" id="newDist">
+                <form method="post" asp-action="RecordRevenue" class="card card-body mb-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PartnershipId" value="@p.Id" />
+                    <div class="row g-2">
+                        <div class="col-md-3"><input class="form-control" name="PeriodLabel" placeholder="الفترة" required /></div>
+                        <div class="col-md-2"><input type="date" class="form-control" name="PeriodStartDate" required /></div>
+                        <div class="col-md-2"><input type="date" class="form-control" name="PeriodEndDate" required /></div>
+                        <div class="col-md-3"><input type="number" step="0.01" class="form-control" id="newTotalRevenue" name="TotalRevenue" placeholder="إجمالي الإيراد" required /></div>
+                        <div class="col-md-2"><button class="btn btn-success w-100" type="submit">حفظ</button></div>
+                        <div class="col-md-4"><input class="form-control" name="TransferMethod" placeholder="طريقة التحويل (اختياري)" /></div>
+                        <div class="col-md-8"><input class="form-control" name="Notes" placeholder="ملاحظات" /></div>
+                        <div class="col-12"><div class="alert alert-light border mb-0" id="newRevenuePreview">حصة الوقف: - | حصة الشريك: - | طريقة الحساب: -</div></div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light"><tr><th>الفترة</th><th>الإيراد الكلي</th><th>حصة الوقف</th><th>حصة الشريك</th><th>التحويل</th><th>الإجراءات</th></tr></thead>
+                    <tbody>
+                        @foreach (var d in Model.Distributions)
+                        {
+                            var statusClass = d.TransferStatus == WaqfSystem.Core.Enums.TransferStatus.Pending ? "bg-warning text-dark" : d.TransferStatus == WaqfSystem.Core.Enums.TransferStatus.Transferred ? "bg-success" : "bg-danger";
+                            <tr>
+                                <td>@d.PeriodLabel</td>
+                                <td>@d.TotalRevenue.ToString("N0") د.ع</td>
+                                <td>@d.WaqfAmount.ToString("N0") د.ع</td>
+                                <td>@d.PartnerAmount.ToString("N0") د.ع</td>
+                                <td><span class="badge @statusClass">@d.TransferStatus</span></td>
+                                <td>
+                                    @if (d.TransferStatus == WaqfSystem.Core.Enums.TransferStatus.Pending)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" onclick="markTransferred(@d.Id)">تأكيد التحويل</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab3">
+            <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#sendMsgModal">إرسال رسالة جديدة</button>
+            <div id="contactTimeline">
+                @await Html.PartialAsync("_ContactHistory", Model.ContactHistory)
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab4">
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>تاريخ الاتفاقية:</strong> @p.AgreementDate?.ToString("yyyy/MM/dd")</p>
+                    <p><strong>كاتب العدل:</strong> @p.AgreementNotaryName</p>
+                    <p><strong>المحكمة:</strong> @p.AgreementCourt</p>
+                    <p><strong>رقم المرجع:</strong> @p.AgreementReferenceNo</p>
+                    @if (!string.IsNullOrWhiteSpace(p.AgreementDocUrl))
+                    {
+                        <a class="btn btn-outline-success" href="@p.AgreementDocUrl" target="_blank">عرض/تحميل المستند</a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab5">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead><tr><th>التاريخ</th><th>المستخدم</th><th>التغيير</th><th>القيمة القديمة</th><th>القيمة الجديدة</th></tr></thead>
+                    <tbody><tr><td colspan="5" class="text-center text-muted">يتم عرض السجل من جدول التدقيق عبر الخدمات الخلفية</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="sendMsgModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">إرسال رسالة جديدة</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="msgPartnershipId" value="@p.Id" />
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">نوع التواصل</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <label class="btn btn-outline-success"><input type="radio" name="msgType" value="SMS" checked /> 💬 SMS</label>
+                            <label class="btn btn-outline-success"><input type="radio" name="msgType" value="WhatsApp" /> 📱 واتساب</label>
+                            <label class="btn btn-outline-success"><input type="radio" name="msgType" value="Email" /> 📧 إيميل</label>
+                            <label class="btn btn-outline-success"><input type="radio" name="msgType" value="Phone" /> 📞 هاتف</label>
+                            <label class="btn btn-outline-success"><input type="radio" name="msgType" value="Meeting" /> 🤝 لقاء</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12" id="msgSubjectWrap" style="display:none;"><label class="form-label">الموضوع</label><input id="msgSubject" class="form-control" /></div>
+                    <div class="col-md-12"><label class="form-label">الرسالة</label><textarea id="msgBody" class="form-control" rows="4" maxlength="160"></textarea><small class="text-muted" id="msgCounter">0/160</small></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-success" onclick="sendMessage()">إرسال</button></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<style>
+.donut {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: 10px auto;
+    background: conic-gradient(#198754 calc(var(--p) * 1%), #d9dee3 0);
+    position: relative;
+}
+.donut::after {
+    content: '';
+    position: absolute;
+    inset: 24px;
+    background: #fff;
+    border-radius: 50%;
+}
+</style>
+<script>
+$('#newTotalRevenue').on('input', function() {
+    $.get('/Partnership/PreviewRevenue', { partnershipId: @p.Id, totalRevenue: $(this).val() })
+        .done(function(res){
+            $('#newRevenuePreview').text('حصة الوقف: ' + Number(res.waqfAmount).toLocaleString('en-US') + ' د.ع | حصة الشريك: ' + Number(res.partnerAmount).toLocaleString('en-US') + ' د.ع | طريقة الحساب: ' + res.calculationMethod);
+        });
+});
+
+$('input[name="msgType"]').on('change', function(){
+    $('#msgSubjectWrap').toggle($('input[name="msgType"]:checked').val() === 'Email');
+});
+
+$('#msgBody').on('input', function(){
+    $('#msgCounter').text($(this).val().length + '/160');
+});
+
+function markTransferred(id) {
+    var method = prompt('أدخل طريقة التحويل');
+    if (!method) return;
+    var reference = prompt('أدخل رقم المرجع');
+    if (!reference) return;
+    $.post('/Partnership/MarkTransferred', { distributionId: id, method: method, reference: reference })
+        .done(function(res){ if(res.success) location.reload(); else alert(res.message); });
+}
+
+function sendMessage(){
+    $.post('/Partnership/SendMessage', {
+        PartnershipId: $('#msgPartnershipId').val(),
+        ContactType: $('input[name="msgType"]:checked').val(),
+        Subject: $('#msgSubject').val(),
+        MessageBody: $('#msgBody').val()
+    }).done(function(res){
+        if(res.success){
+            location.reload();
+        } else {
+            alert(res.message);
+        }
+    });
+}
+
+function deactivate(id){
+    var reason = prompt('أدخل سبب التعليق');
+    if(!reason) return;
+    $.post('/Partnership/Deactivate', { id:id, reason:reason }).done(function(r){
+        if(r.success) location.reload(); else alert(r.message);
+    });
+}
+
+function generateStatement(){
+    const from = new Date();
+    from.setMonth(from.getMonth() - 12);
+    const to = new Date();
+    const f = from.toISOString().slice(0,10);
+    const t = to.toISOString().slice(0,10);
+    window.open('/Partnership/GenerateStatement?partnershipId=@p.Id&from=' + f + '&to=' + t, '_blank');
+}
+</script>
+}

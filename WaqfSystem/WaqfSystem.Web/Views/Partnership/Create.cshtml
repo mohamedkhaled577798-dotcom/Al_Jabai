@@ -1,0 +1,412 @@
+@model WaqfSystem.Web.ViewModels.Properties.PartnershipCreateViewModel
+@{
+    ViewData["Title"] = "إضافة شراكة";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800"><i class="fas fa-handshake-plus me-2"></i> إضافة شريك وأملاك ملحقة</h2>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary rounded-pill px-4"><i class="fas fa-arrow-right me-1"></i> العودة للقائمة</a>
+    </div>
+
+    @if (Model.Form.PropertyId > 0)
+    {
+        <div class="alert alert-primary border-0 shadow-sm rounded-4 d-flex align-items-center p-3 mb-4">
+            <i class="fas fa-building fs-3 me-3"></i>
+            <div>
+                <div class="fw-bold">العقار المستهدف: @Model.PropertyName</div>
+                <div class="small">رقم الوقف: @Model.PropertyWqfNumber</div>
+            </div>
+        </div>
+    }
+
+    <form method="post" enctype="multipart/form-data" asp-action="Create" class="needs-validation" novalidate id="partnershipForm">
+        @Html.AntiForgeryToken()
+        @if (Model.Form.PropertyId > 0)
+        {
+            <input asp-for="Form.PropertyId" type="hidden" />
+        }
+        <input asp-for="Form.PartnershipType" type="hidden" id="partnershipTypeInput" value="RevenuePercent" />
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-header bg-white py-3 border-bottom border-light">
+                        <h5 class="card-title mb-0 fw-bold">1) بيانات العقار والشراكة</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        @if (Model.Form.PropertyId == 0)
+                        {
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">اختر العقار</label>
+                                <select asp-for="Form.PropertyId" class="form-select form-select-lg rounded-3 select2-property" asp-items="Model.Properties" required>
+                                    <option value="">-- اختر العقار من القائمة --</option>
+                                </select>
+                                <div class="invalid-feedback">يرجى اختيار العقار أولاً.</div>
+                            </div>
+                        }
+
+                        <label class="form-label fw-bold mb-3">نوع الشراكة <span class="text-danger">*</span></label>
+                        <div class="row g-2 mb-4" id="partnershipTypeCards">
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm active border-primary bg-primary-subtle" data-type="RevenuePercent" onclick="selectPartnershipType('RevenuePercent', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-percent me-2 text-primary"></i> نسبة من الإيراد</div>
+                                    <div class="tiny text-muted mt-1 small">الوقف يأخذ نسبة % من مجمل الإيرادات</div>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm" data-type="FloorOwnership" onclick="selectPartnershipType('FloorOwnership', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-layer-group me-2 text-info"></i> ملكية طوابق</div>
+                                    <div class="tiny text-muted mt-1 small">الوقف يمتلك طوابق محددة في البناء</div>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm" data-type="UnitOwnership" onclick="selectPartnershipType('UnitOwnership', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-door-open me-2 text-success"></i> ملكية عينية (وحدات)</div>
+                                    <div class="tiny text-muted mt-1 small">الوقف يمتلك شقق أو محلات محددة</div>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm" data-type="UsufructRight" onclick="selectPartnershipType('UsufructRight', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-history me-2 text-warning"></i> حق انتفاع</div>
+                                    <div class="tiny text-muted mt-1 small">انتفاع الشريك بالعقار مقابل رسوم سنوية</div>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm" data-type="LandPercent" onclick="selectPartnershipType('LandPercent', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-seedling me-2 text-success"></i> نسبة من الأرض</div>
+                                    <div class="tiny text-muted mt-1 small">ملكية جزء من الأرض الزراعية</div>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="button" class="btn btn-outline-light w-100 text-end p-3 type-card border shadow-sm" data-type="TimedPartnership" onclick="selectPartnershipType('TimedPartnership', this)">
+                                    <div class="fw-bold text-dark"><i class="fas fa-calendar-alt me-2 text-danger"></i> شراكة مؤقتة</div>
+                                    <div class="tiny text-muted mt-1 small">شراكة بنسبة تنتهي تلقائياً بتاريخ محدد</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="partnershipConfigs" class="p-4 bg-light rounded-4 border-0 mb-4">
+                            <h6 class="fw-bold mb-3" id="configTitle">إعدادات الشراكة المختارة</h6>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label small fw-bold">نسبة الوقف المئوية (%)</label>
+                                    <input type="range" class="form-range" id="waqfShareSlider" min="1" max="99" value="60" oninput="syncSliderInput('waqfShareSlider','waqfShareInput')" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">القيمة</label>
+                                    <div class="input-group">
+                                        <input asp-for="Form.WaqfSharePercent" class="form-control text-center fw-bold" id="waqfShareInput" value="60" step="0.01" oninput="syncSliderInput('waqfShareSlider','waqfShareInput')" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-12 text-center py-2">
+                                    <span class="badge bg-success-subtle text-success fs-6 border border-success" id="shareDisplay">حصة الوقف: 60.00% | حصة الشريك: 40.00%</span>
+                                </div>
+                            </div>
+
+                            <div id="sectionUsufructRight" class="dynamic-section mt-4" style="display:none;">
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label small fw-bold">الرسوم السنوية</label><div class="input-group"><input asp-for="Form.UsufructAnnualFeePerYear" class="form-control" placeholder="0.00" /><span class="input-group-text">د.ع</span></div></div>
+                                    <div class="col-md-3"><label class="form-label small fw-bold">بدء الانتفاع</label><input asp-for="Form.UsufructStartDate" type="date" class="form-control" /></div>
+                                    <div class="col-md-3"><label class="form-label small fw-bold">انتهاء الانتفاع</label><input asp-for="Form.UsufructEndDate" type="date" class="form-control" /></div>
+                                </div>
+                            </div>
+                            
+                            <div id="sectionTimedPartnership" class="dynamic-section mt-4" style="display:none;">
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label small fw-bold">تاريخ بدء الشراكة</label><input asp-for="Form.PartnershipStartDate" type="date" class="form-control" /></div>
+                                    <div class="col-md-6"><label class="form-label small fw-bold">تاريخ الانتهاء التلقائي</label><input asp-for="Form.PartnershipEndDate" type="date" class="form-control" /></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 border-top pt-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">دورة توزيع الإيرادات</label>
+                                <select asp-for="Form.RevenueDistribMethod" class="form-select rounded-3">
+                                    <option value="Monthly">شهري</option>
+                                    <option value="Quarterly">ربع سنوي</option>
+                                    <option value="SemiAnnual">نصف سنوي</option>
+                                    <option value="Annual">سنوي</option>
+                                    <option value="PerCollection">عند كل تحصيل</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">يوم التوزيع المفضل</label>
+                                <input asp-for="Form.RevenueDistribDay" type="number" class="form-control" min="1" max="28" value="1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-header bg-white py-3 border-bottom border-light d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold">2) بيانات الشريك (المستثمر)</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="togglePartnerSearch()"><i class="fas fa-search me-1"></i> البحث عن شريك مسجل</button>
+                    </div>
+                    <div class="card-body p-4">
+                        <div id="partnerSearchSection" style="display:none;" class="mb-4 bg-primary-subtle p-3 rounded-4 border border-primary">
+                            <label class="form-label small fw-bold text-primary">ابحث عن اسم شريك موجود مسبقاً</label>
+                            <select id="partnerSearchSelect" class="form-select border-primary rounded-pill"></select>
+                            <div class="form-text text-primary-emphasis mt-1 small">عند اختيار شريك، سيتم ملء البيانات آلياً.</div>
+                        </div>
+
+                        <!-- Partner Type Tabs -->
+                        <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded-pill" id="partnerTypeTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active rounded-pill px-4" id="individual-tab" data-bs-toggle="pill" data-bs-target="#individual-panel" type="button" role="tab" onclick="setPartnerType('Individual')">
+                                    <i class="fas fa-user me-2"></i> شخص (فرد)
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link rounded-pill px-4" id="company-tab" data-bs-toggle="pill" data-bs-target="#company-panel" type="button" role="tab" onclick="setPartnerType('Company')">
+                                    <i class="fas fa-building-columns me-2"></i> شركة / مؤسسة
+                                </button>
+                            </li>
+                        </ul>
+                        <input type="hidden" asp-for="Form.PartnerType" id="partnerTypeHidden" value="Individual" />
+
+                        <div class="row g-3 px-2">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold" id="partnerNameLabel">اسم الشريك الكامل</label>
+                                <input asp-for="Form.PartnerName" id="partnerNameInput" class="form-control rounded-3" placeholder="الاسم كما في الهوية / السجل التجاري" required />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold" id="partnerIdLabel">الرقم الوطني / الهوية</label>
+                                <input asp-for="Form.PartnerNationalId" id="partnerIdInput" class="form-control rounded-3" placeholder="أدخل رقم الهوية أو السجل" />
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold"><i class="fas fa-phone me-1"></i> هاتف التواصل</label>
+                                <input asp-for="Form.PartnerPhone" id="partnerPhoneInput" class="form-control rounded-3" dir="ltr" placeholder="07xxxxxxxxx" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold"><i class="fab fa-whatsapp me-1 text-success"></i> واتساب</label>
+                                <input asp-for="Form.PartnerWhatsApp" id="partnerWhatsAppInput" class="form-control rounded-3" dir="ltr" placeholder="07xxxxxxxxx" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">البريد الإلكتروني</label>
+                                <input asp-for="Form.PartnerEmail" id="partnerEmailInput" type="email" class="form-control rounded-3" placeholder="example@mail.com" />
+                            </div>
+                            
+                            <div id="companyExtraSection" style="display:none;" class="row g-3 p-0 m-0 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">اسم المدير المفوض / الممثل</label>
+                                    <input asp-for="Form.PartnerNameEn" id="partnerNameEnInput" class="form-control rounded-3" placeholder="الاسم الكامل للممثل القانوني" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">رقم تسجيل الشركة</label>
+                                    <input asp-for="Form.PartnerRegistrationNo" id="partnerRegNoInput" class="form-control rounded-3" placeholder="رقم التسجيل في الغرفة التجارية" />
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold">العنوان السكني / مقر الشركة</label>
+                                <input asp-for="Form.PartnerAddress" id="partnerAddressInput" class="form-control rounded-3" placeholder="المحافظة - القضاء - الحي" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 rounded-4 mb-4 text-center p-3 bg-light">
+                    <div class="small text-muted mb-2">معاينة التوزيع (افتراضي)</div>
+                    <div class="h4 fw-bold text-success mb-0" id="previewWaqfVal">0.00 د.ع</div>
+                    <div class="tiny text-muted mt-1">من أرباح افتراضية مليون د.ع</div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-header bg-white py-3 border-bottom border-light">
+                        <h5 class="card-title mb-0 fw-bold">3) توثيق الاتفاقية</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">تاريخ توقيع الاتفاقية</label>
+                            <input asp-for="Form.AgreementDate" type="date" class="form-control rounded-3" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">رقم مرجع الاتفاقية</label>
+                            <input asp-for="Form.AgreementReferenceNo" class="form-control rounded-3" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">ملف الاتفاقية الممسوح</label>
+                            <input name="agreementFile" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">ملاحظات إضافية</label>
+                            <textarea asp-for="Form.Notes" class="form-control rounded-3" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-4 mb-4 bg-light border-start border-4 border-primary">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3">حفظ البيانات</h6>
+                        <p class="small text-muted mb-4">بتأكيد الإضافة، سيتم تسجيل الشراكة وإرسال تنبيه آلي للشريك.</p>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow">
+                            <i class="fas fa-save me-2"></i> حفظ واشتراك بنجاح
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        function selectPartnershipType(type, el) {
+            $('.type-card').removeClass('active border-primary bg-primary-subtle');
+            $(el).addClass('active border-primary bg-primary-subtle');
+            $('#partnershipTypeInput').val(type);
+            $('.dynamic-section').hide();
+            $('#section' + type).show();
+            updateShareDisplay();
+        }
+
+        function setPartnerType(type) {
+            $('#partnerTypeHidden').val(type);
+            var isCompany = (type === 'Company');
+            
+            if (isCompany) {
+                $('#companyExtraSection').slideDown();
+                $('#partnerNameLabel').text('اسم الشركة / المؤسسة');
+                $('#partnerIdLabel').text('رقم السجل التجاري / الهوية الضريبية');
+            } else {
+                $('#companyExtraSection').slideUp();
+                $('#partnerNameLabel').text('اسم الشريك الكامل (الفرد)');
+                $('#partnerIdLabel').text('الرقم الوطني / هوية الأحوال');
+            }
+        }
+
+        function togglePartnerSearch() {
+            $("#partnerSearchSection").slideToggle();
+        }
+
+        function syncSliderInput(sliderId, inputId) {
+            const val = $('#' + sliderId).val();
+            $('#' + inputId).val(val);
+            updateShareDisplay();
+        }
+
+        function updateShareDisplay() {
+            const waqf = parseFloat($('#waqfShareInput').val()) || 0;
+            const partner = 100 - waqf;
+            $('#shareDisplay').text(`حصة الوقف: ${waqf.toFixed(2)}% | حصة الشريك: ${partner.toFixed(2)}%`);
+            
+            // Preview calc based on 1M IQD
+            const previewVal = (waqf / 100) * 1000000;
+            $('#previewWaqfVal').text(previewVal.toLocaleString() + ' د.ع');
+        }
+
+        $(function() {
+            // Initialize Select2 for Partner Search
+            $('#partnerSearchSelect').select2({
+                placeholder: 'ابحث عن اسم شريك أو رقم هاتف...',
+                minimumInputLength: 2,
+                ajax: {
+                    url: '/Partnership/GetPartners',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return { term: params.term };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: $.map(data, function (item) {
+                                return {
+                                    text: item.partnerName + " (" + item.partnerPhone + ")",
+                                    id: item.id,
+                                    partnerData: item
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                }
+            });
+
+            // Handle Partner Selection
+            $('#partnerSearchSelect').on('select2:select', function (e) {
+                var data = e.params.data.partnerData;
+                
+                // Auto-fill fields
+                $("#partnerNameInput").val(data.partnerName);
+                $("#partnerIdInput").val(data.partnerNationalId);
+                $("#partnerPhoneInput").val(data.partnerPhone);
+                $("#partnerWhatsAppInput").val(data.partnerWhatsApp);
+                $("#partnerEmailInput").val(data.partnerEmail);
+                $("#partnerAddressInput").val(data.partnerAddress);
+                $("#partnerNameEnInput").val(data.partnerNameEn);
+                $("#partnerRegNoInput").val(data.partnerRegistrationNo);
+
+                // Set Tab and Type
+                if (data.partnerType === 'Company') {
+                    bootstrap.Tab.getOrCreateInstance(document.querySelector('#company-tab')).show();
+                    setPartnerType('Company');
+                } else {
+                    bootstrap.Tab.getOrCreateInstance(document.querySelector('#individual-tab')).show();
+                    setPartnerType('Individual');
+                }
+                
+                // Close search section
+                togglePartnerSearch();
+            });
+
+            updateShareDisplay();
+            const currentType = $('#partnerTypeHidden').val() || 'Individual';
+            setPartnerType(currentType);
+
+            // Additional Logic for dynamic fields
+            $('input[name="Form.RevenueDistribMethod"]').on('change', function () {
+                const v = $(this).val();
+                if (v === 'Monthly') $('#monthlyDayWrap').show(); else $('#monthlyDayWrap').hide();
+            });
+
+            $('#ownedFloors').on('change', function () {
+                const box = $('#selectedFloorsBadges');
+                box.empty();
+                $(this).find(':selected').each(function () {
+                    box.append('<span class="badge bg-success me-1">' + $(this).text() + '</span>');
+                });
+            });
+
+            $('#ownedUnits').on('change', function () {
+                const box = $('#selectedUnitsBadges');
+                box.empty();
+                $(this).find(':selected').each(function () {
+                    box.append('<span class="badge bg-success me-1">' + $(this).text() + '</span>');
+                });
+            });
+
+            $('#usufructAnnual').on('input', function () {
+                const annual = parseFloat($(this).val() || '0');
+                const monthly = annual / 12;
+                $('#monthlyEquivalent').text('أي ما يعادل ' + monthly.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' د.ع/شهر');
+            });
+
+            $('#landShare, #landTotal').on('input', function () {
+                const s = parseFloat($('#landShare').val() || '0');
+                const t = parseFloat($('#landTotal').val() || '0');
+                $('#waqfLandDunumDisplay').val(((s / 100) * t).toFixed(2));
+            });
+
+            $('#timedStart, #timedEnd').on('change', function () {
+                const start = new Date($('#timedStart').val());
+                const end = new Date($('#timedEnd').val());
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    $('#timedDuration').text('مدة الشراكة: -');
+                    return;
+                }
+                const years = ((end - start) / (1000 * 60 * 60 * 24 * 365)).toFixed(1);
+                $('#timedDuration').text('مدة الشراكة: ' + years + ' سنة');
+            });
+        });
+    </script>
+}

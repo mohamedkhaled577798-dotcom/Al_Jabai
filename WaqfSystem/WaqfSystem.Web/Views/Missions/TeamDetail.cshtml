@@ -1,0 +1,75 @@
+@model WaqfSystem.Web.ViewModels.Mission.TeamDetailViewModel
+@{
+    ViewData["Title"] = "تفاصيل الفريق";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="fw-bold mb-0">@Model.Team.TeamName</h2>
+            <div class="text-muted">@Model.Team.TeamCode - @Model.Team.GovernorateNameAr</div>
+        </div>
+        <a asp-action="Teams" class="btn btn-light">رجوع</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="small">عدد الأعضاء</div><div class="h4">@Model.Team.Members.Count</div></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="small">المهام النشطة</div><div class="h4">@Model.Team.ActiveMissionCount</div></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body text-center"><div class="small">المكتملة هذا الشهر</div><div class="h4">@Model.RecentMissions.Count(x=>x.StageDisplayAr=="مكتملة")</div></div></div></div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-bold">الأعضاء</div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light"><tr><th>الموظف</th><th>الدور</th><th>الهاتف</th><th>الانضمام</th><th>المهام النشطة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.Team.Members)
+                    {
+                        <tr>
+                            <td>@m.FullName</td><td>@m.Role</td><td>@m.Phone</td><td>@m.JoinedAt.ToString("yyyy/MM/dd")</td><td>@m.ActiveMissionCount</td><td>@(m.IsActive?"نشط":"غير نشط")</td>
+                            <td><button class="btn btn-sm btn-outline-danger remove-member-btn" data-user-id="@m.UserId">إزالة</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-bold">إضافة عضو</div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-9"><select id="newMemberSelect" class="form-select">@foreach(var e in Model.AvailableEmployees){<option value="@e.Value">@e.Text</option>}</select></div>
+                <div class="col-md-3 d-grid"><button class="btn btn-primary" id="addMemberBtn">إضافة للفريق</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-bold">آخر 10 مهام</div>
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light"><tr><th>الكود</th><th>العنوان</th><th>المرحلة</th><th>التاريخ</th><th>التقدم</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.RecentMissions)
+                    {
+                        <tr><td>@m.MissionCode</td><td>@m.Title</td><td><span class="badge" style="background:@m.StageColor">@m.StageDisplayAr</span></td><td>@m.MissionDate.ToString("yyyy/MM/dd")</td><td>@m.ProgressPercent%</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $('#addMemberBtn').on('click', function(){
+        $.post('@Url.Action("AddTeamMember")', { teamId: @Model.Team.Id, userId: $('#newMemberSelect').val() }, function(){ location.reload(); });
+    });
+    $('.remove-member-btn').on('click', function(){
+        if (!confirm('هل أنت متأكد من إزالة العضو؟')) return;
+        $.post('@Url.Action("RemoveTeamMember")', { teamId: @Model.Team.Id, userId: $(this).data('user-id') }, function(){ location.reload(); });
+    });
+</script>
+}

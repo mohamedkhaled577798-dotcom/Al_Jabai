@@ -1,0 +1,42 @@
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إسناد / إعادة إسناد المهمة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">عنوان المهمة</label>
+                    <input type="text" class="form-control" id="assignMissionTitle" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الموظف</label>
+                    <select class="form-select" id="assignEmployeeSelect"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الفريق (اختياري)</label>
+                    <select class="form-select" id="assignTeamSelect"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ملاحظات الإسناد</label>
+                    <textarea class="form-control" id="assignNotes" rows="3"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">تاريخ الإنجاز المتوقع</label>
+                        <input type="date" class="form-control" id="assignExpectedDate" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">المراجع</label>
+                        <select class="form-select" id="assignReviewer"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="saveAssignBtn">حفظ الإسناد</button>
+            </div>
+        </div>
+    </div>
+</div>
