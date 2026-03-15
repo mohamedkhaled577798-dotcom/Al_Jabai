@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WaqfSystem.Core.Interfaces;
 using WaqfSystem.Core.Entities;
+using WaqfSystem.Infrastructure.Authorization;
 
 namespace WaqfSystem.Web.Controllers
 {
-    [Authorize(Roles = "SYS_ADMIN")]
+    [Authorize]
+    [RequirePermission(PermissionKeys.Admin_ManageUsers)]
     public class UserController : BaseController
     {
         private readonly IUnitOfWork _unitOfWork;

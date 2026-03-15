@@ -7,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using FluentValidation;
 using WaqfSystem.Application;
 using WaqfSystem.Application.Services;
+using WaqfSystem.Application.Validators;
 using WaqfSystem.Infrastructure;
 using WaqfSystem.Web.Hubs;
 
@@ -17,6 +19,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Layered DI Registration
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddAdminPanel(builder.Configuration);
+builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleValidator>();
 builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddSignalR();
 
@@ -105,6 +109,7 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAdminPanel();
 app.UseSession(); // must be before MapControllerRoute
 
 app.MapHub<MissionHub>("/hubs/missions");

@@ -582,9 +582,118 @@ public class GisApiController : ControllerBase
     }
 
     #endregion
+
+    #region Sync Endpoints
+
+    [AllowAnonymous]
+    [HttpPost("features/sync")]
+    public async Task<IActionResult> SyncFeature([FromBody] FeatureSyncDto dto)
+    {
+        try
+        {
+            var property = await _unitOfWork.WaqfProperties.Query()
+                .FirstOrDefaultAsync(p => p.Code == dto.WqfNumber);
+
+            var isNew = false;
+            if (property == null)
+            {
+                isNew = true;
+                // Get default relations
+                var waqfOffice = await _unitOfWork.Repository<WaqfOffice>().Query().FirstOrDefaultAsync();
+                var propertyType = await _unitOfWork.Repository<PropertyType>().Query().FirstOrDefaultAsync();
+                var province = await _unitOfWork.Repository<Province>().Query().FirstOrDefaultAsync();
+
+                property = new WaqfProperty
+                {
+                    Code = dto.WqfNumber ?? GenerateCode("WQF"),
+                    WaqfOfficeId = waqfOffice?.Id ?? 1,
+                    PropertyTypeId = propertyType?.Id ?? 1,
+                    ProvinceId = province?.Id ?? 1,
+                    CreatedBy = "SystemSync"
+                };
+            }
+
+            property.NameAr = dto.Name ?? "Unknown Property";
+            
+            if (dto.Latitude.HasValue && dto.Longitude.HasValue)
+            {
+                property.Location = _geometryService.CreatePoint(dto.Longitude.Value, dto.Latitude.Value);
+            }
+
+            if (isNew)
+            {
+                await _unitOfWork.WaqfProperties.AddAsync(property);
+            }
+            else
+            {
+                property.UpdatedBy = "SystemSync";
+            }
+            
+            await _unitOfWork.SaveChangesAsync();
+
+            // Also add boundary if polygon is provided
+            if (!string.IsNullOrEmpty(dto.Polygon))
+            {
+                var geometry = _geometryService.FromGeoJson(dto.Polygon);
+                if (geometry is Polygon polygon)
+                {
+                    if (!_geometryService.IsValid(polygon))
+                        polygon = (Polygon?)_geometryService.MakeValid(polygon);
+
+                    var existingBoundary = await _unitOfWork.Repository<PropertyBoundary>().Query()
+                        .FirstOrDefaultAsync(b => b.PropertyId == property.Id && b.BoundaryType == "Building");
+
+                    if (existingBoundary != null)
+                    {
+                        existingBoundary.Boundary = polygon;
+                        existingBoundary.CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon);
+                        existingBoundary.PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon);
+                        existingBoundary.UpdatedBy = "SystemSync";
+                    }
+                    else
+                    {
+                        var boundary = new PropertyBoundary
+                        {
+                            PropertyId = property.Id,
+                            Boundary = polygon,
+                            BoundaryType = "Building",
+                            CalculatedAreaSqm = _geometryService.CalculateAreaSquareMeters(polygon),
+                            PerimeterMeters = _geometryService.CalculatePerimeterMeters(polygon),
+                            CreatedBy = "SystemSync"
+                        };
+                        await _unitOfWork.Repository<PropertyBoundary>().AddAsync(boundary);
+                    }
+                    
+                    property.TotalArea = (decimal?)_geometryService.CalculateAreaSquareMeters(polygon);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+            }
+
+            return Ok(new { success = true, featureId = property.Id.ToString() });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    #endregion
 }
 
 #region DTOs
+
+public class FeatureSyncDto
+{
+    public string? FeatureId { get; set; }
+    public string? WqfNumber { get; set; }
+    public string? Name { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? Polygon { get; set; }
+    public string? PropertyType { get; set; }
+    public string? LayerName { get; set; }
+}
+
 
 public class GeometryDto
 {

@@ -1,0 +1,329 @@
+@model WaqfSystem.Web.ViewModels.Admin.UsersViewModel
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+    var total = Model.Users.TotalCount;
+    var active = Model.Users.Items.Count(x => x.IsActive);
+    var locked = Model.Users.Items.Count(x => x.IsLocked);
+    var mustChange = Model.Users.Items.Count(x => !x.IsLocked && x.IsActive);
+}
+@using System.Text.Json
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">إدارة المستخدمين</h2>
+        <a class="btn btn-primary" href="/Admin/CreateUser">إضافة مستخدم جديد</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card"><div class="card-body"><small class="text-muted">إجمالي</small><div class="h5">@total</div></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><small class="text-muted">نشطون</small><div class="h5 text-success">@active</div></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><small class="text-muted">مقفولون</small><div class="h5 text-danger">@locked</div></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><small class="text-muted">يجب تغيير كلمة المرور</small><div class="h5 text-warning">@mustChange</div></div></div></div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header" data-bs-toggle="collapse" data-bs-target="#filterBox" style="cursor:pointer">تصفية النتائج</div>
+        <div id="filterBox" class="collapse show">
+            <div class="card-body">
+                <form method="get" class="row g-2">
+                    <div class="col-md-3"><input class="form-control" name="SearchTerm" value="@Model.Filter.SearchTerm" placeholder="بحث" /></div>
+                    <div class="col-md-2"><select class="form-select" name="RoleId"><option value="">كل الأدوار</option>@foreach(var r in Model.Roles){<option value="@r.Value" selected="@(Model.Filter.RoleId?.ToString()==r.Value)">@r.Text</option>}</select></div>
+                    <div class="col-md-2"><select class="form-select" name="GovernorateId"><option value="">كل المحافظات</option>@foreach(var g in Model.Governorates){<option value="@g.Value" selected="@(Model.Filter.GovernorateId?.ToString()==g.Value)">@g.Text</option>}</select></div>
+                    <div class="col-md-2"><select class="form-select" name="IsActive"><option value="">الكل</option><option value="true">نشط</option><option value="false">موقوف</option></select></div>
+                    <div class="col-md-1"><button class="btn btn-primary w-100">بحث</button></div>
+                    <div class="col-md-2"><a class="btn btn-light w-100" href="/Admin/Users">إعادة ضبط</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>المستخدم</th><th>الدور</th><th>المحافظة</th><th>آخر دخول</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                @foreach (var user in Model.Users.Items)
+                {
+                    var initials = string.Join("", user.FullNameAr.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x.Substring(0, 1)));
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle text-white d-flex justify-content-center align-items-center me-2" style="width:40px;height:40px;background:#0D5C3A">@initials</div>
+                                <div><div>@user.FullNameAr</div><small class="text-muted">@user.Email</small></div>
+                            </div>
+                        </td>
+                        <td><span class="badge" style="background-color:@(user.RoleColor ?? "#0D5C3A")22;color:@(user.RoleColor ?? "#0D5C3A")"><i class="bi @(user.RoleIcon ?? "bi-person")"></i> @user.RoleDisplayNameAr</span></td>
+                        <td>@(user.GovernorateNameAr ?? "-")</td>
+                        <td>@(user.LastLoginAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
+                        <td>
+                            @if (user.IsLocked) { <span class="badge text-bg-danger">مقفول</span> }
+                            else if (user.IsActive) { <span class="badge text-bg-success">نشط</span> }
+                            else { <span class="badge text-bg-secondary">موقوف</span> }
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">إجراءات</button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/Admin/UserDetail/@user.Id">عرض التفاصيل</a></li>
+                                    <li><a class="dropdown-item" href="/Admin/EditUser/@user.Id">تعديل البيانات</a></li>
+                                    <li>
+                                        <button
+                                            class="dropdown-item"
+                                            data-user-id="@user.Id"
+                                            data-user-name="@user.FullNameAr"
+                                            data-role-id="@Model.RoleDetails.FirstOrDefault(r => r.Name == user.RoleName)?.Id ?? 0"
+                                            onclick="openAssignRoleModal(this)">
+                                            تعيين الدور والنطاق
+                                        </button>
+                                    </li>
+                                    <li><button class="dropdown-item" onclick="resetPass(@user.Id)">إعادة تعيين كلمة المرور</button></li>
+                                    <li><button class="dropdown-item" onclick="toggleActive(@user.Id, @user.IsActive.ToString().ToLower())">@(user.IsActive ? "إيقاف" : "تفعيل")</button></li>
+                                    <li><button class="dropdown-item" onclick="toggleLock(@user.Id, @user.IsLocked.ToString().ToLower())">@(user.IsLocked ? "فك القفل" : "قفل الحساب")</button></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="assignRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعيين دور ونطاق جغرافي</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignUserId" />
+                <div class="mb-2 text-muted" id="assignUserName"></div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">الدور</label>
+                        <select id="assignRoleId" class="form-select" onchange="onAssignRoleChanged()">
+                            <option value="">اختر الدور</option>
+                            @foreach (var role in Model.RoleDetails)
+                            {
+                                <option value="@role.Id">@role.DisplayNameAr</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12" id="assignGeoHint" style="display:none">
+                        <div class="alert alert-info py-2 mb-0">اختيارك للدور يحدد مستوى النطاق المسموح. يمكن اختيار أكثر من عنصر بكل مستوى.</div>
+                    </div>
+                    <div class="col-md-6" id="assignGovWrap" style="display:none">
+                        <label class="form-label">المحافظات</label>
+                        <select id="assignGovernorateIds" class="form-select" multiple size="6" onchange="onAssignGovernoratesChanged()">
+                            @foreach (var gov in Model.Governorates)
+                            {
+                                <option value="@gov.Value">@gov.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="assignDistrictWrap" style="display:none">
+                        <label class="form-label">الأقضية</label>
+                        <select id="assignDistrictIds" class="form-select" multiple size="6" onchange="onAssignDistrictsChanged()"></select>
+                    </div>
+                    <div class="col-md-6" id="assignSubDistrictWrap" style="display:none">
+                        <label class="form-label">النواحي</label>
+                        <select id="assignSubDistrictIds" class="form-select" multiple size="6"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="submitAssignRole()">حفظ التعيين</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const roleMeta = @Html.Raw(JsonSerializer.Serialize(Model.RoleDetails.Select(r => new { id = r.Id, geographicScopeLevel = (int)r.GeographicScopeLevel, hasGlobalScope = r.HasGlobalScope })));
+const roleMetaMap = new Map(roleMeta.map(function(item){ return [item.id, item]; }));
+let assignSelection = { governorateIds: [], districtIds: [], subDistrictIds: [], governorateId: null, districtId: null, subDistrictId: null };
+
+function resetPass(id){
+    $.post('/Admin/ResetPassword', { id: id }, function(res){
+        if(res.success){ alert('كلمة المرور المؤقتة: ' + res.data.tempPassword); }
+        else{ alert(res.message); }
+    });
+}
+function toggleActive(id, isActive){
+    if(isActive){
+        $.post('/Admin/DeactivateUser', { id: id, reason: 'إيقاف من لوحة الإدارة' }, function(){ location.reload(); });
+    }else{
+        $.post('/Admin/ActivateUser', { id: id }, function(){ location.reload(); });
+    }
+}
+function toggleLock(id, isLocked){
+    if(isLocked){
+        $.post('/Admin/UnlockUser', { id: id }, function(){ location.reload(); });
+    }else{
+        $.post('/Admin/LockUser', { id: id, reason: 'قفل إداري' }, function(){ location.reload(); });
+    }
+}
+
+function selectedIntValues(selector){
+    return ($(selector).val() || []).map(function(v){ return parseInt(v); }).filter(function(v){ return !isNaN(v); });
+}
+
+function openAssignRoleModal(element){
+    const userId = parseInt($(element).data('user-id'));
+    const userName = $(element).data('user-name');
+    const currentRoleId = parseInt($(element).data('role-id')) || 0;
+
+    $('#assignUserId').val(userId);
+    $('#assignUserName').text('المستخدم: ' + userName);
+    $('#assignRoleId').val(currentRoleId > 0 ? currentRoleId : '');
+
+    $.get('/Admin/GetUserScopeSelection', { userId: userId }, function(res){
+        if(res.success && res.data){
+            assignSelection = {
+                governorateIds: res.data.governorateIds || [],
+                districtIds: res.data.districtIds || [],
+                subDistrictIds: res.data.subDistrictIds || [],
+                governorateId: res.data.governorateId,
+                districtId: res.data.districtId,
+                subDistrictId: res.data.subDistrictId
+            };
+
+            $('#assignGovernorateIds').val(assignSelection.governorateIds.map(function(v){ return v.toString(); }));
+            onAssignRoleChanged();
+        }
+    });
+
+    new bootstrap.Modal(document.getElementById('assignRoleModal')).show();
+}
+
+function onAssignRoleChanged(){
+    const roleId = parseInt($('#assignRoleId').val());
+    const meta = roleMetaMap.get(roleId);
+    const isGlobal = !meta || meta.hasGlobalScope || meta.geographicScopeLevel === 0;
+    const scopeLevel = meta ? meta.geographicScopeLevel : 0;
+
+    $('#assignGeoHint').toggle(!isGlobal);
+    $('#assignGovWrap').toggle(!isGlobal && scopeLevel >= 1);
+    $('#assignDistrictWrap').toggle(!isGlobal && scopeLevel >= 2);
+    $('#assignSubDistrictWrap').toggle(!isGlobal && scopeLevel >= 3);
+
+    if(isGlobal || scopeLevel < 1){
+        $('#assignGovernorateIds').val([]);
+    }
+    if(isGlobal || scopeLevel < 2){
+        $('#assignDistrictIds').empty();
+    }
+    if(isGlobal || scopeLevel < 3){
+        $('#assignSubDistrictIds').empty();
+    }
+
+    if(!isGlobal && scopeLevel >= 2){
+        onAssignGovernoratesChanged();
+    }
+}
+
+function onAssignGovernoratesChanged(){
+    const governorateIds = selectedIntValues('#assignGovernorateIds');
+    const previousDistricts = assignSelection.districtIds || [];
+    const previousSubDistricts = assignSelection.subDistrictIds || [];
+
+    $('#assignDistrictIds').empty();
+    $('#assignSubDistrictIds').empty();
+
+    if(governorateIds.length === 0){
+        return;
+    }
+
+    const calls = governorateIds.map(function(governorateId){
+        return $.get('/Admin/GetDistricts', { governorateId: governorateId });
+    });
+
+    $.when.apply($, calls).done(function(){
+        const responses = calls.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        const map = new Map();
+
+        responses.forEach(function(response){
+            const payload = response[0];
+            if(!payload.success || !payload.data) return;
+            payload.data.forEach(function(item){ map.set(item.id.toString(), item); });
+        });
+
+        map.forEach(function(item){
+            const selected = previousDistricts.includes(item.id) ? ' selected' : '';
+            $('#assignDistrictIds').append('<option value="'+item.id+'"'+selected+'>'+item.nameAr+'</option>');
+        });
+
+        onAssignDistrictsChanged(previousSubDistricts);
+    });
+}
+
+function onAssignDistrictsChanged(previousSubDistricts){
+    const districtIds = selectedIntValues('#assignDistrictIds');
+    const previous = Array.isArray(previousSubDistricts) ? previousSubDistricts : (assignSelection.subDistrictIds || []);
+    $('#assignSubDistrictIds').empty();
+
+    if(districtIds.length === 0){
+        return;
+    }
+
+    const calls = districtIds.map(function(districtId){
+        return $.get('/Admin/GetSubDistricts', { districtId: districtId });
+    });
+
+    $.when.apply($, calls).done(function(){
+        const responses = calls.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        const map = new Map();
+
+        responses.forEach(function(response){
+            const payload = response[0];
+            if(!payload.success || !payload.data) return;
+            payload.data.forEach(function(item){ map.set(item.id.toString(), item); });
+        });
+
+        map.forEach(function(item){
+            const selected = previous.includes(item.id) ? ' selected' : '';
+            $('#assignSubDistrictIds').append('<option value="'+item.id+'"'+selected+'>'+item.nameAr+'</option>');
+        });
+    });
+}
+
+function submitAssignRole(){
+    const payload = {
+        userId: parseInt($('#assignUserId').val()),
+        roleId: parseInt($('#assignRoleId').val()),
+        governorateIds: selectedIntValues('#assignGovernorateIds'),
+        districtIds: selectedIntValues('#assignDistrictIds'),
+        subDistrictIds: selectedIntValues('#assignSubDistrictIds')
+    };
+
+    payload.governorateId = payload.governorateIds.length > 0 ? payload.governorateIds[0] : null;
+    payload.districtId = payload.districtIds.length > 0 ? payload.districtIds[0] : null;
+    payload.subDistrictId = payload.subDistrictIds.length > 0 ? payload.subDistrictIds[0] : null;
+
+    if(!payload.roleId){
+        alert('اختر الدور أولا');
+        return;
+    }
+
+    $.ajax({
+        url: '/Admin/AssignRole',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: function(res){
+            if(res.success){
+                location.reload();
+                return;
+            }
+
+            alert(res.message || 'حدث خطأ أثناء حفظ التعيين');
+        }
+    });
+}
+</script>
+}

@@ -1,0 +1,86 @@
+@model WaqfSystem.Web.ViewModels.Admin.RolesViewModel
+@{
+    ViewData["Title"] = "الأدوار والصلاحيات";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">الأدوار والصلاحيات</h2>
+        <a href="/Admin/CreateRole" class="btn btn-primary">إنشاء دور جديد</a>
+    </div>
+
+    <div class="row g-3">
+        @foreach (var role in Model.Roles)
+        {
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width:44px;height:44px;background-color:@(role.Color ?? "#0D5C3A")22;color:@(role.Color ?? "#0D5C3A")">
+                                <i class="bi @(role.Icon ?? "bi-shield")"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold">@role.DisplayNameAr</div>
+                                <span class="badge text-bg-light" style="font-family:monospace">@role.Name</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small">@role.Description</p>
+                        <div class="mb-2">
+                            <span class="badge text-bg-secondary">@role.UserCount مستخدم</span>
+                            <span class="badge text-bg-info">@role.PermissionCount صلاحية</span>
+                            @if (role.IsSystemRole)
+                            {
+                                <span class="badge text-bg-dark">نظامي</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" onclick="openPerm(@role.Id)">تعديل الصلاحيات</button>
+                        <a href="/Admin/EditRole/@role.Id" class="btn btn-sm btn-outline-primary">تعديل البيانات</a>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRole(@role.Id)" @(role.IsSystemRole || role.UserCount > 0 ? "disabled" : "")>حذف</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="permModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">تعديل مصفوفة الصلاحيات</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="permBody"></div>
+            <div class="modal-footer"><button class="btn btn-success" onclick="savePerms()">حفظ الصلاحيات</button></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentRoleId = 0;
+function openPerm(roleId){
+    currentRoleId = roleId;
+    $('#permBody').html('<div class="text-center p-4">جاري التحميل...</div>');
+    $.get('/Admin/EditRole/' + roleId, function(html){
+        const view = $('<div/>').html(html).find('#permissionMatrix').html() || 'لا توجد صلاحيات';
+        $('#permBody').html(view);
+        new bootstrap.Modal(document.getElementById('permModal')).show();
+    });
+}
+function savePerms(){
+    const ids = [];
+    $('#permBody input[type=checkbox]:checked').each(function(){ ids.push(parseInt($(this).val())); });
+    $.post('/Admin/SetPermissions', { roleId: currentRoleId, permissionIds: ids }, function(res){
+        if(res.success){ location.reload(); }
+        else{ alert(res.message); }
+    });
+}
+function deleteRole(id){
+    if(!confirm('هل تريد حذف الدور؟')) return;
+    $.post('/Admin/DeleteRole', { id: id }, function(res){
+        if(res.success){ location.reload(); }
+        else{ alert(res.message); }
+    });
+}
+</script>
+}

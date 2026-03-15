@@ -33,10 +33,13 @@ namespace WaqfSystem.Core.Entities
         public string? NameEn { get; set; }
         public string Code { get; set; } = string.Empty;
         public string? GisLayerId { get; set; }
+        public string? PostalCode { get; set; }
         public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public int? CreatedById { get; set; }
 
         public virtual Country Country { get; set; } = null!;
         public virtual ICollection<District> Districts { get; set; } = new List<District>();
@@ -52,9 +55,11 @@ namespace WaqfSystem.Core.Entities
         public string Code { get; set; } = string.Empty;
         public string? GisLayerId { get; set; }
         public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public int? CreatedById { get; set; }
 
         public virtual Governorate Governorate { get; set; } = null!;
         public virtual ICollection<SubDistrict> SubDistricts { get; set; } = new List<SubDistrict>();
@@ -70,9 +75,11 @@ namespace WaqfSystem.Core.Entities
         public string Code { get; set; } = string.Empty;
         public string? GisLayerId { get; set; }
         public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public int? CreatedById { get; set; }
 
         public virtual District District { get; set; } = null!;
         public virtual ICollection<Neighborhood> Neighborhoods { get; set; } = new List<Neighborhood>();
@@ -86,11 +93,15 @@ namespace WaqfSystem.Core.Entities
         public string NameAr { get; set; } = string.Empty;
         public string? NameEn { get; set; }
         public string Code { get; set; } = string.Empty;
+        public string Type { get; set; } = "City";
+        public string? PostalCode { get; set; }
         public string? GisLayerId { get; set; }
         public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public int? CreatedById { get; set; }
 
         public virtual SubDistrict SubDistrict { get; set; } = null!;
         public virtual ICollection<Street> Streets { get; set; } = new List<Street>();
@@ -105,10 +116,14 @@ namespace WaqfSystem.Core.Entities
         public string? NameEn { get; set; }
         public string Code { get; set; } = string.Empty;
         public string? GisLayerId { get; set; }
+        public string? GisLineId { get; set; }
+        public string? StreetType { get; set; }
         public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public int? CreatedById { get; set; }
 
         public virtual Neighborhood Neighborhood { get; set; } = null!;
     }

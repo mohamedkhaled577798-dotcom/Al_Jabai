@@ -35,13 +35,15 @@ namespace WaqfSystem.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notifications;
         private readonly IGeographicService _geo;
+        private readonly IGeographicScopeService _geographicScopeService;
         private readonly ILogger<MissionService> _logger;
 
-        public MissionService(IUnitOfWork unitOfWork, INotificationService notifications, IGeographicService geo, ILogger<MissionService> logger)
+        public MissionService(IUnitOfWork unitOfWork, INotificationService notifications, IGeographicService geo, IGeographicScopeService geographicScopeService, ILogger<MissionService> logger)
         {
             _unitOfWork = unitOfWork;
             _notifications = notifications;
             _geo = geo;
+            _geographicScopeService = geographicScopeService;
             _logger = logger;
         }
 
@@ -792,6 +794,9 @@ namespace WaqfSystem.Application.Services
                 .ThenInclude(x => x!.Members)
                 .AsQueryable();
 
+            var geoScope = await _geographicScopeService.BuildScopeAsync(userId, userRole);
+            query = _geographicScopeService.ApplyToMissions(query, geoScope);
+
             if (userRole == "FIELD_INSPECTOR")
             {
                 query = query.Where(x => x.AssignedToUserId == userId);
@@ -801,11 +806,6 @@ namespace WaqfSystem.Application.Services
                 var memberTeamIds = await _unitOfWork.GetQueryable<InspectionTeamMember>().Where(x => x.UserId == userId && x.IsActive).Select(x => x.TeamId).ToListAsync();
                 var teamUserIds = await _unitOfWork.GetQueryable<InspectionTeamMember>().Where(x => memberTeamIds.Contains(x.TeamId) && x.IsActive).Select(x => x.UserId).Distinct().ToListAsync();
                 query = query.Where(x => (x.AssignedToUserId.HasValue && teamUserIds.Contains(x.AssignedToUserId.Value)) || x.ReviewerUserId == userId);
-            }
-            else if (userRole == "REGIONAL_MGR")
-            {
-                var myGov = await _unitOfWork.GetQueryable<User>().Where(x => x.Id == userId).Select(x => x.GovernorateId).FirstOrDefaultAsync();
-                query = query.Where(x => x.GovernorateId == myGov);
             }
 
             return query;

@@ -1,0 +1,120 @@
+@model WaqfSystem.Web.ViewModels.Admin.GeographicViewModel
+@{
+    ViewData["Title"] = "إدارة التسلسل الجغرافي";
+}
+
+<div class="container-fluid">
+    <h2 class="mb-3">إدارة التسلسل الجغرافي</h2>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-2"><div class="card"><div class="card-body text-center"><small>المحافظات</small><div class="h5">@Model.Governorates.Count</div></div></div></div>
+        <div class="col-md-2"><div class="card"><div class="card-body text-center"><small>الأقضية</small><div class="h5">@Model.TotalCounts.Districts</div></div></div></div>
+        <div class="col-md-2"><div class="card"><div class="card-body text-center"><small>النواحي</small><div class="h5">@Model.TotalCounts.SubDistricts</div></div></div></div>
+        <div class="col-md-2"><div class="card"><div class="card-body text-center"><small>الأحياء</small><div class="h5">@Model.TotalCounts.Neighborhoods</div></div></div></div>
+        <div class="col-md-2"><div class="card"><div class="card-body text-center"><small>الشوارع</small><div class="h5">@Model.TotalCounts.Streets</div></div></div></div>
+    </div>
+
+    <div class="sticky-top bg-white border rounded p-2 mb-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge text-bg-dark">العراق</span>
+            <select class="form-select w-auto" id="govSel" onchange="navigateTo('district', this.value, this.options[this.selectedIndex].text)"><option value="">اختر محافظة</option>@foreach(var g in Model.Governorates){<option value="@g.Id">@g.NameAr</option>}</select>
+            <select class="form-select w-auto" id="distSel" onchange="navigateTo('subdistrict', this.value, this.options[this.selectedIndex].text)"><option value="">اختر قضاء</option></select>
+            <select class="form-select w-auto" id="subSel" onchange="navigateTo('neighborhood', this.value, this.options[this.selectedIndex].text)"><option value="">اختر ناحية</option></select>
+            <select class="form-select w-auto" id="neighSel" onchange="navigateTo('street', this.value, this.options[this.selectedIndex].text)"><option value="">اختر حي</option></select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span id="levelTitle">محافظات العراق</span>
+            <button class="btn btn-sm btn-primary" onclick="showAddForm()">إضافة</button>
+        </div>
+        <div class="card-body">
+            <div id="addForm" class="collapse mb-3 border rounded p-3">
+                <div class="row g-2" id="formInputs"></div>
+                <div class="mt-2 d-flex gap-2"><button class="btn btn-success btn-sm" onclick="saveNew()">حفظ</button><button class="btn btn-light btn-sm" onclick="$('#addForm').collapse('hide')">إلغاء</button></div>
+            </div>
+            <div class="table-responsive">
+                <table class="table" id="geoTable">
+                    <thead><tr><th>الاسم</th><th>الاسم بالإنجليزي</th><th>الكود</th><th>GIS</th><th>الترتيب</th><th>عدد الأبناء</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.Governorates)
+                    {
+                        <tr data-id="@item.Id" data-level="governorate">
+                            <td>@item.NameAr</td><td>@item.NameEn</td><td>@item.Code</td><td>@item.GisLayerId</td><td>@item.SortOrder</td><td>@item.DistrictCount</td>
+                            <td><span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">@(item.IsActive ? "نشط" : "موقوف")</span></td>
+                            <td><button class="btn btn-sm btn-outline-primary" onclick="editRow(@item.Id,'governorate')">تعديل</button> <button class="btn btn-sm btn-outline-secondary" onclick="toggleActive(@item.Id,'governorate')">تفعيل/إيقاف</button></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentLevel='governorate';
+let parentId=null;
+function loadLevel(level, pid){
+    currentLevel = level; parentId = pid || null;
+    if(level==='district') $.get('/Admin/GetDistricts',{governorateId:pid},res=>renderTable(level,res.data));
+    if(level==='subdistrict') $.get('/Admin/GetSubDistricts',{districtId:pid},res=>renderTable(level,res.data));
+    if(level==='neighborhood') $.get('/Admin/GetNeighborhoods',{subDistrictId:pid},res=>renderTable(level,res.data));
+    if(level==='street') $.get('/Admin/GetStreets',{neighborhoodId:pid},res=>renderTable(level,res.data));
+}
+function renderTable(level, items){
+    let html='';
+    items.forEach(x=>{
+        html += `<tr data-id="${x.id}" data-level="${level}"><td>${x.nameAr}</td><td>${x.nameEn||''}</td><td>${x.code||''}</td><td>${x.gisLayerId||x.gisLineId||''}</td><td>${x.sortOrder||0}</td><td>${x.districtCount||x.subDistrictCount||x.neighborhoodCount||x.streetCount||0}</td><td><span class="badge ${x.isActive?'text-bg-success':'text-bg-secondary'}">${x.isActive?'نشط':'موقوف'}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="editRow(${x.id},'${level}')">تعديل</button> <button class="btn btn-sm btn-outline-secondary" onclick="toggleActive(${x.id},'${level}')">تفعيل/إيقاف</button></td></tr>`;
+    });
+    $('#geoTable tbody').html(html);
+}
+function showAddForm(){
+    $('#addForm').collapse('show');
+    let extra='';
+    if(currentLevel==='neighborhood') extra = '<div class="col-md-3"><input class="form-control" id="Type" placeholder="النوع" value="City"></div>';
+    if(currentLevel==='street') extra = '<div class="col-md-3"><input class="form-control" id="StreetType" placeholder="نوع الشارع"></div><div class="col-md-3"><input class="form-control" id="GisLineId" placeholder="GisLineId"></div>';
+    $('#formInputs').html(`<div class="col-md-3"><input class="form-control" id="NameAr" placeholder="الاسم العربي"></div><div class="col-md-2"><input class="form-control" id="NameEn" placeholder="الاسم الإنجليزي"></div><div class="col-md-2"><input class="form-control" id="Code" placeholder="الكود"></div><div class="col-md-2"><input class="form-control" id="GisLayerId" placeholder="GIS Layer"></div><div class="col-md-2"><input class="form-control" id="SortOrder" type="number" value="0"></div>${extra}`);
+}
+function saveNew(){
+    const data = { nameAr:$('#NameAr').val(), nameEn:$('#NameEn').val(), code:$('#Code').val(), gisLayerId:$('#GisLayerId').val(), sortOrder:parseInt($('#SortOrder').val()||0) };
+    if(currentLevel==='governorate') $.post('/Admin/CreateGovernorate', data, ()=>location.reload());
+    if(currentLevel==='district') $.post('/Admin/CreateDistrict', Object.assign(data,{governorateId:parentId}), ()=>loadLevel('district', parentId));
+    if(currentLevel==='subdistrict') $.post('/Admin/CreateSubDistrict', Object.assign(data,{districtId:parentId}), ()=>loadLevel('subdistrict', parentId));
+    if(currentLevel==='neighborhood') $.post('/Admin/CreateNeighborhood', Object.assign(data,{subDistrictId:parentId,type:$('#Type').val()}), ()=>loadLevel('neighborhood', parentId));
+    if(currentLevel==='street') $.post('/Admin/CreateStreet', Object.assign(data,{neighborhoodId:parentId,streetType:$('#StreetType').val(),gisLineId:$('#GisLineId').val()}), ()=>loadLevel('street', parentId));
+}
+function editRow(id, level){
+    const row = $(`#geoTable tr[data-id='${id}']`);
+    const values = row.children().map(function(){ return $(this).text().trim(); }).get();
+    row.html(`<td><input class='form-control form-control-sm' value='${values[0]}'></td><td><input class='form-control form-control-sm' value='${values[1]}'></td><td><input class='form-control form-control-sm' value='${values[2]}'></td><td><input class='form-control form-control-sm' value='${values[3]}'></td><td><input class='form-control form-control-sm' type='number' value='${values[4]||0}'></td><td>${values[5]}</td><td>${values[6]}</td><td><button class='btn btn-sm btn-success' onclick="saveEdit(${id},'${level}',this)">✓</button> <button class='btn btn-sm btn-light' onclick='location.reload()'>✗</button></td>`);
+}
+function saveEdit(id, level, btn){
+    const tds = $(btn).closest('tr').find('input');
+    const data = { id:id, nameAr:tds.eq(0).val(), nameEn:tds.eq(1).val(), code:tds.eq(2).val(), gisLayerId:tds.eq(3).val(), sortOrder:parseInt(tds.eq(4).val()||0), isActive:true };
+    if(level==='governorate') $.post('/Admin/UpdateGovernorate', data, ()=>location.reload());
+    if(level==='district') $.post('/Admin/UpdateDistrict', Object.assign(data,{governorateId:parentId}), ()=>loadLevel(level,parentId));
+    if(level==='subdistrict') $.post('/Admin/UpdateSubDistrict', Object.assign(data,{districtId:parentId}), ()=>loadLevel(level,parentId));
+    if(level==='neighborhood') $.post('/Admin/UpdateNeighborhood', Object.assign(data,{subDistrictId:parentId,type:'City'}), ()=>loadLevel(level,parentId));
+    if(level==='street') $.post('/Admin/UpdateStreet', Object.assign(data,{neighborhoodId:parentId}), ()=>loadLevel(level,parentId));
+}
+function toggleActive(id, level){
+    const url = level==='governorate'?'/Admin/ToggleGovernorate':level==='district'?'/Admin/ToggleDistrict':level==='subdistrict'?'/Admin/ToggleSubDistrict':level==='neighborhood'?'/Admin/ToggleNeighborhood':'/Admin/ToggleStreet';
+    $.post(url,{id:id},function(){ if(level==='governorate') location.reload(); else loadLevel(level,parentId); });
+}
+function navigateTo(level,id,name){
+    if(!id) return;
+    if(level==='district'){ loadLevel('district', id); $.get('/Admin/GetDistricts',{governorateId:id},res=>fillSelect('#distSel',res.data)); }
+    if(level==='subdistrict'){ loadLevel('subdistrict', id); $.get('/Admin/GetSubDistricts',{districtId:id},res=>fillSelect('#subSel',res.data)); }
+    if(level==='neighborhood'){ loadLevel('neighborhood', id); $.get('/Admin/GetNeighborhoods',{subDistrictId:id},res=>fillSelect('#neighSel',res.data)); }
+    if(level==='street'){ loadLevel('street', id); }
+}
+function fillSelect(sel, items){
+    let opt='<option value="">اختر</option>';
+    items.forEach(x=> opt += `<option value="${x.id}">${x.nameAr}</option>`);
+    $(sel).html(opt);
+}
+</script>
+}

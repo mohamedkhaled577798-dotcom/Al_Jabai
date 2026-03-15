@@ -1,0 +1,116 @@
+@model WaqfSystem.Web.ViewModels.Admin.CreateEditRoleViewModel
+@{
+    ViewData["Title"] = Model.IsEditMode ? "تعديل دور" : "إضافة دور";
+}
+
+<div class="container-fluid">
+    <h3 class="mb-4">@(Model.IsEditMode ? "تعديل بيانات الدور" : "إنشاء دور جديد")</h3>
+    <form method="post" asp-action="@(Model.IsEditMode ? "EditRole" : "CreateRole")">
+        @Html.AntiForgeryToken()
+        @if (Model.IsEditMode)
+        {
+            <input type="hidden" name="Id" value="@Model.RoleId" />
+        }
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">اسم الدور</label>
+                <input class="form-control" name="Name" value="@Model.Role.Name" @(Model.IsEditMode ? "readonly" : "") />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">الاسم العربي</label>
+                <input class="form-control" name="DisplayNameAr" value="@Model.Role.DisplayNameAr" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">الاسم الإنجليزي</label>
+                <input class="form-control" name="DisplayNameEn" value="@Model.Role.DisplayNameEn" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">الوصف</label>
+                <textarea class="form-control" name="Description" rows="3">@Model.Role.Description</textarea>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">مستوى النطاق الجغرافي</label>
+                <select class="form-select" name="GeographicScopeLevel">
+                    <option value="0" selected="@(Model.Role.GeographicScopeLevel == WaqfSystem.Core.Enums.GeographicScopeLevel.None)">بدون تقييد</option>
+                    <option value="1" selected="@(Model.Role.GeographicScopeLevel == WaqfSystem.Core.Enums.GeographicScopeLevel.Governorate)">محافظة</option>
+                    <option value="2" selected="@(Model.Role.GeographicScopeLevel == WaqfSystem.Core.Enums.GeographicScopeLevel.District)">قضاء</option>
+                    <option value="3" selected="@(Model.Role.GeographicScopeLevel == WaqfSystem.Core.Enums.GeographicScopeLevel.SubDistrict)">ناحية</option>
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input type="hidden" name="HasGlobalScope" value="false" />
+                    <input class="form-check-input" type="checkbox" name="HasGlobalScope" value="true" @(Model.Role.HasGlobalScope ? "checked" : "") />
+                    <label class="form-check-label">صلاحية شاملة على جميع المناطق</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">اللون</label>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    @foreach (var color in Model.AvailableColors)
+                    {
+                        <button type="button" class="btn p-0 rounded-circle border" style="width:28px;height:28px;background:@color" onclick="document.getElementById('Color').value='@color';"></button>
+                    }
+                </div>
+                <input id="Color" class="form-control" name="Color" value="@Model.Role.Color" placeholder="#0D5C3A" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">الأيقونة</label>
+                <input class="form-control mb-2" id="iconSearch" placeholder="بحث عن أيقونة" />
+                <div class="border rounded p-2" style="height:120px;overflow:auto">
+                    @foreach (var icon in Model.AvailableIcons)
+                    {
+                        <button type="button" class="btn btn-sm btn-light m-1 icon-item" data-icon="@icon" onclick="document.getElementById('Icon').value='@icon';"><i class="bi @icon"></i> @icon</button>
+                    }
+                </div>
+                <input id="Icon" class="form-control mt-2" name="Icon" value="@Model.Role.Icon" />
+            </div>
+        </div>
+
+        @if (Model.IsEditMode)
+        {
+            <hr />
+            <div id="permissionMatrix">
+                @foreach (var group in Model.PermissionGroups)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between">
+                            <span>@group.ModuleDisplayAr</span>
+                            <span class="small text-muted">@group.Permissions.Count صلاحية</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @foreach (var perm in group.Permissions)
+                                {
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="@perm.Id" @(Model.SelectedPermissionIds.Contains(perm.Id) ? "checked" : "") />
+                                            <label class="form-check-label" title="@perm.Description">@perm.DisplayNameAr</label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="mt-3 d-flex gap-2">
+            <a href="/Admin/Roles" class="btn btn-light">إلغاء</a>
+            <button class="btn btn-primary">حفظ</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+$('#iconSearch').on('input', function(){
+    const q = $(this).val().toLowerCase();
+    $('.icon-item').each(function(){
+        $(this).toggle($(this).data('icon').toLowerCase().includes(q));
+    });
+});
+</script>
+}
