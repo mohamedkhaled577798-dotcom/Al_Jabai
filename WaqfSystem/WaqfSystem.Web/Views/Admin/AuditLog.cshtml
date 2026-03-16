@@ -1,0 +1,57 @@
+@model WaqfSystem.Web.ViewModels.Admin.AuditLogViewModel
+@{
+    ViewData["Title"] = "سجل التدقيق والعمليات";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">سجل التدقيق والعمليات</h2>
+        <button class="btn btn-success" onclick="exportExcel()">تصدير Excel</button>
+    </div>
+
+    <form method="get" class="card mb-3">
+        <div class="card-body row g-2">
+            <div class="col-md-2"><input class="form-control" name="UserId" value="@Model.Filter.UserId" placeholder="رقم المستخدم" /></div>
+            <div class="col-md-2"><select class="form-select" name="EntityType"><option value="">كل الأنواع</option>@foreach(var e in Model.EntityTypes){<option value="@e.Value" selected="@(Model.Filter.EntityType==e.Value)">@e.Text</option>}</select></div>
+            <div class="col-md-2"><input class="form-control" name="Action" value="@Model.Filter.Action" placeholder="العملية" /></div>
+            <div class="col-md-2"><input type="date" class="form-control" name="DateFrom" value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><input type="date" class="form-control" name="DateTo" value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><input class="form-control" name="SearchTerm" value="@Model.Filter.SearchTerm" placeholder="بحث" /></div>
+            <div class="col-12 d-flex gap-2"><button class="btn btn-primary">تطبيق</button><a href="/Admin/AuditLog" class="btn btn-light">إعادة ضبط</a></div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>النوع</th><th>الكيان</th><th>التفاصيل</th></tr></thead>
+                <tbody>
+                @foreach (var log in Model.Logs.Items)
+                {
+                    var cls = log.Action.Contains("CREATE") ? "text-bg-success" : log.Action.Contains("UPDATE") ? "text-bg-primary" : log.Action.Contains("DELETE") ? "text-bg-danger" : "text-bg-secondary";
+                    <tr>
+                        <td>@log.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                        <td>@log.UserName</td>
+                        <td><span class="badge @cls">@log.Action</span></td>
+                        <td>@log.EntityType</td>
+                        <td>@log.EntityId</td>
+                        <td>
+                            <details>
+                                <summary>عرض</summary>
+                                <pre class="small mb-0">@(log.OldValues ?? "")
+@(log.NewValues ?? "")</pre>
+                            </details>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function exportExcel(){ alert('سيتم توفير التصدير في إصدار لاحق.'); }
+</script>
+}

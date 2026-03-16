@@ -1,0 +1,97 @@
+@model WaqfSystem.Web.ViewModels.Admin.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "لوحة تحكم الأدمن";
+    var totalGeo = Model.Dashboard.TotalDistricts + Model.Dashboard.TotalSubDistricts;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">لوحة تحكم الأدمن</h2>
+        <span class="badge bg-dark-subtle text-dark">@User.Identity?.Name</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">إجمالي المستخدمين</div><div class="h4 mb-0">@Model.Dashboard.TotalUsers</div></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">نشطون</div><div class="h4 mb-0 text-success">@Model.Dashboard.ActiveUsers</div></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">مقفولون</div><div class="h4 mb-0 text-danger">@Model.Dashboard.LockedUsers</div></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">الأدوار</div><div class="h4 mb-0">@Model.Dashboard.TotalRoles</div></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">المحافظات</div><div class="h4 mb-0">@Model.Dashboard.TotalGovernates</div></div></div></div>
+        <div class="col-lg-2 col-md-4 col-6"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">الأقضية والنواحي</div><div class="h4 mb-0">@totalGeo</div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-primary w-100" href="/Admin/Users">👥 إدارة المستخدمين</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-success w-100" href="/Admin/Roles">🛡️ الأدوار والصلاحيات</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-info w-100" href="/Admin/Geographic">🗺️ التسلسل الجغرافي</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-secondary w-100" href="/Admin/AuditLog">📋 سجل التدقيق</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-warning w-100" href="/Admin/Users?mustChangePassword=true">🔑 إعادة تعيين كلمات المرور</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-danger w-100" href="/Admin/Users?isLocked=true">⚠️ الحسابات المقفولة</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-outline-dark w-100" href="/Admin/Users?isActive=false">📊 المستخدمون غير النشطين</a></div>
+        <div class="col-md-3"><a class="btn btn-lg btn-light border w-100" href="#">⚙️ إعدادات النظام</a></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">توزيع المستخدمين حسب الدور</div>
+                <div class="card-body">
+                    @{
+                        var totalByRole = Model.Dashboard.UsersByRole.Values.Sum();
+                    }
+                    @foreach (var item in Model.Dashboard.UsersByRole)
+                    {
+                        var pct = totalByRole == 0 ? 0 : Math.Round((item.Value * 100.0) / totalByRole, 1);
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small"><span>@item.Key</span><span>@item.Value (@pct%)</span></div>
+                            <div class="progress" style="height:10px;"><div class="progress-bar bg-success" style="width:@pct%"></div></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">ملخص التسلسل الجغرافي</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between"><span>محافظة</span><span>@Model.Dashboard.TotalGovernates</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>قضاء</span><span>@Model.Dashboard.TotalDistricts</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>ناحية</span><span>@Model.Dashboard.TotalSubDistricts</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>حي</span><span>@Model.Dashboard.TotalNeighborhoods</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>شارع</span><span>@Model.Dashboard.TotalStreets</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">آخر 20 عملية تدقيق</div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0" id="auditTable">
+                <thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>النوع</th><th>التفاصيل</th></tr></thead>
+                <tbody>
+                @foreach (var log in Model.RecentActivity)
+                {
+                    <tr>
+                        <td>@log.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                        <td>@log.UserName</td>
+                        <td>@log.Action</td>
+                        <td>@log.EntityType</td>
+                        <td class="text-truncate" style="max-width:280px">@(log.NewValues ?? log.OldValues ?? "-")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+setInterval(function() {
+    $.get('/Admin/AuditLog', { page: 1, pageSize: 20 }, function() {
+    });
+}, 60000);
+</script>
+}

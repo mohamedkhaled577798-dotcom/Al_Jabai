@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+@using WaqfSystem.Infrastructure.Authorization
+@inject WaqfSystem.Application.Services.IPermissionCacheService PermCache
+@{
+    var roleIdText = User.FindFirst("RoleId")?.Value ?? "0";
+    var roleId = int.TryParse(roleIdText, out var rid) ? rid : 0;
+    var perms = await PermCache.GetRolePermissionsAsync(roleId);
+}
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8" />
@@ -151,12 +159,33 @@
                         <i class="fas fa-file-invoice-dollar me-2"></i> نظام الممتلكات (الجباية)
                     </a>
                 </li>
-                @if (User.IsInRole("SYS_ADMIN"))
+                @if ((User.FindFirstValue(ClaimTypes.Role) ?? string.Empty) == "SYS_ADMIN")
                 {
                     <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "User" ? "active" : "")">
                         <a asp-controller="User" asp-action="Index">
                             <i class="fas fa-user-shield me-2"></i> إدارة المستخدمين
                         </a>
+                    </li>
+
+                    <li class="nav-divider mt-3 mb-2 bg-secondary opacity-25" style="height:1px; list-style:none;"></li>
+                    <li class="text-muted small px-3 py-1">⚙️ الإدارة</li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")">
+                        <a href="/Admin/Dashboard"><i class="bi bi-speedometer2 me-2"></i> لوحة تحكم الأدمن</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")">
+                        <a href="/Admin/Users"><i class="bi bi-people me-2"></i> المستخدمون</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Roles" ? "active" : "")">
+                        <a href="/Admin/Roles"><i class="bi bi-shield-check me-2"></i> الأدوار والصلاحيات</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Geographic" ? "active" : "")">
+                        <a href="/Admin/Geographic"><i class="bi bi-map me-2"></i> التسلسل الجغرافي</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "AuditLog" ? "active" : "")">
+                        <a href="/Admin/AuditLog"><i class="bi bi-journal-text me-2"></i> سجل التدقيق</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")">
+                        <a href="/Admin/Dashboard#recent-activity"><i class="bi bi-activity me-2"></i> نشاط الإدارة</a>
                     </li>
                 }
             </ul>

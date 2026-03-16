@@ -1,0 +1,69 @@
+@model WaqfSystem.Web.ViewModels.Admin.UserDetailViewModel
+@{
+    ViewData["Title"] = "تفاصيل المستخدم";
+    var initials = string.Join("", Model.User.FullNameAr.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x.Substring(0, 1)));
+    var days = Model.User.PasswordChangedAt.HasValue ? (DateTime.UtcNow - Model.User.PasswordChangedAt.Value).Days : 0;
+}
+
+<div class="container-fluid">
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-light d-flex justify-content-center align-items-center me-3" style="width:72px;height:72px;overflow:hidden">
+                    @if (!string.IsNullOrWhiteSpace(Model.User.ProfilePhotoUrl)) { <img src="@Model.User.ProfilePhotoUrl" class="w-100 h-100" style="object-fit:cover" /> }
+                    else { <span class="h4 mb-0">@initials</span> }
+                </div>
+                <div>
+                    <div class="h5 mb-1">@Model.User.FullNameAr</div>
+                    <span class="badge text-bg-info">@Model.User.RoleDisplayNameAr</span>
+                    @if (Model.User.IsLocked) { <span class="badge text-bg-danger">مقفول</span> }
+                    else if (Model.User.IsActive) { <span class="badge text-bg-success">نشط</span> }
+                    else { <span class="badge text-bg-secondary">موقوف</span> }
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-primary" href="/Admin/EditUser/@Model.User.Id">تعديل</a>
+                <button class="btn btn-outline-warning" onclick="resetPass(@Model.User.Id)">إعادة تعيين كلمة المرور</button>
+                @if (Model.User.IsActive) { <button class="btn btn-outline-danger" onclick="toggleActive(@Model.User.Id,false)">إيقاف</button> }
+                else { <button class="btn btn-outline-success" onclick="toggleActive(@Model.User.Id,true)">تفعيل</button> }
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab1">البيانات الشخصية</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab2">الصلاحيات الحالية</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab3">سجل النشاط</button></li>
+    </ul>
+
+    <div class="tab-content border border-top-0 p-3 bg-white">
+        <div class="tab-pane fade show active" id="tab1">
+            <div class="row g-3">
+                <div class="col-md-6"><div class="card"><div class="card-body"><h6>معلومات شخصية</h6><p class="mb-1">البريد: @Model.User.Email</p><p class="mb-1">الهاتف: @Model.User.Phone</p><p class="mb-1">الوظيفة: @Model.User.JobTitle</p><p class="mb-0">الرقم الوطني: @Model.User.NationalId</p></div></div></div>
+                <div class="col-md-6"><div class="card"><div class="card-body"><h6>معلومات الحساب</h6><p class="mb-1">آخر دخول: @(Model.User.LastLoginAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</p><p class="mb-1">IP آخر دخول: @(Model.User.LastLoginIp ?? "-")</p><p class="mb-1">عمر كلمة المرور: @days يوم</p><p class="mb-0">محاولات فاشلة: <span class="badge @(Model.User.FailedLoginCount>0 ? "text-bg-danger" : "text-bg-secondary")">@Model.User.FailedLoginCount</span></p></div></div></div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tab2">
+            <div class="mb-3">الدور الحالي: <span class="badge text-bg-info">@Model.User.RoleDisplayNameAr</span></div>
+            @foreach(var group in Model.PermissionGroups)
+            {
+                <div class="card mb-2"><div class="card-header">@group.ModuleDisplayAr</div><div class="card-body"><div class="row">@foreach(var p in group.Permissions){<div class="col-md-4"><i class="bi bi-check2-circle text-success"></i> @p.DisplayNameAr</div>}</div></div></div>
+            }
+        </div>
+        <div class="tab-pane fade" id="tab3">
+            <div class="table-responsive">
+                <table class="table table-sm"><thead><tr><th>الوقت</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>@foreach(var log in Model.UserAuditLogs.Items){<tr><td>@log.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td><td>@log.Action</td><td>@(log.NewValues ?? log.OldValues)</td></tr>}</tbody></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function resetPass(id){ $.post('/Admin/ResetPassword', { id:id }, function(res){ alert(res.success ? 'كلمة المرور المؤقتة: '+res.data.tempPassword : res.message); }); }
+function toggleActive(id, activate){
+    if(activate) $.post('/Admin/ActivateUser', {id:id}, function(){ location.reload(); });
+    else $.post('/Admin/DeactivateUser', {id:id, reason:'إيقاف إداري'}, function(){ location.reload(); });
+}
+</script>
+}

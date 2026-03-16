@@ -1,0 +1,301 @@
+@model WaqfSystem.Web.ViewModels.Admin.CreateEditUserViewModel
+@{
+    ViewData["Title"] = Model.IsEditMode ? "تعديل بيانات المستخدم" : "إضافة مستخدم جديد";
+}
+@using System.Text.Json
+
+<div class="container-fluid">
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+    <form method="post" enctype="multipart/form-data" asp-action="@(Model.IsEditMode ? "EditUser" : "CreateUser")" class="card shadow-sm">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            @if (Model.IsEditMode)
+            {
+                <input type="hidden" name="Id" value="@Model.UserId" />
+            }
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="text-center">
+                        <div id="avatarBox" class="rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center bg-light" style="width:160px;height:160px;overflow:hidden">
+                            @if (!string.IsNullOrWhiteSpace(Model.User.ProfilePhotoUrl))
+                            {
+                                <img src="@Model.User.ProfilePhotoUrl" class="w-100 h-100" style="object-fit:cover" />
+                            }
+                            else
+                            {
+                                <span class="h3 mb-0">@string.Join("", Model.User.FullNameAr.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x.Substring(0, 1)))</span>
+                            }
+                        </div>
+                        <label class="btn btn-outline-primary">
+                            رفع صورة
+                            <input type="file" name="profilePhoto" id="profilePhoto" hidden accept="image/*" onchange="previewPhoto(this)" />
+                        </label>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <h5 class="mb-3">البيانات الشخصية</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label">الاسم الكامل عربي</label><input class="form-control" name="FullNameAr" value="@Model.User.FullNameAr" required /></div>
+                        <div class="col-md-6"><label class="form-label">الاسم الكامل إنجليزي</label><input class="form-control" name="FullNameEn" value="@Model.User.FullNameEn" /></div>
+                        <div class="col-md-6"><label class="form-label">الرقم الوطني</label><input class="form-control" name="NationalId" value="@Model.User.NationalId" /></div>
+                        <div class="col-md-6"><label class="form-label">المسمى الوظيفي</label><input class="form-control" name="JobTitle" value="@Model.User.JobTitle" /></div>
+                        <div class="col-md-6"><label class="form-label">الهاتف</label><input class="form-control" name="Phone" value="@Model.User.Phone" /></div>
+                        <div class="col-md-6"><label class="form-label">هاتف إضافي</label><input class="form-control" name="Phone2" value="@Model.User.Phone2" /></div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">بيانات الحساب</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input class="form-control" id="Email" name="Email" value="@Model.User.Email" required onblur="checkEmailUnique(this.value)" />
+                            <small id="emailStatus"></small>
+                        </div>
+                        @if (!Model.IsEditMode)
+                        {
+                            <div class="col-md-3"><label class="form-label">كلمة المرور</label><input class="form-control" type="password" name="Password" required /></div>
+                            <div class="col-md-3"><label class="form-label">تأكيد كلمة المرور</label><input class="form-control" type="password" name="ConfirmPassword" required /></div>
+                        }
+                        <div class="col-md-4">
+                            <label class="form-label">إجبار تغيير كلمة المرور</label>
+                            <select class="form-select" name="MustChangePassword"><option value="true" selected="@Model.User.MustChangePassword">نعم</option><option value="false" selected="@(!Model.User.MustChangePassword)">لا</option></select>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">الصلاحيات والنطاق الجغرافي</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">الدور</label>
+                            <select class="form-select" name="RoleId" id="RoleId" onchange="roleChanged(this.value)">
+                                <option value="">اختر الدور</option>
+                                @foreach (var role in Model.Roles)
+                                {
+                                    <option value="@role.Value" selected="@(Model.User.RoleId.ToString()==role.Value)">@role.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <input type="hidden" name="GovernorateId" id="GovernorateId" value="@Model.User.GovernorateId" />
+                        <input type="hidden" name="DistrictId" id="DistrictId" value="@Model.User.DistrictId" />
+                        <input type="hidden" name="SubDistrictId" id="SubDistrictId" value="@Model.User.SubDistrictId" />
+
+                        <div class="col-md-12" id="geoHintWrap">
+                            <div class="alert alert-info py-2 mb-2">
+                                يتم تحديد النطاق تلقائيا حسب الدور المختار. المحافظة/القضاء/الناحية الحالية للمستخدم ظاهرة وممكن تعديلها أو إزالتها.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="govWrap">
+                            <label class="form-label">المحافظات المسموحة</label>
+                            <select class="form-select" name="GovernorateIds" id="GovernorateIds" multiple size="6" onchange="onGovernorateSelectionChanged()">
+                                @foreach (var gov in Model.Governorates)
+                                {
+                                    var selected = Model.SelectedGovernorateIds.Contains(int.Parse(gov.Value));
+                                    <option value="@gov.Value" selected="@selected">@gov.Text</option>
+                                }
+                            </select>
+                            <small class="text-muted">يمكن اختيار أكثر من محافظة.</small>
+                        </div>
+                        <div class="col-md-6" id="districtWrap">
+                            <label class="form-label">الأقضية المسموحة</label>
+                            <select class="form-select" name="DistrictIds" id="DistrictIds" multiple size="6" onchange="onDistrictSelectionChanged()">
+                                @foreach (var district in Model.Districts)
+                                {
+                                    var selected = Model.SelectedDistrictIds.Contains(int.Parse(district.Value));
+                                    <option value="@district.Value" selected="@selected">@district.Text</option>
+                                }
+                            </select>
+                            <small class="text-muted">يتم تحميل الأقضية حسب المحافظات المختارة.</small>
+                        </div>
+                        <div class="col-md-6" id="subDistrictWrap">
+                            <label class="form-label">النواحي المسموحة</label>
+                            <select class="form-select" name="SubDistrictIds" id="SubDistrictIds" multiple size="6" onchange="syncPrimaryFields()">
+                                @foreach (var subDistrict in Model.SubDistricts)
+                                {
+                                    var selected = Model.SelectedSubDistrictIds.Contains(int.Parse(subDistrict.Value));
+                                    <option value="@subDistrict.Value" selected="@selected">@subDistrict.Text</option>
+                                }
+                            </select>
+                            <small class="text-muted">يتم تحميل النواحي حسب الأقضية المختارة.</small>
+                        </div>
+                        <div class="col-12"><label class="form-label">ملاحظات</label><textarea class="form-control" rows="4" name="Notes">@Model.User.Notes</textarea></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+            <a href="/Admin/Users" class="btn btn-light">إلغاء</a>
+            <button class="btn btn-primary">حفظ المستخدم</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+const roleScopeLevels = @Html.Raw(JsonSerializer.Serialize(Model.RoleScopeLevels));
+const globalScopeRoleIds = @Html.Raw(JsonSerializer.Serialize(Model.GlobalScopeRoleIds));
+
+function checkEmailUnique(email){
+    $.get('/Admin/CheckEmailUnique', { email: email, id: @(Model.IsEditMode ? Model.UserId : 0) }, function(res){
+        if(res.success && res.data.isUnique){ $('#emailStatus').text('متاح').removeClass('text-danger').addClass('text-success'); }
+        else { $('#emailStatus').text('مستخدم بالفعل').removeClass('text-success').addClass('text-danger'); }
+    });
+}
+function getSelectedValues(selector){
+    return ($(selector).val() || []).map(function(v){ return parseInt(v); }).filter(function(v){ return !isNaN(v); });
+}
+
+function roleChanged(roleId){
+    const numericRoleId = parseInt(roleId);
+    const scopeLevel = isNaN(numericRoleId) ? 0 : (roleScopeLevels[numericRoleId] || 0);
+    const isGlobal = !isNaN(numericRoleId) && globalScopeRoleIds.includes(numericRoleId);
+
+    const showGov = !isGlobal && scopeLevel >= 1;
+    const showDistrict = !isGlobal && scopeLevel >= 2;
+    const showSubDistrict = !isGlobal && scopeLevel >= 3;
+
+    $('#geoHintWrap').toggle(showGov || showDistrict || showSubDistrict);
+    $('#govWrap').toggle(showGov);
+    $('#districtWrap').toggle(showDistrict);
+    $('#subDistrictWrap').toggle(showSubDistrict);
+
+    if(!showGov){
+        $('#GovernorateIds').val([]);
+    }
+    if(!showDistrict){
+        $('#DistrictIds').val([]);
+    }
+    if(!showSubDistrict){
+        $('#SubDistrictIds').val([]);
+    }
+
+    syncPrimaryFields();
+}
+
+function onGovernorateSelectionChanged(){
+    const governorateIds = getSelectedValues('#GovernorateIds');
+    const previousDistricts = getSelectedValues('#DistrictIds');
+    const previousSubDistricts = getSelectedValues('#SubDistrictIds');
+    $('#DistrictIds').empty();
+    $('#SubDistrictIds').empty();
+
+    if(governorateIds.length === 0){
+        syncPrimaryFields();
+        return;
+    }
+
+    const calls = governorateIds.map(function(governorateId){
+        return $.get('/Admin/GetDistricts', { governorateId: governorateId });
+    });
+
+    $.when.apply($, calls).done(function(){
+        const responses = calls.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        const map = new Map();
+
+        responses.forEach(function(response){
+            const payload = response[0];
+            if(!payload.success || !payload.data){
+                return;
+            }
+
+            payload.data.forEach(function(item){
+                map.set(item.id.toString(), item);
+            });
+        });
+
+        map.forEach(function(item){
+            const selected = previousDistricts.includes(item.id) ? ' selected' : '';
+            $('#DistrictIds').append('<option value="'+item.id+'" data-govid="'+item.governorateId+'"'+selected+'>'+item.nameAr+'</option>');
+        });
+
+        onDistrictSelectionChanged(previousSubDistricts);
+    });
+}
+
+function onDistrictSelectionChanged(previousSubDistricts){
+    const districtIds = getSelectedValues('#DistrictIds');
+    const selectedBefore = Array.isArray(previousSubDistricts) ? previousSubDistricts : getSelectedValues('#SubDistrictIds');
+    $('#SubDistrictIds').empty();
+
+    if(districtIds.length === 0){
+        syncPrimaryFields();
+        return;
+    }
+
+    const calls = districtIds.map(function(districtId){
+        return $.get('/Admin/GetSubDistricts', { districtId: districtId });
+    });
+
+    $.when.apply($, calls).done(function(){
+        const responses = calls.length === 1 ? [arguments] : Array.prototype.slice.call(arguments);
+        const map = new Map();
+
+        responses.forEach(function(response){
+            const payload = response[0];
+            if(!payload.success || !payload.data){
+                return;
+            }
+
+            payload.data.forEach(function(item){
+                map.set(item.id.toString(), item);
+            });
+        });
+
+        map.forEach(function(item){
+            const selected = selectedBefore.includes(item.id) ? ' selected' : '';
+            $('#SubDistrictIds').append('<option value="'+item.id+'" data-districtid="'+item.districtId+'"'+selected+'>'+item.nameAr+'</option>');
+        });
+
+        syncPrimaryFields();
+    });
+}
+
+function syncPrimaryFields(){
+    const selectedGovs = getSelectedValues('#GovernorateIds');
+    const selectedDistricts = getSelectedValues('#DistrictIds');
+    const selectedSubDistricts = getSelectedValues('#SubDistrictIds');
+    const roleId = parseInt($('#RoleId').val());
+    const scopeLevel = isNaN(roleId) ? 0 : (roleScopeLevels[roleId] || 0);
+    const isGlobal = !isNaN(roleId) && globalScopeRoleIds.includes(roleId);
+
+    if(isGlobal || scopeLevel === 0){
+        $('#GovernorateId').val('');
+        $('#DistrictId').val('');
+        $('#SubDistrictId').val('');
+        return;
+    }
+
+    const governorateId = selectedGovs.length > 0 ? selectedGovs[0] : '';
+    const districtId = selectedDistricts.length > 0 ? selectedDistricts[0] : '';
+    const subDistrictId = selectedSubDistricts.length > 0 ? selectedSubDistricts[0] : '';
+
+    if(scopeLevel >= 1){
+        $('#GovernorateId').val(governorateId);
+    }
+    if(scopeLevel >= 2){
+        $('#DistrictId').val(districtId);
+    } else {
+        $('#DistrictId').val('');
+    }
+    if(scopeLevel >= 3){
+        $('#SubDistrictId').val(subDistrictId);
+    } else {
+        $('#SubDistrictId').val('');
+    }
+}
+
+function previewPhoto(input){
+    if(input.files && input.files[0]){
+        const reader = new FileReader();
+        reader.onload = function(e){ $('#avatarBox').html('<img src="'+e.target.result+'" class="w-100 h-100" style="object-fit:cover"/>'); };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+$(function(){
+    roleChanged($('#RoleId').val());
+    if(getSelectedValues('#GovernorateIds').length > 0){
+        onGovernorateSelectionChanged();
+    } else {
+        syncPrimaryFields();
+    }
+});
+</script>
+}

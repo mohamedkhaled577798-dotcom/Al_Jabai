@@ -28,6 +28,10 @@ namespace WaqfSystem.Application
             services.AddScoped<IWorkflowService, WorkflowService>();
             services.AddScoped<IMissionService, MissionService>();
             services.AddScoped<IMobileSyncService, MobileSyncService>();
+            services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<IGeographicScopeService, GeographicScopeService>();
+            services.AddScoped<IPermissionCacheService, PermissionCacheService>();
+            services.AddScoped<IPermissionDiscoveryService, PermissionDiscoveryService>();
 
             services.AddValidatorsFromAssemblyContaining<CreatePartnershipValidator>();
 

@@ -1,5 +1,14 @@
 namespace WaqfSystem.Core.Enums
 {
+    /// <summary>مستوى النطاق الجغرافي للدور/المستخدم</summary>
+    public enum GeographicScopeLevel : byte
+    {
+        None = 0,
+        Governorate = 1,
+        District = 2,
+        SubDistrict = 3
+    }
+
     /// <summary>أدوار المستخدمين</summary>
     public enum UserRole : byte
     {

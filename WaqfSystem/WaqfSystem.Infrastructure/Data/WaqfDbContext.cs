@@ -45,10 +45,24 @@ namespace WaqfSystem.Infrastructure.Data
         public DbSet<Street> Streets { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Role> Roles { get; set; } = null!;
+        public DbSet<Permission> Permissions { get; set; } = null!;
+        public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+        public DbSet<UserGeographicScope> UserGeographicScopes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfiguration(new RoleConfiguration());
+            modelBuilder.ApplyConfiguration(new PermissionConfiguration());
+            modelBuilder.ApplyConfiguration(new RolePermissionConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
+            modelBuilder.ApplyConfiguration(new UserGeographicScopeConfiguration());
+            modelBuilder.ApplyConfiguration(new GovernorateConfiguration());
+            modelBuilder.ApplyConfiguration(new DistrictConfiguration());
+            modelBuilder.ApplyConfiguration(new SubDistrictConfiguration());
+            modelBuilder.ApplyConfiguration(new NeighborhoodConfiguration());
+            modelBuilder.ApplyConfiguration(new StreetConfiguration());
 
             modelBuilder.ApplyConfiguration(new InspectionTeamConfiguration());
             modelBuilder.ApplyConfiguration(new InspectionTeamMemberConfiguration());

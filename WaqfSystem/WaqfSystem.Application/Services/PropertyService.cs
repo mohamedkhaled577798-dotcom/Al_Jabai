@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using WaqfSystem.Application.DTOs.Common;
 using WaqfSystem.Application.DTOs.Property;
@@ -31,13 +32,15 @@ namespace WaqfSystem.Application.Services
         private readonly IMapper _mapper;
         private readonly ILogger<PropertyService> _logger;
         private readonly IDqsService _dqsService;
+        private readonly IGeographicScopeService _geographicScopeService;
 
-        public PropertyService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PropertyService> logger, IDqsService dqsService)
+        public PropertyService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<PropertyService> logger, IDqsService dqsService, IGeographicScopeService geographicScopeService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _dqsService = dqsService;
+            _geographicScopeService = geographicScopeService;
         }
 
         public async Task<PropertyDetailDto?> GetByIdAsync(int id)
@@ -49,20 +52,53 @@ namespace WaqfSystem.Application.Services
 
         public async Task<PagedResult<PropertyListDto>> GetPagedAsync(PropertyFilterRequest filter, int? userId = null, string? userRole = null, int? governorateId = null)
         {
-            // Role scoping
-            int? scopedGovernorateId = filter.GovernorateId;
-            int? scopedCreatedById = null;
+            var query = _unitOfWork.Properties.GetQueryable()
+                .AsNoTracking()
+                .Include(p => p.Governorate)
+                .Include(p => p.CreatedBy)
+                .AsQueryable();
 
-            if (userRole == "REGIONAL_MGR" && governorateId.HasValue)
-                scopedGovernorateId = governorateId;
-            else if (userRole == "FIELD_INSPECTOR" && userId.HasValue)
-                scopedCreatedById = userId;
+            if (userId.HasValue)
+            {
+                var scope = await _geographicScopeService.BuildScopeAsync(userId.Value, userRole);
+                query = _geographicScopeService.ApplyToProperties(query, scope);
+            }
 
-            var (items, totalCount) = await _unitOfWork.Properties.GetPagedAsync(
-                filter.Page, filter.PageSize,
-                scopedGovernorateId, filter.PropertyType, filter.OwnershipType,
-                filter.ApprovalStage, filter.Status, filter.SearchTerm,
-                scopedCreatedById);
+            if (userRole == "FIELD_INSPECTOR" && userId.HasValue)
+            {
+                query = query.Where(p => p.CreatedById == userId.Value);
+            }
+
+            if (filter.GovernorateId.HasValue)
+                query = query.Where(p => p.GovernorateId == filter.GovernorateId.Value);
+
+            if (filter.PropertyType.HasValue)
+                query = query.Where(p => p.PropertyType == filter.PropertyType.Value);
+
+            if (filter.OwnershipType.HasValue)
+                query = query.Where(p => p.OwnershipType == filter.OwnershipType.Value);
+
+            if (filter.ApprovalStage.HasValue)
+                query = query.Where(p => p.ApprovalStage == filter.ApprovalStage.Value);
+
+            if (filter.Status.HasValue)
+                query = query.Where(p => p.PropertyStatus == filter.Status.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                var term = filter.SearchTerm.Trim();
+                query = query.Where(p =>
+                    (p.PropertyName != null && p.PropertyName.Contains(term)) ||
+                    p.WqfNumber.Contains(term) ||
+                    (p.DeedNumber != null && p.DeedNumber.Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
 
             var dtos = _mapper.Map<List<PropertyListDto>>(items);
 
