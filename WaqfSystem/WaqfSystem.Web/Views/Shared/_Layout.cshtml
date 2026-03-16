@@ -68,8 +68,8 @@
                     </a>
                 </li>
 
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Property" && ViewContext.HttpContext.Request.Query["view"] == "documents" ? "active" : "")">
-                    <a asp-controller="Property" asp-action="Index" asp-route-view="documents">
+                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Documents" ? "active" : "")">
+                    <a asp-controller="Documents" asp-action="Index">
                         <i class="fas fa-folder-open me-2"></i> إدارة الوثائق
                     </a>
                 </li>
@@ -180,6 +180,9 @@
                     </li>
                     <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Geographic" ? "active" : "")">
                         <a href="/Admin/Geographic"><i class="bi bi-map me-2"></i> التسلسل الجغرافي</a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "DocumentTypes" ? "active" : "")">
+                        <a href="/Admin/DocumentTypes"><i class="bi bi-files me-2"></i> أنواع الوثائق</a>
                     </li>
                     <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "AuditLog" ? "active" : "")">
                         <a href="/Admin/AuditLog"><i class="bi bi-journal-text me-2"></i> سجل التدقيق</a>

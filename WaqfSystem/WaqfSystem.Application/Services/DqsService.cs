@@ -103,7 +103,7 @@ namespace WaqfSystem.Application.Services
 
             // DeedNumber + document uploaded (15%)
             var hasDeed = !string.IsNullOrWhiteSpace(property.DeedNumber) &&
-                          property.Documents?.Any(d => d.DocumentCategory == Core.Enums.DocumentCategory.Ownership) == true;
+                          property.Documents?.Any(d => d.DocumentType != null && d.DocumentType.Code == "OWNERSHIP_DEED") == true;
             criteria.Add(new DqsCriterionDto
             {
                 CriterionName = "DeedDocument",

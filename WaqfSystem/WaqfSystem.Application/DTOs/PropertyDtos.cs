@@ -96,6 +96,10 @@ namespace WaqfSystem.Application.DTOs.Property
     public class PropertyAddressDto
     {
         public int? StreetId { get; set; }
+        public int? NeighborhoodId { get; set; }
+        public int? SubDistrictId { get; set; }
+        public int? DistrictId { get; set; }
+        public int? GovernorateId { get; set; }
         public string? StreetName { get; set; }
         public string? NeighborhoodName { get; set; }
         public string? DistrictName { get; set; }
@@ -169,14 +173,35 @@ namespace WaqfSystem.Application.DTOs.Property
         public string PartnerName { get; set; } = string.Empty;
         public PartnerType PartnerType { get; set; }
         public string? PartnerNationalId { get; set; }
+        public decimal WaqfSharePercent { get; set; }
         public decimal PartnerSharePercent { get; set; }
         public string? PartnerBankIBAN { get; set; }
         public RevenueDistribMethod RevenueDistribMethod { get; set; }
         public string? AgreementDocUrl { get; set; }
         public DateTime? AgreementDate { get; set; }
+        public DateTime? PartnershipStartDate { get; set; }
+        public DateTime? PartnershipEndDate { get; set; }
+        public DateTime? NextDistribDate { get; set; }
         public bool IsActive { get; set; }
         public string? ContactPhone { get; set; }
         public string? ContactEmail { get; set; }
+        public string? Notes { get; set; }
+        public List<RevenuePeriodDto> RevenueDistributions { get; set; } = new();
+    }
+
+    public class RevenuePeriodDto
+    {
+        public int Id { get; set; }
+        public string PeriodLabel { get; set; } = string.Empty;
+        public DateTime PeriodStartDate { get; set; }
+        public DateTime PeriodEndDate { get; set; }
+        public string DistributionType { get; set; } = "Revenue";
+        public decimal TotalRevenue { get; set; }
+        public decimal WaqfAmount { get; set; }
+        public decimal PartnerAmount { get; set; }
+        public decimal WaqfPercentSnapshot { get; set; }
+        public TransferStatus TransferStatus { get; set; }
+        public DateTime? TransferDate { get; set; }
         public string? Notes { get; set; }
     }
 
@@ -277,6 +302,7 @@ namespace WaqfSystem.Application.DTOs.Property
         public DateTime? RegistrationDate { get; set; }
         public string? WaqfOriginStory { get; set; }
         public string? FounderName { get; set; }
+        public DateTime? FoundationDate { get; set; }
         public string? EndowmentPurpose { get; set; }
         public short? TotalFloors { get; set; }
         public decimal? TotalAreaSqm { get; set; }

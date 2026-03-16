@@ -32,6 +32,8 @@ namespace WaqfSystem.Core.Entities
         public string? FarmerName { get; set; }
         public string? FarmerNationalId { get; set; }
         public string? HarvestContractType { get; set; }
+        public string? CustomPartnershipName { get; set; }
+        public string? CustomCalculationFormula { get; set; }
 
         // Partner identity
         public string PartnerName { get; set; } = string.Empty;
@@ -58,6 +60,7 @@ namespace WaqfSystem.Core.Entities
 
         // Distribution schedule
         public RevenueDistribMethod RevenueDistribMethod { get; set; } = RevenueDistribMethod.Monthly;
+        public ExpenseBearingMethod ExpenseBearingMethod { get; set; } = ExpenseBearingMethod.BeforeDistribution;
         public int? RevenueDistribDay { get; set; }
         public DateTime? LastDistribDate { get; set; }
         public DateTime? NextDistribDate { get; set; }
@@ -76,6 +79,8 @@ namespace WaqfSystem.Core.Entities
         public virtual Property Property { get; set; } = null!;
         public override User? CreatedBy { get; set; }
         public virtual ICollection<PartnerRevenueDistribution> RevenueDistributions { get; set; } = new List<PartnerRevenueDistribution>();
+        public virtual ICollection<PartnershipConditionRule> ConditionRules { get; set; } = new List<PartnershipConditionRule>();
+        public virtual ICollection<PartnershipExpenseEntry> ExpenseEntries { get; set; } = new List<PartnershipExpenseEntry>();
         public virtual ICollection<PartnerContactLog> ContactLogs { get; set; } = new List<PartnerContactLog>();
         public virtual ICollection<PartnerNotificationSchedule> NotificationSchedules { get; set; } = new List<PartnerNotificationSchedule>();
     }

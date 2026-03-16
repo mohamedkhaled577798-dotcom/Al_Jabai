@@ -503,7 +503,10 @@ namespace WaqfSystem.Web.ViewModels.Properties
         [Display(Name = "صورة داخلية")]
         public IFormFile? PhotoInside { get; set; }
 
+        public int ExistingPhotoCount { get; set; }
+
         public int UploadedPhotoCount =>
+            ExistingPhotoCount +
             (PhotoFront != null ? 1 : 0) +
             (PhotoRight != null ? 1 : 0) +
             (PhotoLeft != null ? 1 : 0) +

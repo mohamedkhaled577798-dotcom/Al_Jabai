@@ -10,7 +10,7 @@ namespace WaqfSystem.Infrastructure.Data
         public void Configure(EntityTypeBuilder<PropertyPartnership> builder)
         {
             builder.Property(x => x.PartnershipType).HasConversion<string>().HasMaxLength(30).UseCollation("Arabic_CI_AS");
-            builder.HasCheckConstraint("CK_PartnershipType", "[PartnershipType] IN ('RevenuePercent','FloorOwnership','UnitOwnership','UsufructRight','LandPercent','TimedPartnership','HarvestShare')");
+            builder.HasCheckConstraint("CK_PartnershipType", "[PartnershipType] IN ('RevenuePercent','FloorOwnership','UnitOwnership','UsufructRight','LandPercent','TimedPartnership','HarvestShare','Custom')");
 
             builder.Property(x => x.WaqfSharePercent).HasColumnType("decimal(5,2)");
             builder.Property(x => x.PartnerSharePercent).HasColumnType("decimal(5,2)");
@@ -44,9 +44,13 @@ namespace WaqfSystem.Infrastructure.Data
             builder.Property(x => x.FarmerName).HasMaxLength(200).UseCollation("Arabic_CI_AS");
             builder.Property(x => x.FarmerNationalId).HasMaxLength(20).UseCollation("Arabic_CI_AS");
             builder.Property(x => x.HarvestContractType).HasMaxLength(20).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.CustomPartnershipName).HasMaxLength(120).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.CustomCalculationFormula).HasMaxLength(1000).UseCollation("Arabic_CI_AS");
 
             builder.Property(x => x.RevenueDistribMethod).HasConversion<string>().HasMaxLength(20).UseCollation("Arabic_CI_AS");
             builder.HasCheckConstraint("CK_DistribMethod", "[RevenueDistribMethod] IN ('Monthly','Quarterly','Annual','PerCollection')");
+            builder.Property(x => x.ExpenseBearingMethod).HasConversion<string>().HasMaxLength(30).UseCollation("Arabic_CI_AS");
+            builder.HasCheckConstraint("CK_ExpenseBearingMethod", "[ExpenseBearingMethod] IN ('BeforeDistribution','SharedByPercent','WaqfOnly','PartnerOnly')");
 
             builder.HasIndex(x => new { x.PropertyId, x.IsActive }).HasDatabaseName("IX_Partnership_Property_Active");
             builder.HasIndex(x => x.PartnershipEndDate).HasDatabaseName("IX_Partnership_EndDate");
@@ -56,6 +60,16 @@ namespace WaqfSystem.Infrastructure.Data
                 .WithOne(x => x.Partnership)
                 .HasForeignKey(x => x.PartnershipId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasMany(x => x.ConditionRules)
+                .WithOne(x => x.Partnership)
+                .HasForeignKey(x => x.PartnershipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(x => x.ExpenseEntries)
+                .WithOne(x => x.Partnership)
+                .HasForeignKey(x => x.PartnershipId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.ContactLogs)
                 .WithOne(x => x.Partnership)
@@ -79,6 +93,8 @@ namespace WaqfSystem.Infrastructure.Data
             builder.Property(x => x.PeriodLabel).HasMaxLength(50).UseCollation("Arabic_CI_AS");
             builder.Property(x => x.DistributionType).HasMaxLength(20).UseCollation("Arabic_CI_AS");
             builder.Property(x => x.TotalRevenue).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.TotalExpenses).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.NetRevenue).HasColumnType("decimal(15,2)");
             builder.Property(x => x.WaqfAmount).HasColumnType("decimal(15,2)");
             builder.Property(x => x.PartnerAmount).HasColumnType("decimal(15,2)");
             builder.Property(x => x.WaqfPercentSnapshot).HasColumnType("decimal(5,2)");
@@ -145,6 +161,60 @@ namespace WaqfSystem.Infrastructure.Data
             builder.Property(x => x.TemplateKey).HasMaxLength(100).UseCollation("Arabic_CI_AS");
 
             builder.HasIndex(x => new { x.TriggerDate, x.IsSent }).HasDatabaseName("IX_NotifSchedule_Pending");
+        }
+    }
+
+    public class PartnershipConditionRuleConfiguration : IEntityTypeConfiguration<PartnershipConditionRule>
+    {
+        public void Configure(EntityTypeBuilder<PartnershipConditionRule> builder)
+        {
+            builder.ToTable("PartnershipConditionRules");
+            builder.HasKey(x => x.Id);
+
+            builder.Property(x => x.RuleType).HasConversion<string>().HasMaxLength(40).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.Scope).HasConversion<string>().HasMaxLength(40).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.RuleName).HasMaxLength(200).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.FixedAmount).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.PercentValue).HasColumnType("decimal(5,2)");
+            builder.Property(x => x.MinRevenueThreshold).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.MaxRevenueThreshold).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.DistributionType).HasMaxLength(30).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.SeasonLabel).HasMaxLength(60).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.Notes).HasMaxLength(500).UseCollation("Arabic_CI_AS");
+
+            builder.HasIndex(x => new { x.PartnershipId, x.IsActive, x.PriorityOrder }).HasDatabaseName("IX_ConditionRule_Partnership_Active");
+
+            builder.HasOne(x => x.CreatedBy)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+
+    public class PartnershipExpenseEntryConfiguration : IEntityTypeConfiguration<PartnershipExpenseEntry>
+    {
+        public void Configure(EntityTypeBuilder<PartnershipExpenseEntry> builder)
+        {
+            builder.ToTable("PartnershipExpenseEntries");
+            builder.HasKey(x => x.Id);
+
+            builder.Property(x => x.PeriodLabel).HasMaxLength(50).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.ExpenseType).HasMaxLength(80).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.Amount).HasColumnType("decimal(15,2)");
+            builder.Property(x => x.ReferenceNo).HasMaxLength(100).UseCollation("Arabic_CI_AS");
+            builder.Property(x => x.Notes).HasMaxLength(500).UseCollation("Arabic_CI_AS");
+
+            builder.HasIndex(x => new { x.PartnershipId, x.PeriodStartDate, x.PeriodEndDate }).HasDatabaseName("IX_Expense_Partnership_Period");
+
+            builder.HasOne(x => x.Property)
+                .WithMany()
+                .HasForeignKey(x => x.PropertyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.CreatedBy)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

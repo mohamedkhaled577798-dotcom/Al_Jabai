@@ -81,7 +81,7 @@ namespace WaqfSystem.Web.Controllers
         {
             var property = await _propertyService.GetByIdAsync(id);
             if (property == null) return NotFound();
-            return View(property);
+            return View("~/Views/Properties/Details.cshtml", property);
         }
 
         [HttpGet]
@@ -131,34 +131,9 @@ namespace WaqfSystem.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Edit(int id)
+        public IActionResult Edit(int id)
         {
-            var property = await _propertyService.GetByIdAsync(id);
-            if (property == null) return NotFound();
-
-            // Mapping DetailDto back to UpdateDto for form
-            // (In production, use AutoMapper for this reverse mapping too)
-            var updateDto = new UpdatePropertyDto
-            {
-                Id = property.Id,
-                PropertyName = property.PropertyName,
-                PropertyType = property.PropertyType,
-                // ... map all fields
-            };
-
-            var viewModel = new PropertyUpsertViewModel
-            {
-                Property = updateDto,
-                Governorates = new SelectList(await _unitOfWork.GetQueryable<Governorate>().ToListAsync(), "Id", "NameAr", property.GovernorateId),
-                PropertyTypes = new SelectList(Enum.GetValues<PropertyType>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name"),
-                PropertyCategories = new SelectList(Enum.GetValues<PropertyCategory>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name"),
-                OwnershipTypes = new SelectList(Enum.GetValues<OwnershipType>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name"),
-                WaqfTypes = new SelectList(Enum.GetValues<WaqfType>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name"),
-                ConstructionTypes = new SelectList(Enum.GetValues<ConstructionType>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name"),
-                StructuralConditions = new SelectList(Enum.GetValues<StructuralCondition>().Select(e => new { Id = (int)e, Name = e.ToString() }), "Id", "Name")
-            };
-
-            return View("Upsert", viewModel);
+            return RedirectToAction("Edit", "Properties", new { id });
         }
 
         [HttpPost]
@@ -194,8 +169,8 @@ namespace WaqfSystem.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            await _propertyService.SoftDeleteAsync(id);
-            SuccessMessage("تم حذف العقار بنجاح");
+            await _propertyService.DeactivateAsync(id, CurrentUserId);
+            SuccessMessage("تم تعطيل العقار بنجاح");
             return RedirectToAction(nameof(Index));
         }
     }

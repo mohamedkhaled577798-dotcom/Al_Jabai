@@ -96,6 +96,43 @@ namespace WaqfSystem.Web.Controllers
             return View("CreateStep1", vm);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Edit(long id)
+        {
+            var detail = await _propertyService.GetByIdAsync((int)id);
+            if (detail == null) return NotFound();
+
+            var draftKey = Guid.NewGuid().ToString("N")[..12];
+            var vm = MapDetailToDraft(detail);
+            vm.DraftKey = draftKey;
+            vm.CurrentStep = 1;
+            vm.BasicInfo.PropertyTypeOptions = await BuildPropertyTypeSelectList();
+
+            if (vm.Geographic.StreetId.HasValue)
+            {
+                var street = await _unitOfWork.GetQueryable<Street>()
+                    .Include(s => s.Neighborhood)
+                        .ThenInclude(n => n.SubDistrict)
+                            .ThenInclude(sd => sd.District)
+                    .FirstOrDefaultAsync(s => s.Id == vm.Geographic.StreetId.Value);
+
+                if (street != null)
+                {
+                    vm.Geographic.NeighborhoodId = street.NeighborhoodId;
+                    vm.Geographic.SubDistrictId = street.Neighborhood?.SubDistrictId ?? 0;
+                    vm.Geographic.DistrictId = street.Neighborhood?.SubDistrict?.DistrictId ?? 0;
+                    vm.Geographic.GovernorateId = detail.GovernorateId
+                        ?? street.Neighborhood?.SubDistrict?.District?.GovernorateId
+                        ?? vm.Geographic.GovernorateId;
+                }
+            }
+
+            SaveDraft(draftKey, vm);
+            SaveEditId(draftKey, (int)id);
+
+            return View("CreateStep1", vm);
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // CREATE STEP 1 POST
         // ─────────────────────────────────────────────────────────────────────
@@ -358,12 +395,13 @@ namespace WaqfSystem.Web.Controllers
             draft.Documents.DeedNumber = vm.Documents.DeedNumber;
             draft.Documents.DeedDate = vm.Documents.DeedDate;
             draft.Documents.DeedCourt = vm.Documents.DeedCourt;
-            draft.Documents.DeedUploaded = vm.Documents.DeedFile != null;
+            draft.Documents.DeedUploaded = draft.Documents.DeedUploaded || vm.Documents.DeedFile != null;
             draft.Documents.CadastralNumber = vm.Documents.CadastralNumber;
             draft.Documents.TabuNumber = vm.Documents.TabuNumber;
             draft.Documents.BuildingPermitNumber = vm.Documents.BuildingPermitNumber;
             draft.Documents.BuildingPermitDate = vm.Documents.BuildingPermitDate;
             draft.Documents.CompletionCertNumber = vm.Documents.CompletionCertNumber;
+            draft.Documents.ExistingPhotoCount = vm.Documents.ExistingPhotoCount;
 
             draft.DqsCriteria = ComputeDqsCriteria(draft);
             draft.DqsScore = draft.DqsCriteria.Sum(c => c.Score);
@@ -387,9 +425,21 @@ namespace WaqfSystem.Web.Controllers
 
             try
             {
-                var dto = MapDraftToCreateDto(draft);
-                var result = await _propertyService.CreateAsync(dto, CurrentUserId);
-                var propertyId = result.Id;
+                var editId = LoadEditId(vm.DraftKey!);
+                int propertyId;
+
+                if (editId.HasValue)
+                {
+                    var dto = MapDraftToUpdateDto(draft, editId.Value);
+                    var result = await _propertyService.UpdateAsync(dto, CurrentUserId);
+                    propertyId = result.Id;
+                }
+                else
+                {
+                    var dto = MapDraftToCreateDto(draft);
+                    var result = await _propertyService.CreateAsync(dto, CurrentUserId);
+                    propertyId = result.Id;
+                }
 
                 await UploadDocumentsAsync(propertyId, vm.Documents);
 
@@ -403,7 +453,10 @@ namespace WaqfSystem.Web.Controllers
                 }
 
                 ClearDraft(vm.DraftKey!);
-                TempData["SuccessMessage"] = $"تم حفظ البناية بنجاح ✓ — رقم العقار: WQF-{propertyId:D6}";
+                ClearEditId(vm.DraftKey!);
+                TempData["SuccessMessage"] = editId.HasValue
+                    ? $"تم تعديل البناية بنجاح ✓ — رقم العقار: WQF-{propertyId:D6}"
+                    : $"تم حفظ البناية بنجاح ✓ — رقم العقار: WQF-{propertyId:D6}";
                 return RedirectToAction("Details", new { id = propertyId });
             }
             catch (Exception ex)
@@ -526,6 +579,15 @@ namespace WaqfSystem.Web.Controllers
         }
 
         private void ClearDraft(string key) => HttpContext.Session.Remove($"PropertyDraft_{key}");
+
+        private void SaveEditId(string key, int propertyId)
+            => HttpContext.Session.SetInt32($"PropertyEdit_{key}", propertyId);
+
+        private int? LoadEditId(string key)
+            => HttpContext.Session.GetInt32($"PropertyEdit_{key}");
+
+        private void ClearEditId(string key)
+            => HttpContext.Session.Remove($"PropertyEdit_{key}");
 
         // ─────────────────────────────────────────────────────────────────────
         // PRIVATE — MODEL STATE FILTER
@@ -739,16 +801,35 @@ namespace WaqfSystem.Web.Controllers
         // ─────────────────────────────────────────────────────────────────────
         private static CreatePropertyDto MapDraftToCreateDto(PropertyCreateViewModel draft)
         {
+            var propertyType = Enum.IsDefined(typeof(PropertyType), draft.BasicInfo.PropertyTypeId)
+                ? (PropertyType)draft.BasicInfo.PropertyTypeId
+                : PropertyType.CommercialBuilding;
+
+            var propertyCategory = propertyType switch
+            {
+                PropertyType.Agricultural or PropertyType.Farm => PropertyCategory.Agricultural,
+                PropertyType.Land => PropertyCategory.Land,
+                _ => PropertyCategory.Building
+            };
+
             var dto = new CreatePropertyDto
             {
                 PropertyName = draft.BasicInfo.NameAr,
+                PropertyType = propertyType,
+                PropertyCategory = propertyCategory,
                 DeedNumber = draft.Documents.DeedNumber,
                 CadastralNumber = draft.Documents.CadastralNumber,
                 TabuNumber = draft.Documents.TabuNumber,
                 RegistrationDate = draft.Documents.DeedDate,
                 FounderName = draft.BasicInfo.FounderName,
+                FoundationDate = draft.BasicInfo.FoundingYear.HasValue
+                    ? new DateTime(draft.BasicInfo.FoundingYear.Value, 1, 1)
+                    : null,
                 TotalFloors = (short?)draft.BuildingDetails.FloorCount,
                 TotalAreaSqm = draft.BasicInfo.TotalAreaSqm,
+                LandAreaSqm = propertyCategory != PropertyCategory.Building
+                    ? draft.BasicInfo.TotalAreaSqm
+                    : null,
                 YearBuilt = (short?)draft.BuildingDetails.ConstructionYear,
                 EstimatedValue = draft.BasicInfo.EstimatedValue,
                 Latitude = draft.MapLocation.Latitude,
@@ -787,12 +868,173 @@ namespace WaqfSystem.Web.Controllers
             return dto;
         }
 
+        private static UpdatePropertyDto MapDraftToUpdateDto(PropertyCreateViewModel draft, int propertyId)
+        {
+            var create = MapDraftToCreateDto(draft);
+            return new UpdatePropertyDto
+            {
+                Id = propertyId,
+                PropertyName = create.PropertyName,
+                PropertyType = create.PropertyType,
+                PropertyCategory = create.PropertyCategory,
+                WaqfType = create.WaqfType,
+                OwnershipType = create.OwnershipType,
+                OwnershipPercentage = create.OwnershipPercentage,
+                DeedNumber = create.DeedNumber,
+                CadastralNumber = create.CadastralNumber,
+                TabuNumber = create.TabuNumber,
+                RegistrationDate = create.RegistrationDate,
+                WaqfOriginStory = create.WaqfOriginStory,
+                FounderName = create.FounderName,
+                FoundationDate = create.FoundationDate,
+                EndowmentPurpose = create.EndowmentPurpose,
+                TotalFloors = create.TotalFloors,
+                TotalAreaSqm = create.TotalAreaSqm,
+                LandAreaSqm = create.LandAreaSqm,
+                YearBuilt = create.YearBuilt,
+                ConstructionType = create.ConstructionType,
+                StructuralCondition = create.StructuralCondition,
+                EstimatedValue = create.EstimatedValue,
+                Latitude = create.Latitude,
+                Longitude = create.Longitude,
+                GpsAccuracyMeters = create.GpsAccuracyMeters,
+                GisPolygon = create.GisPolygon,
+                GovernorateId = create.GovernorateId,
+                Notes = create.Notes,
+                StreetId = create.StreetId,
+                BuildingNumber = create.BuildingNumber,
+                PlotNumber = create.PlotNumber,
+                BlockNumber = create.BlockNumber,
+                NearestLandmark = create.NearestLandmark,
+                LocalId = create.LocalId,
+                DeviceId = create.DeviceId
+            };
+        }
+
+        private static PropertyCreateViewModel MapDetailToDraft(PropertyDetailDto detail)
+        {
+            var draft = new PropertyCreateViewModel
+            {
+                BasicInfo =
+                {
+                    NameAr = detail.PropertyName,
+                    OwnershipType = detail.OwnershipType == OwnershipType.Partnership ? "PARTNERSHIP" : "FULL_WAQF",
+                    PropertyTypeId = (int)detail.PropertyType,
+                    WaqfType = detail.WaqfType?.ToString(),
+                    FounderName = detail.FounderName,
+                    FoundingYear = detail.FoundationDate?.Year,
+                    StructuralCondition = detail.StructuralCondition?.ToString(),
+                    EstimatedValue = detail.EstimatedValue,
+                    TotalAreaSqm = detail.TotalAreaSqm,
+                    Notes = detail.Notes,
+                    WaqfSharePercent = detail.OwnershipType == OwnershipType.Partnership ? detail.OwnershipPercentage : null
+                },
+                Geographic =
+                {
+                    GovernorateId = detail.Address?.GovernorateId ?? detail.GovernorateId ?? 0,
+                    DistrictId = detail.Address?.DistrictId ?? 0,
+                    SubDistrictId = detail.Address?.SubDistrictId ?? 0,
+                    NeighborhoodId = detail.Address?.NeighborhoodId,
+                    StreetId = detail.Address?.StreetId,
+                    BuildingNumber = detail.Address?.BuildingNumber,
+                    PlotNumber = detail.Address?.PlotNumber,
+                    BlockNumber = detail.Address?.BlockNumber,
+                    ZoneNumber = detail.Address?.ZoneNumber,
+                    NearestLandmark = detail.Address?.NearestLandmark,
+                    AlternativeAddress = detail.Address?.AlternativeAddress,
+                    What3Words = detail.Address?.What3Words
+                },
+                MapLocation =
+                {
+                    Latitude = detail.Latitude,
+                    Longitude = detail.Longitude,
+                    GpsAccuracyMeters = detail.GpsAccuracyMeters,
+                    GisPolygon = detail.GisPolygon
+                },
+                BuildingDetails =
+                {
+                    FloorCount = detail.TotalFloors ?? (detail.Floors?.Count ?? 1),
+                    BasementCount = detail.BasementFloors ?? 0,
+                    ConstructionYear = detail.YearBuilt,
+                    PrimaryUsage = detail.PropertyType.ToString()
+                },
+                Documents =
+                {
+                    DeedNumber = detail.DeedNumber,
+                    CadastralNumber = detail.CadastralNumber,
+                    TabuNumber = detail.TabuNumber,
+                    ExistingPhotoCount = detail.Photos?.Count ?? 0
+                }
+            };
+
+            if (detail.AgriculturalDetail != null)
+            {
+                draft.BasicInfo.TotalAreaDunum = detail.AgriculturalDetail.TotalAreaDunum;
+                draft.BasicInfo.CultivatedAreaDunum = detail.AgriculturalDetail.CultivatedAreaDunum;
+                draft.BasicInfo.SoilType = detail.AgriculturalDetail.SoilType?.ToString();
+                draft.BasicInfo.WaterSourceType = detail.AgriculturalDetail.WaterSourceType?.ToString();
+                draft.BasicInfo.IrrigationMethod = detail.AgriculturalDetail.IrrigationMethod?.ToString();
+                draft.BasicInfo.PrimaryHarvestType = detail.AgriculturalDetail.PrimaryHarvestType;
+                draft.BasicInfo.SeasonType = detail.AgriculturalDetail.SeasonType?.ToString();
+                draft.BasicInfo.FarmingContractType = detail.AgriculturalDetail.FarmingContractType?.ToString();
+                draft.BasicInfo.WaqfShareOfHarvest = detail.AgriculturalDetail.WaqfShareOfHarvest;
+                draft.BasicInfo.FarmerName = detail.AgriculturalDetail.FarmerName;
+                draft.BasicInfo.FarmerNationalId = detail.AgriculturalDetail.FarmerNationalId;
+            }
+
+            var activePartnership = detail.Partnerships?.FirstOrDefault(p => p.IsActive) ?? detail.Partnerships?.FirstOrDefault();
+            if (activePartnership != null)
+            {
+                draft.BasicInfo.PartnerName = activePartnership.PartnerName;
+                draft.BasicInfo.PartnerType = activePartnership.PartnerType.ToString();
+            }
+
+            if (detail.Floors != null && detail.Floors.Any())
+            {
+                draft.BuildingDetails.Floors = detail.Floors
+                    .OrderBy(f => f.FloorNumber)
+                    .Select(f => new FloorInputViewModel
+                    {
+                        FloorNumber = f.FloorNumber,
+                        FloorLabel = string.IsNullOrWhiteSpace(f.FloorLabel) ? $"الطابق {f.FloorNumber}" : f.FloorLabel,
+                        FloorUsage = f.FloorUsage.ToString(),
+                        AreaSqm = f.TotalAreaSqm,
+                        StructuralCondition = f.StructuralCondition?.ToString(),
+                        CeilingHeightCm = f.CeilingHeightCm,
+                        HasBalcony = f.HasBalcony,
+                        IsOccupied = f.IsOccupied,
+                        Notes = f.Notes,
+                        Units = f.Units.Select(u => new UnitInputViewModel
+                        {
+                            UnitNumber = u.UnitNumber ?? $"{f.FloorNumber}-{u.Id}",
+                            UnitType = u.UnitType.ToString(),
+                            AreaSqm = u.AreaSqm,
+                            BedroomCount = u.BedroomCount ?? 0,
+                            OccupancyStatus = u.OccupancyStatus.ToString(),
+                            MarketRentMonthly = u.MarketRentMonthly,
+                            ElectricMeterNo = u.ElectricMeterNo,
+                            WaterMeterNo = u.WaterMeterNo
+                        }).ToList()
+                    }).ToList();
+            }
+
+            var deedDoc = detail.Documents.FirstOrDefault(d => d.DocumentCategory == DocumentCategory.Ownership);
+            if (deedDoc != null)
+            {
+                draft.Documents.DeedDate = deedDoc.DocumentDate;
+                draft.Documents.DeedCourt = deedDoc.IssuingAuthority;
+                draft.Documents.DeedUploaded = true;
+            }
+
+            return draft;
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // PRIVATE — UPLOAD DOCUMENTS
         // ─────────────────────────────────────────────────────────────────────
         private async Task UploadDocumentsAsync(int propertyId, DocumentsViewModel docs)
         {
-            var tasks = new List<Task>();
+            var uploadErrors = new List<string>();
 
             if (docs.DeedFile != null)
             {
@@ -805,7 +1047,8 @@ namespace WaqfSystem.Web.Controllers
                     DocumentDate = docs.DeedDate,
                     IssuingAuthority = docs.DeedCourt
                 };
-                tasks.Add(_documentService.UploadAsync(docs.DeedFile, dto, CurrentUserId));
+                try { await _documentService.UploadAsync(docs.DeedFile, dto, CurrentUserId); }
+                catch (Exception ex) { uploadErrors.Add($"صك الملكية: {ex.Message}"); }
             }
 
             if (docs.CadastralFile != null)
@@ -817,7 +1060,8 @@ namespace WaqfSystem.Web.Controllers
                     DocumentType = "Cadastral",
                     DocumentNumber = docs.CadastralNumber ?? docs.TabuNumber
                 };
-                tasks.Add(_documentService.UploadAsync(docs.CadastralFile, dto, CurrentUserId));
+                try { await _documentService.UploadAsync(docs.CadastralFile, dto, CurrentUserId); }
+                catch (Exception ex) { uploadErrors.Add($"وثيقة الكاداسترو/الطابو: {ex.Message}"); }
             }
 
             if (docs.BuildingPermitFile != null)
@@ -830,7 +1074,8 @@ namespace WaqfSystem.Web.Controllers
                     DocumentNumber = docs.BuildingPermitNumber,
                     DocumentDate = docs.BuildingPermitDate
                 };
-                tasks.Add(_documentService.UploadAsync(docs.BuildingPermitFile, dto, CurrentUserId));
+                try { await _documentService.UploadAsync(docs.BuildingPermitFile, dto, CurrentUserId); }
+                catch (Exception ex) { uploadErrors.Add($"رخصة البناء: {ex.Message}"); }
             }
 
             if (docs.CompletionCertFile != null)
@@ -842,7 +1087,8 @@ namespace WaqfSystem.Web.Controllers
                     DocumentType = "CompletionCert",
                     DocumentNumber = docs.CompletionCertNumber
                 };
-                tasks.Add(_documentService.UploadAsync(docs.CompletionCertFile, dto, CurrentUserId));
+                try { await _documentService.UploadAsync(docs.CompletionCertFile, dto, CurrentUserId); }
+                catch (Exception ex) { uploadErrors.Add($"شهادة الإنجاز: {ex.Message}"); }
             }
 
             var photoMap = new (IFormFile? File, PhotoType Type)[]
@@ -857,11 +1103,17 @@ namespace WaqfSystem.Web.Controllers
             foreach (var (file, photoType) in photoMap)
             {
                 if (file != null)
-                    tasks.Add(_documentService.AddPhotoAsync(file, propertyId, photoType, CurrentUserId));
+                {
+                    try { await _documentService.AddPhotoAsync(file, propertyId, photoType, CurrentUserId); }
+                    catch (Exception ex) { uploadErrors.Add($"صورة {photoType}: {ex.Message}"); }
+                }
             }
 
-            try { await Task.WhenAll(tasks); }
-            catch (Exception ex) { _logger.LogError(ex, "خطأ في رفع مستندات العقار {PropertyId}", propertyId); }
+            if (uploadErrors.Any())
+            {
+                var combined = string.Join(" | ", uploadErrors);
+                throw new InvalidOperationException($"فشل في رفع بعض الوثائق/الصور: {combined}");
+            }
         }
     }
 

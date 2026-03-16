@@ -24,6 +24,7 @@ namespace WaqfSystem.Application
             services.AddScoped<IGeographicService, GeographicService>();
             services.AddScoped<IAgriculturalService, AgriculturalService>();
             services.AddScoped<IDocumentService, DocumentService>();
+            services.AddScoped<IDocumentAlertService, DocumentAlertService>();
             services.AddScoped<IDqsService, DqsService>();
             services.AddScoped<IWorkflowService, WorkflowService>();
             services.AddScoped<IMissionService, MissionService>();

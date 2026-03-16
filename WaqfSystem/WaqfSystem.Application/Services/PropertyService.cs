@@ -20,6 +20,7 @@ namespace WaqfSystem.Application.Services
         Task<PropertyDetailDto> CreateAsync(CreatePropertyDto dto, int userId);
         Task<PropertyDetailDto> UpdateAsync(UpdatePropertyDto dto, int userId);
         Task SoftDeleteAsync(int id);
+        Task DeactivateAsync(int id, int userId);
         Task<List<PropertyMapPointDto>> GetMapPointsAsync(int? governorateId = null, PropertyType? type = null, ApprovalStage? stage = null);
         Task<PropertyDetailDto?> GetByLocalIdAsync(string localId);
         Task<List<PropertyListDto>> GetNearbyAsync(decimal lat, decimal lng, double radius, int limit);
@@ -136,9 +137,11 @@ namespace WaqfSystem.Application.Services
                 }
             }
 
+            // Save the property first so we get a valid DB-generated Id
             await _unitOfWork.Properties.AddAsync(property);
+            await _unitOfWork.SaveChangesAsync();
 
-            // Create address if provided
+            // Create address AFTER saving the property so PropertyId is valid
             if (dto.StreetId.HasValue || !string.IsNullOrEmpty(dto.BuildingNumber))
             {
                 var address = new PropertyAddress
@@ -153,9 +156,9 @@ namespace WaqfSystem.Application.Services
                     CreatedAt = DateTime.UtcNow
                 };
                 await _unitOfWork.AddAsync(address);
+                await _unitOfWork.SaveChangesAsync();
+                property.Address = address;
             }
-
-            await _unitOfWork.SaveChangesAsync();
 
             // Calculate DQS
             property.DqsScore = _dqsService.CalculateScore(property);
@@ -169,13 +172,40 @@ namespace WaqfSystem.Application.Services
 
         public async Task<PropertyDetailDto> UpdateAsync(UpdatePropertyDto dto, int userId)
         {
-            var property = await _unitOfWork.Properties.GetByIdAsync(dto.Id);
+            var property = await _unitOfWork.Properties.GetByIdWithDetailsAsync(dto.Id);
             if (property == null)
                 throw new InvalidOperationException($"العقار غير موجود: {dto.Id}");
 
             _mapper.Map(dto, property);
             property.UpdatedById = userId;
             property.UpdatedAt = DateTime.UtcNow;
+
+            var hasAddressData = dto.StreetId.HasValue
+                || !string.IsNullOrWhiteSpace(dto.BuildingNumber)
+                || !string.IsNullOrWhiteSpace(dto.PlotNumber)
+                || !string.IsNullOrWhiteSpace(dto.BlockNumber)
+                || !string.IsNullOrWhiteSpace(dto.NearestLandmark);
+
+            if (property.Address == null && hasAddressData)
+            {
+                property.Address = new PropertyAddress
+                {
+                    PropertyId = property.Id,
+                    CreatedById = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+            }
+
+            if (property.Address != null)
+            {
+                property.Address.StreetId = dto.StreetId;
+                property.Address.BuildingNumber = dto.BuildingNumber;
+                property.Address.PlotNumber = dto.PlotNumber;
+                property.Address.BlockNumber = dto.BlockNumber;
+                property.Address.NearestLandmark = dto.NearestLandmark;
+                property.Address.UpdatedAt = DateTime.UtcNow;
+                property.Address.UpdatedById = userId;
+            }
 
             // Recalculate DQS
             property.DqsScore = _dqsService.CalculateScore(property);
@@ -193,6 +223,22 @@ namespace WaqfSystem.Application.Services
             await _unitOfWork.Properties.SoftDeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
             _logger.LogInformation("Property soft-deleted: {Id}", id);
+        }
+
+        public async Task DeactivateAsync(int id, int userId)
+        {
+            var property = await _unitOfWork.Properties.GetByIdAsync(id);
+            if (property == null)
+                throw new InvalidOperationException($"العقار غير موجود: {id}");
+
+            property.PropertyStatus = PropertyStatus.Abandoned;
+            property.UpdatedById = userId;
+            property.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.Properties.UpdateAsync(property);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Property deactivated: {Id}", id);
         }
 
         public async Task<List<PropertyMapPointDto>> GetMapPointsAsync(int? governorateId = null, PropertyType? type = null, ApprovalStage? stage = null)

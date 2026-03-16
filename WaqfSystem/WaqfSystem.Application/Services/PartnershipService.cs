@@ -81,6 +81,8 @@ namespace WaqfSystem.Application.Services
                     FarmerName = dto.FarmerName,
                     FarmerNationalId = dto.FarmerNationalId,
                     HarvestContractType = dto.HarvestContractType,
+                    CustomPartnershipName = dto.CustomPartnershipName,
+                    CustomCalculationFormula = dto.CustomCalculationFormula,
                     PartnerName = dto.PartnerName,
                     PartnerNameEn = dto.PartnerNameEn,
                     PartnerType = dto.PartnerType,
@@ -101,6 +103,7 @@ namespace WaqfSystem.Application.Services
                     AgreementReferenceNo = dto.AgreementReferenceNo,
                     AgreementDocUrl = agreementUrl,
                     RevenueDistribMethod = dto.RevenueDistribMethod,
+                    ExpenseBearingMethod = dto.ExpenseBearingMethod,
                     RevenueDistribDay = dto.RevenueDistribDay,
                     NextDistribDate = ComputeNextDistribDate(dto.RevenueDistribMethod, dto.RevenueDistribDay, DateTime.Today),
                     IsActive = true,
@@ -113,6 +116,8 @@ namespace WaqfSystem.Application.Services
 
                 await _unitOfWork.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                await SyncConditionRulesAsync(entity.Id, dto.ConditionRules, userId);
 
                 await CreateExpirySchedulesAsync(entity);
                 await WriteAuditAsync("PropertyPartnerships", entity.Id, "INSERT", null, JsonSerializer.Serialize(entity), userId);
@@ -184,6 +189,8 @@ namespace WaqfSystem.Application.Services
                 entity.FarmerName = merged.FarmerName;
                 entity.FarmerNationalId = merged.FarmerNationalId;
                 entity.HarvestContractType = merged.HarvestContractType;
+                entity.CustomPartnershipName = merged.CustomPartnershipName;
+                entity.CustomCalculationFormula = merged.CustomCalculationFormula;
                 entity.PartnerName = merged.PartnerName;
                 entity.PartnerNameEn = merged.PartnerNameEn;
                 entity.PartnerType = merged.PartnerType;
@@ -203,6 +210,7 @@ namespace WaqfSystem.Application.Services
                 entity.AgreementCourt = merged.AgreementCourt;
                 entity.AgreementReferenceNo = merged.AgreementReferenceNo;
                 entity.RevenueDistribMethod = merged.RevenueDistribMethod;
+                entity.ExpenseBearingMethod = merged.ExpenseBearingMethod;
                 entity.RevenueDistribDay = merged.RevenueDistribDay;
                 entity.NextDistribDate = ComputeNextDistribDate(merged.RevenueDistribMethod, merged.RevenueDistribDay, entity.LastDistribDate ?? DateTime.Today);
                 entity.Notes = merged.Notes;
@@ -213,6 +221,11 @@ namespace WaqfSystem.Application.Services
 
                 await _unitOfWork.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (dto.ConditionRules != null)
+                {
+                    await SyncConditionRulesAsync(entity.Id, dto.ConditionRules, userId);
+                }
 
                 await CreateExpirySchedulesAsync(entity);
                 await WriteAuditAsync("PropertyPartnerships", entity.Id, "UPDATE", oldValues, JsonSerializer.Serialize(entity), userId);
@@ -281,9 +294,9 @@ namespace WaqfSystem.Application.Services
                     throw new ValidationException("لا يمكن تسجيل توزيع لشراكة غير نشطة");
                 }
 
-                var calc = await CalculateRevenueAsync(partnership, dto.TotalRevenue, dto.DistributionType, DateTime.Today);
+                var calc = await CalculateRevenueAsync(partnership, dto.TotalRevenue, dto.TotalExpenses, dto.DistributionType, DateTime.Today, dto.SeasonLabel);
 
-                if (Math.Abs((calc.WaqfAmount + calc.PartnerAmount) - dto.TotalRevenue) >= 0.01m)
+                if (Math.Abs((calc.WaqfAmount + calc.PartnerAmount) - calc.NetRevenue) >= 0.01m)
                 {
                     throw new InvalidOperationException("Revenue calculation mismatch");
                 }
@@ -297,8 +310,10 @@ namespace WaqfSystem.Application.Services
                     PeriodEndDate = dto.PeriodEndDate.Date,
                     DistributionType = dto.DistributionType,
                     TotalRevenue = dto.TotalRevenue,
+                    TotalExpenses = dto.TotalExpenses,
+                    NetRevenue = calc.NetRevenue,
                     WaqfAmount = calc.WaqfAmount,
-                    PartnerAmount = dto.TotalRevenue - calc.WaqfAmount,
+                    PartnerAmount = calc.PartnerAmount,
                     WaqfPercentSnapshot = calc.WaqfPercent,
                     TransferStatus = TransferStatus.Pending,
                     TransferMethod = dto.TransferMethod,
@@ -386,7 +401,7 @@ namespace WaqfSystem.Application.Services
             }
         }
 
-        public async Task<RevenueCalculationResultDto> PreviewRevenueCalculationAsync(int partnershipId, decimal totalRevenue)
+        public async Task<RevenueCalculationResultDto> PreviewRevenueCalculationAsync(int partnershipId, decimal totalRevenue, decimal totalExpenses = 0m, string? distributionType = null, string? seasonLabel = null)
         {
             try
             {
@@ -399,7 +414,7 @@ namespace WaqfSystem.Application.Services
                     throw new ValidationException("الشراكة غير موجودة");
                 }
 
-                var calc = await CalculateRevenueAsync(partnership, totalRevenue, "Revenue", DateTime.Today);
+                var calc = await CalculateRevenueAsync(partnership, totalRevenue, totalExpenses, distributionType ?? "Revenue", DateTime.Today, seasonLabel);
                 return calc;
             }
             catch (ValidationException)
@@ -693,6 +708,7 @@ namespace WaqfSystem.Application.Services
                         TotalDistributed = distributed,
                         PendingTransferAmount = pending,
                         RevenueDistribMethod = p.RevenueDistribMethod,
+                        ExpenseBearingMethod = p.ExpenseBearingMethod,
                         NextDistribDate = p.NextDistribDate
                     });
                 }
@@ -788,6 +804,86 @@ namespace WaqfSystem.Application.Services
             }
         }
 
+        public async Task<PartnershipExpenseEntryDto> AddExpenseAsync(CreatePartnershipExpenseDto dto, int userId)
+        {
+            var partnership = await _unitOfWork.GetQueryable<PropertyPartnership>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == dto.PartnershipId && !x.IsDeleted);
+
+            if (partnership == null)
+            {
+                throw new ValidationException("الشراكة غير موجودة");
+            }
+
+            var expense = new PartnershipExpenseEntry
+            {
+                PartnershipId = partnership.Id,
+                PropertyId = partnership.PropertyId,
+                PeriodLabel = dto.PeriodLabel,
+                PeriodStartDate = dto.PeriodStartDate.Date,
+                PeriodEndDate = dto.PeriodEndDate.Date,
+                ExpenseType = dto.ExpenseType,
+                Amount = decimal.Round(dto.Amount, 2),
+                ReferenceNo = dto.ReferenceNo,
+                Notes = dto.Notes,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await _unitOfWork.AddAsync(expense);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new PartnershipExpenseEntryDto
+            {
+                Id = expense.Id,
+                PartnershipId = expense.PartnershipId,
+                PropertyId = expense.PropertyId,
+                PeriodLabel = expense.PeriodLabel,
+                PeriodStartDate = expense.PeriodStartDate,
+                PeriodEndDate = expense.PeriodEndDate,
+                ExpenseType = expense.ExpenseType,
+                Amount = expense.Amount,
+                ReferenceNo = expense.ReferenceNo,
+                Notes = expense.Notes,
+                CreatedAt = expense.CreatedAt
+            };
+        }
+
+        public async Task<List<PartnershipExpenseEntryDto>> GetExpensesAsync(int partnershipId, DateTime? from = null, DateTime? to = null)
+        {
+            var query = _unitOfWork.GetQueryable<PartnershipExpenseEntry>()
+                .AsNoTracking()
+                .Where(x => x.PartnershipId == partnershipId);
+
+            if (from.HasValue)
+            {
+                query = query.Where(x => x.PeriodEndDate >= from.Value.Date);
+            }
+
+            if (to.HasValue)
+            {
+                query = query.Where(x => x.PeriodStartDate <= to.Value.Date);
+            }
+
+            return await query
+                .OrderByDescending(x => x.PeriodStartDate)
+                .Select(x => new PartnershipExpenseEntryDto
+                {
+                    Id = x.Id,
+                    PartnershipId = x.PartnershipId,
+                    PropertyId = x.PropertyId,
+                    PeriodLabel = x.PeriodLabel,
+                    PeriodStartDate = x.PeriodStartDate,
+                    PeriodEndDate = x.PeriodEndDate,
+                    ExpenseType = x.ExpenseType,
+                    Amount = x.Amount,
+                    ReferenceNo = x.ReferenceNo,
+                    Notes = x.Notes,
+                    CreatedAt = x.CreatedAt
+                })
+                .ToListAsync();
+        }
+
         public async Task<List<PartnershipListItemDto>> GetExpiringAsync(int daysAhead)
         {
             try
@@ -824,6 +920,7 @@ namespace WaqfSystem.Application.Services
                         IsExpiringSoon = days.HasValue && days.Value < 90 && days.Value >= 0,
                         IsExpired = days.HasValue && days.Value < 0,
                         RevenueDistribMethod = p.RevenueDistribMethod,
+                        ExpenseBearingMethod = p.ExpenseBearingMethod,
                         NextDistribDate = p.NextDistribDate
                     };
                 }).ToList();
@@ -948,19 +1045,27 @@ namespace WaqfSystem.Application.Services
                         throw new ValidationException("اسم المزارع مطلوب");
                     }
                     break;
+
+                case PartnershipType.Custom:
+                    if (string.IsNullOrWhiteSpace(dto.CustomPartnershipName))
+                    {
+                        throw new ValidationException("اسم نوع الشراكة المخصصة مطلوب");
+                    }
+                    break;
             }
         }
 
-        private async Task<RevenueCalculationResultDto> CalculateRevenueAsync(PropertyPartnership partnership, decimal totalRevenue, string distributionType, DateTime currentDate)
+        private async Task<RevenueCalculationResultDto> CalculateRevenueAsync(PropertyPartnership partnership, decimal totalRevenue, decimal totalExpenses, string distributionType, DateTime currentDate, string? seasonLabel)
         {
             decimal waqfAmount;
             decimal waqfPercent = partnership.WaqfSharePercent;
             string method;
+            var distributableRevenue = GetDistributableRevenue(partnership.ExpenseBearingMethod, totalRevenue, totalExpenses);
 
             switch (partnership.PartnershipType)
             {
                 case PartnershipType.RevenuePercent:
-                    waqfAmount = totalRevenue * (partnership.WaqfSharePercent / 100m);
+                    waqfAmount = distributableRevenue * (partnership.WaqfSharePercent / 100m);
                     method = "نسبة من الإيراد الكلي";
                     break;
 
@@ -972,7 +1077,7 @@ namespace WaqfSystem.Application.Services
                     var waqfFloors = ParseIntArray(partnership.OwnedFloorNumbers);
                     var waqfFloorCount = allFloors.Count(x => waqfFloors.Contains(x.FloorNumber));
                     var totalFloorCount = allFloors.Count;
-                    waqfAmount = totalFloorCount == 0 ? 0 : totalRevenue * (waqfFloorCount / (decimal)totalFloorCount);
+                    waqfAmount = totalFloorCount == 0 ? 0 : distributableRevenue * (waqfFloorCount / (decimal)totalFloorCount);
                     waqfPercent = totalFloorCount == 0 ? 0 : decimal.Round((waqfFloorCount / (decimal)totalFloorCount) * 100m, 2);
                     method = "ملكية طوابق حسب عدد الطوابق";
                     break;
@@ -988,13 +1093,13 @@ namespace WaqfSystem.Application.Services
                     var totalRent = units.Sum(x => x.MarketRentMonthly ?? 0m);
                     if (totalRent > 0)
                     {
-                        waqfAmount = totalRevenue * (waqfUnitRent / totalRent);
+                        waqfAmount = distributableRevenue * (waqfUnitRent / totalRent);
                         waqfPercent = decimal.Round((waqfUnitRent / totalRent) * 100m, 2);
                     }
                     else
                     {
                         var totalUnits = units.Count;
-                        waqfAmount = totalUnits == 0 ? 0 : totalRevenue * (selectedUnits.Count / (decimal)totalUnits);
+                        waqfAmount = totalUnits == 0 ? 0 : distributableRevenue * (selectedUnits.Count / (decimal)totalUnits);
                         waqfPercent = totalUnits == 0 ? 0 : decimal.Round((selectedUnits.Count / (decimal)totalUnits) * 100m, 2);
                     }
                     method = "ملكية عينية حسب الوحدات";
@@ -1010,15 +1115,15 @@ namespace WaqfSystem.Application.Services
                     else
                     {
                         var monthlyFee = (partnership.UsufructAnnualFeePerYear ?? 0m) / 12m;
-                        waqfAmount = monthlyFee > totalRevenue ? totalRevenue : monthlyFee;
-                        waqfPercent = totalRevenue == 0 ? 0 : decimal.Round((waqfAmount / totalRevenue) * 100m, 2);
+                        waqfAmount = monthlyFee > distributableRevenue ? distributableRevenue : monthlyFee;
+                        waqfPercent = distributableRevenue == 0 ? 0 : decimal.Round((waqfAmount / distributableRevenue) * 100m, 2);
                         method = "حق انتفاع برسوم شهرية ثابتة";
                     }
                     break;
 
                 case PartnershipType.LandPercent:
                     waqfPercent = partnership.LandSharePercentWaqf ?? 0m;
-                    waqfAmount = totalRevenue * (waqfPercent / 100m);
+                    waqfAmount = distributableRevenue * (waqfPercent / 100m);
                     method = "نسبة الوقف من الأرض الزراعية";
                     break;
 
@@ -1031,34 +1136,92 @@ namespace WaqfSystem.Application.Services
                     }
                     else
                     {
-                        waqfAmount = totalRevenue * (partnership.WaqfSharePercent / 100m);
+                        waqfAmount = distributableRevenue * (partnership.WaqfSharePercent / 100m);
                         method = "شراكة مؤقتة بالنسبة المتفق عليها";
                     }
                     break;
 
                 case PartnershipType.HarvestShare:
                     waqfPercent = partnership.WaqfHarvestPercent ?? 0m;
-                    waqfAmount = totalRevenue * (waqfPercent / 100m);
+                    waqfAmount = distributableRevenue * (waqfPercent / 100m);
                     method = distributionType == "Harvest" ? "حصة الوقف من المحصول" : "مزارعة/مساقاة";
                     break;
 
+                case PartnershipType.Custom:
+                    waqfAmount = distributableRevenue * (partnership.WaqfSharePercent / 100m);
+                    method = string.IsNullOrWhiteSpace(partnership.CustomPartnershipName)
+                        ? "شراكة مخصصة"
+                        : $"شراكة مخصصة ({partnership.CustomPartnershipName})";
+                    break;
+
                 default:
-                    waqfAmount = totalRevenue * (partnership.WaqfSharePercent / 100m);
+                    waqfAmount = distributableRevenue * (partnership.WaqfSharePercent / 100m);
                     method = "افتراضي";
                     break;
             }
 
-            waqfAmount = decimal.Round(waqfAmount, 2);
-            var partnerAmount = decimal.Round(totalRevenue - waqfAmount, 2);
+            var activeRules = await _unitOfWork.GetQueryable<PartnershipConditionRule>()
+                .AsNoTracking()
+                .Where(x => x.PartnershipId == partnership.Id && x.IsActive)
+                .OrderBy(x => x.PriorityOrder)
+                .ToListAsync();
+
+            PartnershipConditionRule? appliedRule = null;
+            foreach (var rule in activeRules)
+            {
+                if (!IsRuleApplicable(rule, totalRevenue, distributionType, seasonLabel, currentDate))
+                {
+                    continue;
+                }
+
+                appliedRule = rule;
+                switch (rule.RuleType)
+                {
+                    case ConditionRuleType.FixedAmount:
+                        waqfAmount = rule.FixedAmount ?? waqfAmount;
+                        break;
+                    case ConditionRuleType.PercentOfRevenue:
+                    case ConditionRuleType.SeasonalOverride:
+                    case ConditionRuleType.HarvestOverride:
+                        if (rule.PercentValue.HasValue)
+                        {
+                            waqfAmount = distributableRevenue * (rule.PercentValue.Value / 100m);
+                            waqfPercent = rule.PercentValue.Value;
+                        }
+                        break;
+                    case ConditionRuleType.MinGuaranteedAmount:
+                        waqfAmount = Math.Max(waqfAmount, rule.FixedAmount ?? 0m);
+                        break;
+                    case ConditionRuleType.OneTimeAdjustment:
+                        waqfAmount += rule.FixedAmount ?? 0m;
+                        break;
+                }
+
+                break;
+            }
+
+            var (waqfAfterExpense, partnerAfterExpense, totalForSplit) = ApplyExpensePolicy(
+                partnership.ExpenseBearingMethod,
+                distributableRevenue,
+                totalRevenue,
+                totalExpenses,
+                waqfAmount);
+
+            waqfAmount = decimal.Round(waqfAfterExpense, 2);
+            var partnerAmount = decimal.Round(partnerAfterExpense, 2);
+            var finalWaqfPercent = totalForSplit == 0 ? 0m : decimal.Round((waqfAmount / totalForSplit) * 100m, 2);
 
             return new RevenueCalculationResultDto
             {
                 TotalRevenue = totalRevenue,
+                TotalExpenses = totalExpenses,
+                NetRevenue = decimal.Round(Math.Max(0m, totalRevenue - totalExpenses), 2),
                 WaqfAmount = waqfAmount,
                 PartnerAmount = partnerAmount,
-                WaqfPercent = decimal.Round(waqfPercent, 2),
+                WaqfPercent = finalWaqfPercent,
                 CalculationMethod = method,
-                CalculationDetail = $"نسبة الوقف {decimal.Round(waqfPercent, 2).ToString("N2", CultureInfo.InvariantCulture)}% من إجمالي إيراد {totalRevenue.ToString("N0")} د.ع = {waqfAmount.ToString("N0")} د.ع للوقف، {partnerAmount.ToString("N0")} د.ع للشريك"
+                AppliedRuleName = appliedRule?.RuleName,
+                CalculationDetail = $"إجمالي الإيراد {totalRevenue.ToString("N0", CultureInfo.InvariantCulture)} د.ع، المصروفات {totalExpenses.ToString("N0", CultureInfo.InvariantCulture)} د.ع، صافي التوزيع {(Math.Max(0m, totalRevenue - totalExpenses)).ToString("N0", CultureInfo.InvariantCulture)} د.ع. حصة الوقف {waqfAmount.ToString("N0", CultureInfo.InvariantCulture)} د.ع، حصة الشريك {partnerAmount.ToString("N0", CultureInfo.InvariantCulture)} د.ع"
             };
         }
 
@@ -1118,7 +1281,10 @@ namespace WaqfSystem.Application.Services
                 FarmerName = p.FarmerName,
                 FarmerNationalId = p.FarmerNationalId,
                 HarvestContractType = p.HarvestContractType,
+                CustomPartnershipName = p.CustomPartnershipName,
+                CustomCalculationFormula = p.CustomCalculationFormula,
                 RevenueDistribMethod = p.RevenueDistribMethod,
+                ExpenseBearingMethod = p.ExpenseBearingMethod,
                 RevenueDistribDay = p.RevenueDistribDay,
                 LastDistribDate = p.LastDistribDate,
                 NextDistribDate = p.NextDistribDate,
@@ -1133,6 +1299,7 @@ namespace WaqfSystem.Application.Services
                 PendingTransferAmount = distributions.Where(x => x.TransferStatus == TransferStatus.Pending).Sum(x => x.PartnerAmount),
                 LastContactDate = lastContact?.SentAt,
                 LastContactType = lastContact?.ContactType.ToString(),
+                ConditionRulesCount = await _unitOfWork.GetQueryable<PartnershipConditionRule>().CountAsync(x => x.PartnershipId == p.Id && x.IsActive),
                 IsActive = p.IsActive,
                 Notes = p.Notes
             };
@@ -1280,6 +1447,121 @@ namespace WaqfSystem.Application.Services
             }
         }
 
+        private async Task SyncConditionRulesAsync(int partnershipId, List<PartnershipConditionRuleDto> rules, int userId)
+        {
+            var existing = await _unitOfWork.GetQueryable<PartnershipConditionRule>()
+                .Where(x => x.PartnershipId == partnershipId)
+                .ToListAsync();
+
+            foreach (var old in existing)
+            {
+                old.IsActive = false;
+                await _unitOfWork.UpdateAsync(old);
+            }
+
+            foreach (var rule in rules.Where(x => !string.IsNullOrWhiteSpace(x.RuleName)))
+            {
+                var entity = new PartnershipConditionRule
+                {
+                    PartnershipId = partnershipId,
+                    RuleType = rule.RuleType,
+                    Scope = rule.Scope,
+                    RuleName = rule.RuleName,
+                    FixedAmount = rule.FixedAmount,
+                    PercentValue = rule.PercentValue,
+                    MinRevenueThreshold = rule.MinRevenueThreshold,
+                    MaxRevenueThreshold = rule.MaxRevenueThreshold,
+                    StartDate = rule.StartDate,
+                    EndDate = rule.EndDate,
+                    DistributionType = rule.DistributionType,
+                    SeasonLabel = rule.SeasonLabel,
+                    PriorityOrder = rule.PriorityOrder,
+                    IsActive = rule.IsActive,
+                    Notes = rule.Notes,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedById = userId
+                };
+                await _unitOfWork.AddAsync(entity);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        private static decimal GetDistributableRevenue(ExpenseBearingMethod expenseMethod, decimal totalRevenue, decimal totalExpenses)
+        {
+            var expenses = Math.Max(0m, totalExpenses);
+            var revenue = Math.Max(0m, totalRevenue);
+
+            if (expenseMethod == ExpenseBearingMethod.BeforeDistribution || expenseMethod == ExpenseBearingMethod.SharedByPercent)
+            {
+                return Math.Max(0m, revenue - expenses);
+            }
+
+            return revenue;
+        }
+
+        private static (decimal waqfAmount, decimal partnerAmount, decimal totalForSplit) ApplyExpensePolicy(
+            ExpenseBearingMethod expenseMethod,
+            decimal distributableRevenue,
+            decimal totalRevenue,
+            decimal totalExpenses,
+            decimal waqfAmount)
+        {
+            var revenue = Math.Max(0m, totalRevenue);
+            var expenses = Math.Max(0m, totalExpenses);
+            var waqfBase = Math.Min(Math.Max(0m, waqfAmount), distributableRevenue);
+            var partnerBase = Math.Max(0m, distributableRevenue - waqfBase);
+
+            if (expenseMethod == ExpenseBearingMethod.WaqfOnly)
+            {
+                waqfBase = Math.Max(0m, waqfBase - expenses);
+                return (waqfBase, Math.Max(0m, revenue - waqfBase - expenses), Math.Max(0m, revenue - expenses));
+            }
+
+            if (expenseMethod == ExpenseBearingMethod.PartnerOnly)
+            {
+                partnerBase = Math.Max(0m, partnerBase - expenses);
+                return (waqfBase, partnerBase, Math.Max(0m, revenue - expenses));
+            }
+
+            return (waqfBase, partnerBase, distributableRevenue);
+        }
+
+        private static bool IsRuleApplicable(PartnershipConditionRule rule, decimal totalRevenue, string distributionType, string? seasonLabel, DateTime currentDate)
+        {
+            if (rule.MinRevenueThreshold.HasValue && totalRevenue < rule.MinRevenueThreshold.Value)
+            {
+                return false;
+            }
+
+            if (rule.MaxRevenueThreshold.HasValue && totalRevenue > rule.MaxRevenueThreshold.Value)
+            {
+                return false;
+            }
+
+            if (rule.StartDate.HasValue && currentDate.Date < rule.StartDate.Value.Date)
+            {
+                return false;
+            }
+
+            if (rule.EndDate.HasValue && currentDate.Date > rule.EndDate.Value.Date)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(rule.DistributionType) && !string.Equals(rule.DistributionType, distributionType, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(rule.SeasonLabel) && !string.Equals(rule.SeasonLabel, seasonLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private static string ResolveRecipient(ContactType type, PropertyPartnership partnership)
         {
             return type switch
@@ -1325,12 +1607,16 @@ namespace WaqfSystem.Application.Services
                 FarmerName = dto.FarmerName ?? entity.FarmerName,
                 FarmerNationalId = dto.FarmerNationalId ?? entity.FarmerNationalId,
                 HarvestContractType = dto.HarvestContractType ?? entity.HarvestContractType,
+                CustomPartnershipName = dto.CustomPartnershipName ?? entity.CustomPartnershipName,
+                CustomCalculationFormula = dto.CustomCalculationFormula ?? entity.CustomCalculationFormula,
                 AgreementDate = dto.AgreementDate ?? entity.AgreementDate,
                 AgreementNotaryName = dto.AgreementNotaryName ?? entity.AgreementNotaryName,
                 AgreementCourt = dto.AgreementCourt ?? entity.AgreementCourt,
                 AgreementReferenceNo = dto.AgreementReferenceNo ?? entity.AgreementReferenceNo,
                 RevenueDistribMethod = dto.RevenueDistribMethod ?? entity.RevenueDistribMethod,
+                ExpenseBearingMethod = dto.ExpenseBearingMethod ?? entity.ExpenseBearingMethod,
                 RevenueDistribDay = dto.RevenueDistribDay ?? entity.RevenueDistribDay,
+                ConditionRules = dto.ConditionRules ?? new List<PartnershipConditionRuleDto>(),
                 Notes = dto.Notes ?? entity.Notes
             };
         }
@@ -1366,6 +1652,8 @@ namespace WaqfSystem.Application.Services
                 PeriodEndDate = distribution.PeriodEndDate,
                 DistributionType = distribution.DistributionType,
                 TotalRevenue = distribution.TotalRevenue,
+                TotalExpenses = distribution.TotalExpenses,
+                NetRevenue = distribution.NetRevenue,
                 WaqfAmount = distribution.WaqfAmount,
                 PartnerAmount = distribution.PartnerAmount,
                 WaqfPercentSnapshot = distribution.WaqfPercentSnapshot,

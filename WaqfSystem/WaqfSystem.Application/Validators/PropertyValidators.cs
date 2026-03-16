@@ -44,15 +44,4 @@ namespace WaqfSystem.Application.Validators
         }
     }
 
-    public class UploadDocumentValidator : AbstractValidator<UploadDocumentDto>
-    {
-        public UploadDocumentValidator()
-        {
-            RuleFor(x => x.DocumentCategory)
-                .IsInEnum().WithMessage("فئة المستند غير صالحة");
-
-            RuleFor(x => x.FileFormat)
-                .IsInEnum().WithMessage("صيغة الملف غير صالحة");
-        }
-    }
 }

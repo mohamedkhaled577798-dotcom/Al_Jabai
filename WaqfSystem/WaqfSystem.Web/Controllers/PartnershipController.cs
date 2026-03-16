@@ -368,23 +368,46 @@ namespace WaqfSystem.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> PreviewRevenue(int partnershipId, decimal totalRevenue)
+        public async Task<IActionResult> PreviewRevenue(int partnershipId, decimal totalRevenue, decimal totalExpenses = 0m, string? distributionType = null, string? seasonLabel = null)
         {
             try
             {
-                var preview = await _partnershipService.PreviewRevenueCalculationAsync(partnershipId, totalRevenue);
+                var preview = await _partnershipService.PreviewRevenueCalculationAsync(partnershipId, totalRevenue, totalExpenses, distributionType, seasonLabel);
                 return Json(new
                 {
                     waqfAmount = preview.WaqfAmount,
                     partnerAmount = preview.PartnerAmount,
+                    netRevenue = preview.NetRevenue,
                     detail = preview.CalculationDetail,
-                    calculationMethod = preview.CalculationMethod
+                    calculationMethod = preview.CalculationMethod,
+                    appliedRuleName = preview.AppliedRuleName
                 });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddExpense(CreatePartnershipExpenseDto dto)
+        {
+            try
+            {
+                var result = await _partnershipService.AddExpenseAsync(dto, GetUserId());
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetExpenses(int partnershipId, DateTime? from, DateTime? to)
+        {
+            var data = await _partnershipService.GetExpensesAsync(partnershipId, from, to);
+            return Json(data);
         }
 
         [HttpGet]

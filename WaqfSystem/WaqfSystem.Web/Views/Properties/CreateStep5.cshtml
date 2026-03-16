@@ -165,6 +165,7 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="DraftKey" />
                     <input type="hidden" asp-for="CurrentStep" value="5" />
+                    <input type="hidden" asp-for="Documents.ExistingPhotoCount" />
 
                     @* SECTION: وثائق الملكية *@
                     <div class="form-section">

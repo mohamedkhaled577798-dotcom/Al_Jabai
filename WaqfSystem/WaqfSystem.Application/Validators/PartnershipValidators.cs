@@ -68,6 +68,18 @@ namespace WaqfSystem.Application.Validators
                     .WithMessage("اسم المزارع مطلوب");
             });
 
+            When(x => x.PartnershipType == PartnershipType.Custom, () =>
+            {
+                RuleFor(x => x.CustomPartnershipName).NotEmpty()
+                    .WithMessage("اسم نوع الشراكة المخصصة مطلوب");
+            });
+
+            RuleForEach(x => x.ConditionRules).ChildRules(rule =>
+            {
+                rule.RuleFor(r => r.RuleName).NotEmpty().WithMessage("اسم الشرط مطلوب");
+                rule.RuleFor(r => r.PriorityOrder).GreaterThanOrEqualTo(0);
+            });
+
             When(x => x.RevenueDistribMethod == RevenueDistribMethod.Monthly, () =>
             {
                 RuleFor(x => x.RevenueDistribDay).NotNull().InclusiveBetween(1, 28)

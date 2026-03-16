@@ -1,39 +1,13 @@
-@using Microsoft.EntityFrameworkCore
-@using WaqfSystem.Infrastructure.Data
-@inject WaqfDbContext DbContext
+@using System.Security.Claims
+@using WaqfSystem.Application.DTOs.Document
+@inject WaqfSystem.Application.Services.IDocumentAlertService DocAlertService
 @{
+    var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
     var today = DateTime.UtcNow.Date;
-    var count = 0;
-    var items = new List<(int PropertyId, string? DocumentType, string? DocumentNumber, DateTime? ExpiryDate, string? WaqfNumber)>();
-
-    try
-    {
-        var alertWindowEnd = today.AddDays(30);
-
-        var expiringQuery = DbContext.PropertyDocuments
-            .AsNoTracking()
-            .Where(d => !d.IsDeleted && d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date <= alertWindowEnd);
-
-        count = await expiringQuery.CountAsync();
-        var dataList = await expiringQuery
-            .OrderBy(d => d.ExpiryDate)
-            .Take(5)
-            .Select(d => new
-            {
-                d.PropertyId,
-                d.DocumentType,
-                d.DocumentNumber,
-                d.ExpiryDate,
-                WaqfNumber = d.Property.WqfNumber
-            })
-            .ToListAsync();
-
-        items = dataList.Select(x => (x.PropertyId, x.DocumentType, x.DocumentNumber, x.ExpiryDate, x.WaqfNumber)).ToList();
-    }
-    catch
-    {
-        // Keep layout rendering even if document schema is not fully migrated.
-    }
+    var items = userId > 0
+        ? await DocAlertService.GetUnreadAlertsForUserAsync(userId)
+        : new List<DocumentAlertDto>();
+    var count = items.Count;
 }
 
 <div class="dropdown me-3">
@@ -58,20 +32,24 @@
             {
                 foreach (var item in items)
                 {
-                    var isExpired = item.ExpiryDate!.Value.Date < today;
-                    var days = (item.ExpiryDate!.Value.Date - today).Days;
-                    <a class="dropdown-item border-bottom py-2" asp-controller="Property" asp-action="Details" asp-route-id="@item.PropertyId">
-                        <div class="fw-semibold">@(item.DocumentType ?? "مستند") - @item.WaqfNumber</div>
+                    var expiry = item.ExpiryDate?.Date;
+                    var isExpired = expiry.HasValue && expiry.Value < today;
+                    var days = expiry.HasValue ? (expiry.Value - today).Days : (int?)null;
+                    <a class="dropdown-item border-bottom py-2" asp-controller="Documents" asp-action="Detail" asp-route-id="@item.DocumentId">
+                        <div class="fw-semibold">@item.DocumentTypeNameAr - @item.PropertyWqfNumber</div>
                         <div class="small text-muted">
-                            @(string.IsNullOrWhiteSpace(item.DocumentNumber) ? "بدون رقم" : item.DocumentNumber)
-                            |
-                            @if (isExpired)
+                            @item.DocumentTitle
+                            @if (days.HasValue)
                             {
-                                <span class="text-danger">منتهية منذ @Math.Abs(days) يوم</span>
-                            }
-                            else
-                            {
-                                <span class="text-warning">متبقي @days يوم</span>
+                                <text> | </text>
+                                if (isExpired)
+                                {
+                                    <span class="text-danger">منتهية منذ @Math.Abs(days.Value) يوم</span>
+                                }
+                                else
+                                {
+                                    <span class="text-warning">متبقي @days يوم</span>
+                                }
                             }
                         </div>
                     </a>
@@ -79,7 +57,7 @@
             }
         </div>
         <div class="p-2 text-center">
-            <a class="btn btn-sm btn-outline-primary" asp-controller="Property" asp-action="Index">إدارة الوثائق</a>
+            <a class="btn btn-sm btn-outline-primary" asp-controller="Documents" asp-action="Index">إدارة الوثائق</a>
         </div>
     </div>
 </div>

@@ -8,10 +8,12 @@ enum PartnershipType {
   landPercent,
   timedPartnership,
   harvestShare,
+  custom,
 }
 
 enum PartnerType { individual, company, heirs, government, foundation, other }
 enum RevenueDistribMethod { monthly, quarterly, annual, perCollection }
+enum ExpenseBearingMethod { beforeDistribution, sharedByPercent, waqfOnly, partnerOnly }
 enum TransferStatus { pending, transferred, cancelled }
 enum ContactType { sms, whatsApp, email, phone, meeting, letter, pdf }
 
@@ -24,6 +26,7 @@ extension PartnershipTypeX on PartnershipType {
         PartnershipType.landPercent => 'نسبة من الأرض',
         PartnershipType.timedPartnership => 'شراكة مؤقتة',
         PartnershipType.harvestShare => 'مزارعة/مساقاة',
+        PartnershipType.custom => 'شراكة مخصصة',
       };
 
   bool get hasEndDate =>
@@ -47,6 +50,8 @@ class PartnershipDetail {
   final double waqfSharePercent;
   final String? ownedFloorNumbers;
   final String? ownedUnitIds;
+  final ExpenseBearingMethod expenseBearingMethod;
+  final String? customPartnershipName;
   final DateTime? partnershipEndDate;
   final DateTime? usufructEndDate;
   final bool isActive;
@@ -64,6 +69,8 @@ class PartnershipDetail {
     this.partnerEmail,
     this.ownedFloorNumbers,
     this.ownedUnitIds,
+    required this.expenseBearingMethod,
+    this.customPartnershipName,
     this.partnershipEndDate,
     this.usufructEndDate,
     required this.isActive,
@@ -114,6 +121,8 @@ class PartnershipDetail {
       waqfSharePercent: (json['waqfSharePercent'] as num?)?.toDouble() ?? 0,
       ownedFloorNumbers: json['ownedFloorNumbers'] as String?,
       ownedUnitIds: json['ownedUnitIds'] as String?,
+      expenseBearingMethod: _expenseBearingMethodFromString((json['expenseBearingMethod'] as String?) ?? 'beforeDistribution'),
+      customPartnershipName: json['customPartnershipName'] as String?,
       partnershipEndDate: json['partnershipEndDate'] != null ? DateTime.parse(json['partnershipEndDate']) : null,
       usufructEndDate: json['usufructEndDate'] != null ? DateTime.parse(json['usufructEndDate']) : null,
       isActive: (json['isActive'] as bool?) ?? true,
@@ -134,6 +143,8 @@ class PartnershipDetail {
       'waqfSharePercent': waqfSharePercent,
       'ownedFloorNumbers': ownedFloorNumbers,
       'ownedUnitIds': ownedUnitIds,
+      'expenseBearingMethod': expenseBearingMethod.name,
+      'customPartnershipName': customPartnershipName,
       'partnershipEndDate': partnershipEndDate?.toIso8601String(),
       'usufructEndDate': usufructEndDate?.toIso8601String(),
       'isActive': isActive,
@@ -153,6 +164,8 @@ class PartnershipDetail {
     double? waqfSharePercent,
     String? ownedFloorNumbers,
     String? ownedUnitIds,
+    ExpenseBearingMethod? expenseBearingMethod,
+    String? customPartnershipName,
     DateTime? partnershipEndDate,
     DateTime? usufructEndDate,
     bool? isActive,
@@ -170,6 +183,8 @@ class PartnershipDetail {
       waqfSharePercent: waqfSharePercent ?? this.waqfSharePercent,
       ownedFloorNumbers: ownedFloorNumbers ?? this.ownedFloorNumbers,
       ownedUnitIds: ownedUnitIds ?? this.ownedUnitIds,
+      expenseBearingMethod: expenseBearingMethod ?? this.expenseBearingMethod,
+      customPartnershipName: customPartnershipName ?? this.customPartnershipName,
       partnershipEndDate: partnershipEndDate ?? this.partnershipEndDate,
       usufructEndDate: usufructEndDate ?? this.usufructEndDate,
       isActive: isActive ?? this.isActive,
@@ -182,6 +197,8 @@ class RevenueDistribution {
   final int partnershipId;
   final String periodLabel;
   final double totalRevenue;
+  final double totalExpenses;
+  final double netRevenue;
   final double waqfAmount;
   final double partnerAmount;
   final TransferStatus transferStatus;
@@ -191,6 +208,8 @@ class RevenueDistribution {
     required this.partnershipId,
     required this.periodLabel,
     required this.totalRevenue,
+    required this.totalExpenses,
+    required this.netRevenue,
     required this.waqfAmount,
     required this.partnerAmount,
     required this.transferStatus,
@@ -202,6 +221,8 @@ class RevenueDistribution {
       partnershipId: (json['partnershipId'] as num?)?.toInt() ?? 0,
       periodLabel: (json['periodLabel'] as String?) ?? '',
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0,
+      totalExpenses: (json['totalExpenses'] as num?)?.toDouble() ?? 0,
+      netRevenue: (json['netRevenue'] as num?)?.toDouble() ?? 0,
       waqfAmount: (json['waqfAmount'] as num?)?.toDouble() ?? 0,
       partnerAmount: (json['partnerAmount'] as num?)?.toDouble() ?? 0,
       transferStatus: _transferStatusFromString((json['transferStatus'] as String?) ?? 'pending'),
@@ -213,6 +234,8 @@ class RevenueDistribution {
         'partnershipId': partnershipId,
         'periodLabel': periodLabel,
         'totalRevenue': totalRevenue,
+        'totalExpenses': totalExpenses,
+        'netRevenue': netRevenue,
         'waqfAmount': waqfAmount,
         'partnerAmount': partnerAmount,
         'transferStatus': transferStatus.name,
@@ -223,6 +246,8 @@ class RevenueDistribution {
     int? partnershipId,
     String? periodLabel,
     double? totalRevenue,
+    double? totalExpenses,
+    double? netRevenue,
     double? waqfAmount,
     double? partnerAmount,
     TransferStatus? transferStatus,
@@ -232,6 +257,8 @@ class RevenueDistribution {
       partnershipId: partnershipId ?? this.partnershipId,
       periodLabel: periodLabel ?? this.periodLabel,
       totalRevenue: totalRevenue ?? this.totalRevenue,
+      totalExpenses: totalExpenses ?? this.totalExpenses,
+      netRevenue: netRevenue ?? this.netRevenue,
       waqfAmount: waqfAmount ?? this.waqfAmount,
       partnerAmount: partnerAmount ?? this.partnerAmount,
       transferStatus: transferStatus ?? this.transferStatus,
@@ -243,17 +270,23 @@ class RevenueCalculationResult {
   final double waqfAmount;
   final double partnerAmount;
   final double totalRevenue;
+  final double totalExpenses;
+  final double netRevenue;
   final double waqfPercent;
   final String calculationMethod;
   final String calculationDetail;
+  final String? appliedRuleName;
 
   RevenueCalculationResult({
     required this.waqfAmount,
     required this.partnerAmount,
     required this.totalRevenue,
+    required this.totalExpenses,
+    required this.netRevenue,
     required this.waqfPercent,
     required this.calculationMethod,
     required this.calculationDetail,
+    this.appliedRuleName,
   });
 
   factory RevenueCalculationResult.fromJson(Map<String, dynamic> json) {
@@ -261,9 +294,12 @@ class RevenueCalculationResult {
       waqfAmount: (json['waqfAmount'] as num?)?.toDouble() ?? 0,
       partnerAmount: (json['partnerAmount'] as num?)?.toDouble() ?? 0,
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0,
+      totalExpenses: (json['totalExpenses'] as num?)?.toDouble() ?? 0,
+      netRevenue: (json['netRevenue'] as num?)?.toDouble() ?? 0,
       waqfPercent: (json['waqfPercent'] as num?)?.toDouble() ?? 0,
       calculationMethod: (json['calculationMethod'] as String?) ?? '',
       calculationDetail: (json['calculationDetail'] as String?) ?? '',
+      appliedRuleName: json['appliedRuleName'] as String?,
     );
   }
 
@@ -271,9 +307,12 @@ class RevenueCalculationResult {
         'waqfAmount': waqfAmount,
         'partnerAmount': partnerAmount,
         'totalRevenue': totalRevenue,
+        'totalExpenses': totalExpenses,
+        'netRevenue': netRevenue,
         'waqfPercent': waqfPercent,
         'calculationMethod': calculationMethod,
         'calculationDetail': calculationDetail,
+        'appliedRuleName': appliedRuleName,
       };
 
   String get waqfAmountFormatted => '${waqfAmount.toStringAsFixed(0)} د.ع';
@@ -330,7 +369,9 @@ class RevenueDistributionCreateRequest {
   final DateTime periodStartDate;
   final DateTime periodEndDate;
   final double totalRevenue;
+  final double totalExpenses;
   final String distributionType;
+  final String? seasonLabel;
   final String? transferMethod;
   final String? notes;
 
@@ -340,7 +381,9 @@ class RevenueDistributionCreateRequest {
     required this.periodStartDate,
     required this.periodEndDate,
     required this.totalRevenue,
+    this.totalExpenses = 0,
     this.distributionType = 'Revenue',
+    this.seasonLabel,
     this.transferMethod,
     this.notes,
   });
@@ -351,7 +394,9 @@ class RevenueDistributionCreateRequest {
         'periodStartDate': periodStartDate.toIso8601String(),
         'periodEndDate': periodEndDate.toIso8601String(),
         'totalRevenue': totalRevenue,
+        'totalExpenses': totalExpenses,
         'distributionType': distributionType,
+        'seasonLabel': seasonLabel,
         'transferMethod': transferMethod,
         'notes': notes,
       };
@@ -384,5 +429,12 @@ ContactType _contactTypeFromString(String value) {
   return ContactType.values.firstWhere(
     (e) => e.name.toLowerCase() == normalized,
     orElse: () => ContactType.sms,
+  );
+}
+
+ExpenseBearingMethod _expenseBearingMethodFromString(String value) {
+  return ExpenseBearingMethod.values.firstWhere(
+    (e) => e.name.toLowerCase() == value.toLowerCase(),
+    orElse: () => ExpenseBearingMethod.beforeDistribution,
   );
 }

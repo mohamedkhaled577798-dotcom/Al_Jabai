@@ -42,8 +42,16 @@ class PartnershipService {
     return PartnershipDetail.fromJson((data as Map<String, dynamic>? ?? <String, dynamic>{}));
   }
 
-  Future<RevenueCalculationResult> previewRevenue(int partnershipId, double total) async {
-    final uri = Uri.parse('$baseUrl/api/v1/mobile/partnerships/$partnershipId/revenue-preview?total=$total');
+  Future<RevenueCalculationResult> previewRevenue(
+    int partnershipId,
+    double total, {
+    double expenses = 0,
+    String? distributionType,
+    String? season,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/mobile/partnerships/$partnershipId/revenue-preview?total=$total&expenses=$expenses${distributionType != null ? '&distributionType=$distributionType' : ''}${season != null ? '&season=$season' : ''}',
+    );
     final response = await http.get(uri, headers: _headers);
     final data = _decodeApiResponse(response);
     return RevenueCalculationResult.fromJson((data as Map<String, dynamic>? ?? <String, dynamic>{}));
@@ -64,6 +72,46 @@ class PartnershipService {
         .map((e) => RevenueDistribution.fromJson((e as Map<String, dynamic>? ?? <String, dynamic>{})))
         .toList();
     return list;
+  }
+
+  Future<Map<String, dynamic>> addExpense({
+    required int partnershipId,
+    required String periodLabel,
+    required DateTime periodStartDate,
+    required DateTime periodEndDate,
+    required String expenseType,
+    required double amount,
+    String? referenceNo,
+    String? notes,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/mobile/partnerships/$partnershipId/expenses');
+    final response = await http.post(
+      uri,
+      headers: _headers,
+      body: jsonEncode(<String, dynamic>{
+        'partnershipId': partnershipId,
+        'periodLabel': periodLabel,
+        'periodStartDate': periodStartDate.toIso8601String(),
+        'periodEndDate': periodEndDate.toIso8601String(),
+        'expenseType': expenseType,
+        'amount': amount,
+        'referenceNo': referenceNo,
+        'notes': notes,
+      }),
+    );
+    final data = _decodeApiResponse(response);
+    return (data as Map<String, dynamic>? ?? <String, dynamic>{});
+  }
+
+  Future<List<Map<String, dynamic>>> getExpenses(int partnershipId, {DateTime? from, DateTime? to}) async {
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/mobile/partnerships/$partnershipId/expenses${from != null || to != null ? '?' : ''}${from != null ? 'from=${from.toIso8601String()}' : ''}${from != null && to != null ? '&' : ''}${to != null ? 'to=${to.toIso8601String()}' : ''}',
+    );
+    final response = await http.get(uri, headers: _headers);
+    final data = _decodeApiResponse(response);
+    return (data as List<dynamic>? ?? <dynamic>[])
+        .map((e) => (e as Map<String, dynamic>? ?? <String, dynamic>{}))
+        .toList();
   }
 
   Future<bool> logContact(int partnershipId, String contactType, String notes) async {

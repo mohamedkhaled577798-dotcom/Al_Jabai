@@ -8,10 +8,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using WaqfSystem.Application.DTOs.Admin;
+using WaqfSystem.Application.DTOs.Document;
 using WaqfSystem.Application.Services;
 using WaqfSystem.Infrastructure.Authorization;
+using WaqfSystem.Infrastructure.Data;
 using WaqfSystem.Web.ViewModels.Admin;
 
 namespace WaqfSystem.Web.Controllers
@@ -21,13 +24,15 @@ namespace WaqfSystem.Web.Controllers
     {
         private readonly IAdminService _adminService;
         private readonly IPermissionCacheService _permissionCacheService;
+        private readonly WaqfDbContext _db;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<AdminController> _logger;
 
-        public AdminController(IAdminService adminService, IPermissionCacheService permissionCacheService, IWebHostEnvironment environment, ILogger<AdminController> logger)
+        public AdminController(IAdminService adminService, IPermissionCacheService permissionCacheService, WaqfDbContext db, IWebHostEnvironment environment, ILogger<AdminController> logger)
         {
             _adminService = adminService;
             _permissionCacheService = permissionCacheService;
+            _db = db;
             _environment = environment;
             _logger = logger;
         }
@@ -647,6 +652,167 @@ namespace WaqfSystem.Web.Controllers
         {
             ViewBag.Permission = permission;
             return View();
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpGet]
+        public async Task<IActionResult> DocumentTypes()
+        {
+            var rows = await _db.DocumentTypes
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.NameAr)
+                .Select(x => new DocumentTypeDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    NameAr = x.NameAr,
+                    NameEn = x.NameEn,
+                    Category = x.Category,
+                    IsRequired = x.IsRequired,
+                    HasExpiry = x.HasExpiry,
+                    AlertDays1 = x.AlertDays1,
+                    AlertDays2 = x.AlertDays2,
+                    AllowedExtensions = x.AllowedExtensions,
+                    VerifierRoles = new System.Collections.Generic.List<string>(),
+                    IsActive = x.IsActive,
+                    DocumentCount = _db.PropertyDocuments.Count(d => d.DocumentTypeId == x.Id)
+                })
+                .ToListAsync();
+
+            var list = rows.Select(x =>
+            {
+                var roles = new System.Collections.Generic.List<string>();
+                var raw = _db.DocumentTypes.Where(d => d.Id == x.Id).Select(d => d.VerifierRoles).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    roles = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<string>>(raw) ?? new System.Collections.Generic.List<string>();
+                }
+
+                x.VerifierRoles = roles;
+                return x;
+            }).ToList();
+
+            return View("DocumentTypes", list);
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpGet]
+        public IActionResult CreateDocumentType()
+        {
+            return View("DocumentTypeForm", new CreateDocumentTypeDto());
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateDocumentType(CreateDocumentTypeDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("DocumentTypeForm", dto);
+            }
+
+            var entity = new Core.Entities.DocumentType
+            {
+                Code = dto.Code,
+                NameAr = dto.NameAr,
+                NameEn = dto.NameEn,
+                Category = dto.Category,
+                Description = dto.Description,
+                IsRequired = dto.IsRequired,
+                HasExpiry = dto.HasExpiry,
+                AlertDays1 = dto.AlertDays1,
+                AlertDays2 = dto.AlertDays2,
+                AllowedExtensions = dto.AllowedExtensions,
+                MaxFileSizeMB = dto.MaxFileSizeMB,
+                VerifierRoles = System.Text.Json.JsonSerializer.Serialize(dto.VerifierRoles),
+                IsActive = dto.IsActive,
+                SortOrder = dto.SortOrder,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = GetUserId()
+            };
+
+            _db.DocumentTypes.Add(entity);
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "تم إنشاء نوع الوثيقة";
+            return RedirectToAction(nameof(DocumentTypes));
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpGet]
+        public async Task<IActionResult> EditDocumentType(int id)
+        {
+            var e = await _db.DocumentTypes.FirstOrDefaultAsync(x => x.Id == id);
+            if (e == null) return NotFound();
+
+            var dto = new UpdateDocumentTypeDto
+            {
+                Id = e.Id,
+                Code = e.Code,
+                NameAr = e.NameAr,
+                NameEn = e.NameEn,
+                Category = e.Category,
+                Description = e.Description,
+                IsRequired = e.IsRequired,
+                HasExpiry = e.HasExpiry,
+                AlertDays1 = e.AlertDays1,
+                AlertDays2 = e.AlertDays2,
+                AllowedExtensions = e.AllowedExtensions,
+                MaxFileSizeMB = e.MaxFileSizeMB,
+                VerifierRoles = string.IsNullOrWhiteSpace(e.VerifierRoles) ? new System.Collections.Generic.List<string>() : System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<string>>(e.VerifierRoles) ?? new System.Collections.Generic.List<string>(),
+                IsActive = e.IsActive,
+                SortOrder = e.SortOrder
+            };
+
+            return View("DocumentTypeForm", dto);
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditDocumentType(UpdateDocumentTypeDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("DocumentTypeForm", dto);
+            }
+
+            var e = await _db.DocumentTypes.FirstOrDefaultAsync(x => x.Id == dto.Id);
+            if (e == null) return NotFound();
+
+            e.Code = dto.Code;
+            e.NameAr = dto.NameAr;
+            e.NameEn = dto.NameEn;
+            e.Category = dto.Category;
+            e.Description = dto.Description;
+            e.IsRequired = dto.IsRequired;
+            e.HasExpiry = dto.HasExpiry;
+            e.AlertDays1 = dto.AlertDays1;
+            e.AlertDays2 = dto.AlertDays2;
+            e.AllowedExtensions = dto.AllowedExtensions;
+            e.MaxFileSizeMB = dto.MaxFileSizeMB;
+            e.VerifierRoles = System.Text.Json.JsonSerializer.Serialize(dto.VerifierRoles);
+            e.IsActive = dto.IsActive;
+            e.SortOrder = dto.SortOrder;
+
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "تم تحديث نوع الوثيقة";
+            return RedirectToAction(nameof(DocumentTypes));
+        }
+
+        [RequirePermission(PermissionKeys.Admin_ManageRoles)]
+        [HttpPost]
+        public async Task<IActionResult> ToggleDocumentType(int id)
+        {
+            var e = await _db.DocumentTypes.FirstOrDefaultAsync(x => x.Id == id);
+            if (e == null)
+            {
+                return Json(new { success = false, data = (object?)null, message = "النوع غير موجود", errors = new[] { "النوع غير موجود" } });
+            }
+
+            e.IsActive = !e.IsActive;
+            await _db.SaveChangesAsync();
+            return Json(new { success = true, data = new { isActive = e.IsActive }, message = "تم تغيير الحالة", errors = Array.Empty<string>() });
         }
 
         [HttpGet]

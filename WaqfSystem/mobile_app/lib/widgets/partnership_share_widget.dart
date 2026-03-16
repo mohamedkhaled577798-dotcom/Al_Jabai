@@ -41,6 +41,8 @@ class PartnershipShareWidget extends StatelessWidget {
         return _buildLandPercent();
       case PartnershipType.harvestShare:
         return _buildHarvestShare();
+      case PartnershipType.custom:
+        return _buildCustomType();
     }
   }
 
@@ -164,6 +166,17 @@ class PartnershipShareWidget extends StatelessWidget {
         const Text('🌾', style: TextStyle(fontSize: 28)),
         const SizedBox(width: 8),
         Text('نسبة الوقف من المحصول ${partnership.waqfSharePercent.toStringAsFixed(1)}%'),
+      ],
+    );
+  }
+
+  Widget _buildCustomType() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(partnership.customPartnershipName ?? 'شراكة مخصصة'),
+        const SizedBox(height: 6),
+        Text('حصة الوقف ${partnership.waqfSharePercent.toStringAsFixed(1)}%'),
       ],
     );
   }

@@ -256,7 +256,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "IQ",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1486),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9550),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "العراق",
@@ -321,6 +321,322 @@ namespace WaqfSystem.Infrastructure.Migrations
                         .HasDatabaseName("IX_District_Gov");
 
                     b.ToTable("Districts", (string)null);
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentAlert", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AlertLevel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("AlertType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("DaysRemaining")
+                        .HasColumnType("int");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NotifiedUserIds")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReadByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReadByUserId");
+
+                    b.HasIndex("DocumentId", "IsRead")
+                        .HasDatabaseName("IX_DocAlert_Doc");
+
+                    b.HasIndex("AlertLevel", "IsRead", "CreatedAt")
+                        .HasDatabaseName("IX_DocAlert_Level");
+
+                    b.ToTable("DocumentAlerts", (string)null);
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentAuditTrail", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("ActionAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("ActionByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("VersionId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionByUserId");
+
+                    b.HasIndex("VersionId");
+
+                    b.HasIndex("DocumentId", "ActionAt")
+                        .HasDatabaseName("IX_DocAudit_Doc");
+
+                    b.HasIndex("PropertyId", "ActionAt")
+                        .HasDatabaseName("IX_DocAudit_Property");
+
+                    b.ToTable("DocumentAuditTrail", (string)null);
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentResponsible", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("AssignedById")
+                        .HasColumnType("int");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedById");
+
+                    b.HasIndex("DocumentId", "UserId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_DocResponsible_User");
+
+                    b.ToTable("DocumentResponsibles", (string)null);
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AlertDays1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AlertDays2")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AllowedExtensions")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("CreatedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<bool>("HasExpiry")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxFileSizeMB")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VerifierRoles")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("DocumentTypes", (string)null);
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentVersion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FileExtension")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<int?>("PageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("UploadedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("DocumentId", "IsCurrent")
+                        .HasDatabaseName("IX_DocVersion_Doc");
+
+                    b.HasIndex("DocumentId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("DocumentVersions", (string)null);
                 });
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.GisSyncLog", b =>
@@ -453,7 +769,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 1,
                             Code = "BGW",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1635),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9777),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "بغداد",
@@ -465,7 +781,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 2,
                             Code = "BSA",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1639),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9793),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "البصرة",
@@ -477,7 +793,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 3,
                             Code = "NIN",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1640),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9796),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "نينوى",
@@ -489,7 +805,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 4,
                             Code = "EBL",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1641),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9797),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "أربيل",
@@ -501,7 +817,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 5,
                             Code = "SLM",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1642),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9799),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "السليمانية",
@@ -513,7 +829,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 6,
                             Code = "DHK",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1643),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9800),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "دهوك",
@@ -525,7 +841,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 7,
                             Code = "KRK",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1644),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9801),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "كركوك",
@@ -537,7 +853,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 8,
                             Code = "DIY",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1645),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9803),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ديالى",
@@ -549,7 +865,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 9,
                             Code = "ANB",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1646),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9804),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "الأنبار",
@@ -561,7 +877,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 10,
                             Code = "BAB",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1647),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9805),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "بابل",
@@ -573,7 +889,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 11,
                             Code = "KAR",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1648),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9806),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "كربلاء",
@@ -585,7 +901,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 12,
                             Code = "NAJ",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1648),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9808),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "النجف",
@@ -597,7 +913,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 13,
                             Code = "WAS",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1649),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9809),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "واسط",
@@ -609,7 +925,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 14,
                             Code = "SLD",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1650),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9810),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "صلاح الدين",
@@ -621,7 +937,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 15,
                             Code = "DHQ",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1651),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9812),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ذي قار",
@@ -633,7 +949,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 16,
                             Code = "MYS",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1652),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9813),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ميسان",
@@ -645,7 +961,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 17,
                             Code = "MTN",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1653),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9814),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "المثنى",
@@ -657,7 +973,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 18,
                             Code = "QAD",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1660),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9853),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "القادسية",
@@ -1954,11 +2270,17 @@ namespace WaqfSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyDocument", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Alert1Sent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("Alert2Sent")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1966,79 +2288,98 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Property<int>("CreatedById")
                         .HasColumnType("int");
 
-                    b.Property<byte>("DocumentCategory")
-                        .HasColumnType("tinyint");
+                    b.Property<long?>("CurrentVersionId")
+                        .HasColumnType("bigint");
 
-                    b.Property<DateTime?>("DocumentDate")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("DocumentNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int?>("DeletedById")
+                        .HasColumnType("int");
 
-                    b.Property<string>("DocumentType")
+                    b.Property<string>("DeletedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<string>("DocumentNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .UseCollation("Arabic_CI_AS");
 
-                    b.Property<DateTime?>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<byte>("FileFormat")
-                        .HasColumnType("tinyint");
-
-                    b.Property<int?>("FileSizeKB")
+                    b.Property<int>("DocumentTypeId")
                         .HasColumnType("int");
 
-                    b.Property<string>("FileUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<bool>("ExpiredAlertSent")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("GisAttachedLayerId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsOriginal")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("IssueDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("IssuingAuthority")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .UseCollation("Arabic_CI_AS");
 
-                    b.Property<string>("IssuingCity")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Arabic_CI_AS");
+                    b.Property<long?>("LinkedPartnershipId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Arabic_CI_AS");
+                    b.Property<int?>("LinkedUnitId")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("OcrConfidence")
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<DateTime?>("OcrProcessedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("OcrText")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PrimaryResponsibleId")
+                        .HasColumnType("int");
 
                     b.Property<int>("PropertyId")
                         .HasColumnType("int");
 
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Arabic_CI_AS");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .UseCollation("Arabic_CI_AS");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.Property<byte?>("VerificationMethod")
-                        .HasColumnType("tinyint");
+                    b.Property<string>("VerificationNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .UseCollation("Arabic_CI_AS");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("datetime2");
@@ -2046,19 +2387,31 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Property<int?>("VerifiedById")
                         .HasColumnType("int");
 
+                    b.Property<int>("VersionCount")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("DocumentCategory")
-                        .HasFilter("[IsDeleted] = 0");
+                    b.HasIndex("CurrentVersionId");
 
-                    b.HasIndex("PropertyId")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("UpdatedById");
+                    b.HasIndex("LinkedUnitId");
 
                     b.HasIndex("VerifiedById");
+
+                    b.HasIndex("DocumentTypeId", "Status")
+                        .HasDatabaseName("IX_PropDoc_Type");
+
+                    b.HasIndex("PrimaryResponsibleId", "Status")
+                        .HasDatabaseName("IX_PropDoc_Responsible");
+
+                    b.HasIndex("ExpiryDate", "Status", "IsDeleted")
+                        .HasDatabaseName("IX_PropDoc_Expiry")
+                        .HasFilter("[ExpiryDate] IS NOT NULL");
+
+                    b.HasIndex("PropertyId", "IsDeleted", "Status")
+                        .HasDatabaseName("IX_PropDoc_Property");
 
                     b.ToTable("PropertyDocuments", (string)null);
                 });
@@ -2892,7 +3245,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "SYS_ADMIN",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1704),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9910),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2906,7 +3259,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 2,
                             Code = "AUTH_DIRECTOR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1709),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9937),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2920,7 +3273,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 3,
                             Code = "REGIONAL_MGR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1711),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9939),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2934,7 +3287,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 4,
                             Code = "LEGAL_REVIEWER",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1712),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9940),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2948,7 +3301,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 5,
                             Code = "ENGINEER",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1713),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9942),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2962,7 +3315,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 6,
                             Code = "FIELD_SUPERVISOR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1713),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9943),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2976,7 +3329,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 7,
                             Code = "FIELD_INSPECTOR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1717),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9944),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -2990,7 +3343,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 8,
                             Code = "COLLECTOR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1718),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9946),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3004,7 +3357,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 9,
                             Code = "CONTRACTS_MGR",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1719),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9947),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3018,7 +3371,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 10,
                             Code = "ANALYST",
-                            CreatedAt = new DateTime(2026, 3, 15, 12, 18, 27, 489, DateTimeKind.Utc).AddTicks(1719),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9949),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3451,6 +3804,95 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("Governorate");
                 });
 
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentAlert", b =>
+                {
+                    b.HasOne("WaqfSystem.Core.Entities.PropertyDocument", "Document")
+                        .WithMany("Alerts")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.User", "ReadBy")
+                        .WithMany()
+                        .HasForeignKey("ReadByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Document");
+
+                    b.Navigation("ReadBy");
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentAuditTrail", b =>
+                {
+                    b.HasOne("WaqfSystem.Core.Entities.User", "ActionByUser")
+                        .WithMany()
+                        .HasForeignKey("ActionByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("WaqfSystem.Core.Entities.PropertyDocument", "Document")
+                        .WithMany("AuditTrail")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.DocumentVersion", "Version")
+                        .WithMany()
+                        .HasForeignKey("VersionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActionByUser");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Version");
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentResponsible", b =>
+                {
+                    b.HasOne("WaqfSystem.Core.Entities.User", "AssignedBy")
+                        .WithMany()
+                        .HasForeignKey("AssignedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.PropertyDocument", "Document")
+                        .WithMany("Responsibles")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedBy");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentVersion", b =>
+                {
+                    b.HasOne("WaqfSystem.Core.Entities.PropertyDocument", "Document")
+                        .WithMany("Versions")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("UploadedBy");
+                });
+
             modelBuilder.Entity("WaqfSystem.Core.Entities.GisSyncLog", b =>
                 {
                     b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
@@ -3861,15 +4303,32 @@ namespace WaqfSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("WaqfSystem.Core.Entities.DocumentVersion", "CurrentVersion")
+                        .WithMany()
+                        .HasForeignKey("CurrentVersionId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("WaqfSystem.Core.Entities.DocumentType", "DocumentType")
+                        .WithMany("Documents")
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WaqfSystem.Core.Entities.PropertyUnit", "LinkedUnit")
+                        .WithMany()
+                        .HasForeignKey("LinkedUnitId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("WaqfSystem.Core.Entities.User", "PrimaryResponsible")
+                        .WithMany()
+                        .HasForeignKey("PrimaryResponsibleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
                         .WithMany("Documents")
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
 
                     b.HasOne("WaqfSystem.Core.Entities.User", "VerifiedBy")
                         .WithMany()
@@ -3878,9 +4337,15 @@ namespace WaqfSystem.Infrastructure.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("Property");
+                    b.Navigation("CurrentVersion");
 
-                    b.Navigation("UpdatedBy");
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("LinkedUnit");
+
+                    b.Navigation("PrimaryResponsible");
+
+                    b.Navigation("Property");
 
                     b.Navigation("VerifiedBy");
                 });
@@ -4254,6 +4719,11 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("SubDistricts");
                 });
 
+            modelBuilder.Entity("WaqfSystem.Core.Entities.DocumentType", b =>
+                {
+                    b.Navigation("Documents");
+                });
+
             modelBuilder.Entity("WaqfSystem.Core.Entities.Governorate", b =>
                 {
                     b.Navigation("Districts");
@@ -4306,6 +4776,17 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("Units");
 
                     b.Navigation("WorkflowHistory");
+                });
+
+            modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyDocument", b =>
+                {
+                    b.Navigation("Alerts");
+
+                    b.Navigation("AuditTrail");
+
+                    b.Navigation("Responsibles");
+
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyFloor", b =>

@@ -42,9 +42,9 @@ namespace WaqfSystem.Web.Areas.MobileApi.Controllers
         }
 
         [HttpGet("{id:int}/revenue-preview")]
-        public async Task<ActionResult<ApiResponse<RevenueCalculationResultDto>>> PreviewRevenue(int id, [FromQuery] decimal total)
+        public async Task<ActionResult<ApiResponse<RevenueCalculationResultDto>>> PreviewRevenue(int id, [FromQuery] decimal total, [FromQuery] decimal expenses = 0m, [FromQuery] string? distributionType = null, [FromQuery] string? season = null)
         {
-            var preview = await _partnershipService.PreviewRevenueCalculationAsync(id, total);
+            var preview = await _partnershipService.PreviewRevenueCalculationAsync(id, total, expenses, distributionType, season);
             return Ok(ApiResponse<RevenueCalculationResultDto>.Ok(preview));
         }
 
@@ -60,6 +60,21 @@ namespace WaqfSystem.Web.Areas.MobileApi.Controllers
         public async Task<ActionResult<ApiResponse<object>>> GetDistributions(int id)
         {
             var data = await _partnershipService.GetDistributionHistoryAsync(id);
+            return Ok(ApiResponse<object>.Ok(data));
+        }
+
+        [HttpPost("{id:int}/expenses")]
+        public async Task<ActionResult<ApiResponse<PartnershipExpenseEntryDto>>> AddExpense(int id, [FromBody] CreatePartnershipExpenseDto dto)
+        {
+            dto.PartnershipId = id;
+            var result = await _partnershipService.AddExpenseAsync(dto, 1);
+            return Ok(ApiResponse<PartnershipExpenseEntryDto>.Ok(result));
+        }
+
+        [HttpGet("{id:int}/expenses")]
+        public async Task<ActionResult<ApiResponse<object>>> GetExpenses(int id, [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
+        {
+            var data = await _partnershipService.GetExpensesAsync(id, from, to);
             return Ok(ApiResponse<object>.Ok(data));
         }
 

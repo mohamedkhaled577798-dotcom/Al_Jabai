@@ -55,6 +55,8 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public string? FarmerName { get; set; }
         public string? FarmerNationalId { get; set; }
         public string? HarvestContractType { get; set; }
+        public string? CustomPartnershipName { get; set; }
+        public string? CustomCalculationFormula { get; set; }
 
         public DateTime? AgreementDate { get; set; }
         public string? AgreementNotaryName { get; set; }
@@ -65,8 +67,13 @@ namespace WaqfSystem.Application.DTOs.Partnership
         [Required]
         public RevenueDistribMethod RevenueDistribMethod { get; set; }
 
+        [Required]
+        public ExpenseBearingMethod ExpenseBearingMethod { get; set; } = ExpenseBearingMethod.BeforeDistribution;
+
         [Range(1, 28)]
         public int? RevenueDistribDay { get; set; }
+
+        public List<PartnershipConditionRuleDto> ConditionRules { get; set; } = new();
 
         public string? Notes { get; set; }
     }
@@ -109,6 +116,8 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public string? FarmerName { get; set; }
         public string? FarmerNationalId { get; set; }
         public string? HarvestContractType { get; set; }
+        public string? CustomPartnershipName { get; set; }
+        public string? CustomCalculationFormula { get; set; }
 
         public DateTime? AgreementDate { get; set; }
         public string? AgreementNotaryName { get; set; }
@@ -117,8 +126,11 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public IFormFile? AgreementFile { get; set; }
 
         public RevenueDistribMethod? RevenueDistribMethod { get; set; }
+        public ExpenseBearingMethod? ExpenseBearingMethod { get; set; }
         [Range(1, 28)]
         public int? RevenueDistribDay { get; set; }
+
+        public List<PartnershipConditionRuleDto>? ConditionRules { get; set; }
 
         public bool? IsActive { get; set; }
         public string? Notes { get; set; }
@@ -165,8 +177,11 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public string? FarmerName { get; set; }
         public string? FarmerNationalId { get; set; }
         public string? HarvestContractType { get; set; }
+        public string? CustomPartnershipName { get; set; }
+        public string? CustomCalculationFormula { get; set; }
 
         public RevenueDistribMethod RevenueDistribMethod { get; set; }
+        public ExpenseBearingMethod ExpenseBearingMethod { get; set; }
         public int? RevenueDistribDay { get; set; }
         public DateTime? LastDistribDate { get; set; }
         public DateTime? NextDistribDate { get; set; }
@@ -184,6 +199,7 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public decimal PendingTransferAmount { get; set; }
         public DateTime? LastContactDate { get; set; }
         public string? LastContactType { get; set; }
+        public int ConditionRulesCount { get; set; }
         public bool IsActive { get; set; }
         public string? Notes { get; set; }
     }
@@ -211,6 +227,7 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public decimal TotalDistributed { get; set; }
         public decimal PendingTransferAmount { get; set; }
         public RevenueDistribMethod RevenueDistribMethod { get; set; }
+        public ExpenseBearingMethod ExpenseBearingMethod { get; set; }
         public DateTime? NextDistribDate { get; set; }
     }
 
@@ -232,7 +249,11 @@ namespace WaqfSystem.Application.DTOs.Partnership
         [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
         public decimal TotalRevenue { get; set; }
 
+        [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+        public decimal TotalExpenses { get; set; }
+
         public string DistributionType { get; set; } = "Revenue";
+        public string? SeasonLabel { get; set; }
         public string? TransferMethod { get; set; }
         public string? Notes { get; set; }
     }
@@ -249,6 +270,8 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public DateTime PeriodEndDate { get; set; }
         public string DistributionType { get; set; } = string.Empty;
         public decimal TotalRevenue { get; set; }
+        public decimal TotalExpenses { get; set; }
+        public decimal NetRevenue { get; set; }
         public decimal WaqfAmount { get; set; }
         public decimal PartnerAmount { get; set; }
         public decimal WaqfPercentSnapshot { get; set; }
@@ -266,9 +289,70 @@ namespace WaqfSystem.Application.DTOs.Partnership
         public decimal WaqfAmount { get; set; }
         public decimal PartnerAmount { get; set; }
         public decimal TotalRevenue { get; set; }
+        public decimal TotalExpenses { get; set; }
+        public decimal NetRevenue { get; set; }
         public decimal WaqfPercent { get; set; }
         public string CalculationMethod { get; set; } = string.Empty;
         public string CalculationDetail { get; set; } = string.Empty;
+        public string? AppliedRuleName { get; set; }
+    }
+
+    public class PartnershipConditionRuleDto
+    {
+        public int? Id { get; set; }
+        public ConditionRuleType RuleType { get; set; }
+        public ConditionApplicationScope Scope { get; set; } = ConditionApplicationScope.Always;
+        public string RuleName { get; set; } = string.Empty;
+        public decimal? FixedAmount { get; set; }
+        public decimal? PercentValue { get; set; }
+        public decimal? MinRevenueThreshold { get; set; }
+        public decimal? MaxRevenueThreshold { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? DistributionType { get; set; }
+        public string? SeasonLabel { get; set; }
+        public int PriorityOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+        public string? Notes { get; set; }
+    }
+
+    public class PartnershipExpenseEntryDto
+    {
+        public int Id { get; set; }
+        public int PartnershipId { get; set; }
+        public int PropertyId { get; set; }
+        public string PeriodLabel { get; set; } = string.Empty;
+        public DateTime PeriodStartDate { get; set; }
+        public DateTime PeriodEndDate { get; set; }
+        public string ExpenseType { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string? ReferenceNo { get; set; }
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CreatePartnershipExpenseDto
+    {
+        [Required]
+        public int PartnershipId { get; set; }
+
+        [Required]
+        public string PeriodLabel { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime PeriodStartDate { get; set; }
+
+        [Required]
+        public DateTime PeriodEndDate { get; set; }
+
+        [Required]
+        public string ExpenseType { get; set; } = string.Empty;
+
+        [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
+        public decimal Amount { get; set; }
+
+        public string? ReferenceNo { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class PartnerContactDto

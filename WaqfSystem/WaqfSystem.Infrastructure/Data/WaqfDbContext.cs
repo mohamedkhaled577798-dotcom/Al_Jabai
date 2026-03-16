@@ -1,12 +1,13 @@
 using System;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using WaqfSystem.Application.Services;
 using WaqfSystem.Core.Entities;
 using WaqfSystem.Core.Enums;
 
 namespace WaqfSystem.Infrastructure.Data
 {
-    public class WaqfDbContext : DbContext
+    public class WaqfDbContext : DbContext, IAppDbContext
     {
         public WaqfDbContext(DbContextOptions<WaqfDbContext> options) : base(options) { }
 
@@ -19,11 +20,18 @@ namespace WaqfSystem.Infrastructure.Data
         public DbSet<PropertyFacility> PropertyFacilities { get; set; } = null!;
         public DbSet<PropertyMeter> PropertyMeters { get; set; } = null!;
         public DbSet<PropertyPartnership> PropertyPartnerships { get; set; } = null!;
+        public DbSet<PartnershipConditionRule> PartnershipConditionRules { get; set; } = null!;
+        public DbSet<PartnershipExpenseEntry> PartnershipExpenseEntries { get; set; } = null!;
         public DbSet<PartnerRevenueDistribution> PartnerRevenueDistributions { get; set; } = null!;
         public DbSet<PartnerContactLog> PartnerContactLogs { get; set; } = null!;
         public DbSet<PartnerNotificationSchedule> PartnerNotificationSchedules { get; set; } = null!;
         public DbSet<AgriculturalDetail> AgriculturalDetails { get; set; } = null!;
+        public DbSet<DocumentType> DocumentTypes { get; set; } = null!;
         public DbSet<PropertyDocument> PropertyDocuments { get; set; } = null!;
+        public DbSet<DocumentVersion> DocumentVersions { get; set; } = null!;
+        public DbSet<DocumentAuditTrail> DocumentAuditTrail { get; set; } = null!;
+        public DbSet<DocumentAlert> DocumentAlerts { get; set; } = null!;
+        public DbSet<DocumentResponsible> DocumentResponsibles { get; set; } = null!;
         public DbSet<PropertyPhoto> PropertyPhotos { get; set; } = null!;
         public DbSet<PropertyWorkflowHistory> PropertyWorkflowHistories { get; set; } = null!;
         public DbSet<GisSyncLog> GisSyncLogs { get; set; } = null!;
@@ -71,6 +79,12 @@ namespace WaqfSystem.Infrastructure.Data
             modelBuilder.ApplyConfiguration(new MissionPropertyEntryConfiguration());
             modelBuilder.ApplyConfiguration(new MissionChecklistTemplateConfiguration());
             modelBuilder.ApplyConfiguration(new MissionChecklistResultConfiguration());
+            modelBuilder.ApplyConfiguration(new DocumentTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new PropertyDocumentConfiguration());
+            modelBuilder.ApplyConfiguration(new DocumentVersionConfiguration());
+            modelBuilder.ApplyConfiguration(new DocumentAuditTrailConfiguration());
+            modelBuilder.ApplyConfiguration(new DocumentAlertConfiguration());
+            modelBuilder.ApplyConfiguration(new DocumentResponsibleConfiguration());
 
             modelBuilder.Entity<Partner>(entity =>
             {
@@ -294,29 +308,6 @@ namespace WaqfSystem.Infrastructure.Data
                 entity.HasOne(e => e.CreatedBy).WithMany().HasForeignKey(e => e.CreatedById).OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ========== PROPERTY DOCUMENT ==========
-            modelBuilder.Entity<PropertyDocument>(entity =>
-            {
-                entity.ToTable("PropertyDocuments");
-                entity.HasKey(e => e.Id);
-                entity.HasQueryFilter(e => !e.IsDeleted);
-                entity.HasIndex(e => e.PropertyId).HasFilter("[IsDeleted] = 0");
-                entity.HasIndex(e => e.DocumentCategory).HasFilter("[IsDeleted] = 0");
-
-                entity.Property(e => e.DocumentType).HasMaxLength(100).UseCollation("Arabic_CI_AS");
-                entity.Property(e => e.DocumentNumber).HasMaxLength(50);
-                entity.Property(e => e.IssuingAuthority).HasMaxLength(200).UseCollation("Arabic_CI_AS");
-                entity.Property(e => e.IssuingCity).HasMaxLength(100).UseCollation("Arabic_CI_AS");
-                entity.Property(e => e.FileUrl).HasMaxLength(500).IsRequired();
-                entity.Property(e => e.OcrConfidence).HasColumnType("decimal(5,2)");
-                entity.Property(e => e.GisAttachedLayerId).HasMaxLength(100);
-                entity.Property(e => e.Notes).UseCollation("Arabic_CI_AS");
-
-                entity.HasOne(e => e.Property).WithMany(p => p.Documents).HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne(e => e.VerifiedBy).WithMany().HasForeignKey(e => e.VerifiedById).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(e => e.CreatedBy).WithMany().HasForeignKey(e => e.CreatedById).OnDelete(DeleteBehavior.Restrict);
-            });
-
             // ========== PROPERTY PHOTO ==========
             modelBuilder.Entity<PropertyPhoto>(entity =>
             {
@@ -520,6 +511,8 @@ namespace WaqfSystem.Infrastructure.Data
             });
 
             modelBuilder.ApplyConfiguration(new PartnershipConfiguration());
+            modelBuilder.ApplyConfiguration(new PartnershipConditionRuleConfiguration());
+            modelBuilder.ApplyConfiguration(new PartnershipExpenseEntryConfiguration());
             modelBuilder.ApplyConfiguration(new PartnerRevenueDistributionConfiguration());
             modelBuilder.ApplyConfiguration(new PartnerContactLogConfiguration());
             modelBuilder.ApplyConfiguration(new PartnerNotificationScheduleConfiguration());

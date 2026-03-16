@@ -8,7 +8,8 @@ namespace WaqfSystem.Core.Enums
         UsufructRight = 3,
         LandPercent = 4,
         TimedPartnership = 5,
-        HarvestShare = 6
+        HarvestShare = 6,
+        Custom = 7
     }
 
     public enum PartnerType
@@ -27,6 +28,33 @@ namespace WaqfSystem.Core.Enums
         Quarterly = 1,
         Annual = 2,
         PerCollection = 3
+    }
+
+    public enum ExpenseBearingMethod
+    {
+        BeforeDistribution = 0,
+        SharedByPercent = 1,
+        WaqfOnly = 2,
+        PartnerOnly = 3
+    }
+
+    public enum ConditionRuleType
+    {
+        FixedAmount = 0,
+        PercentOfRevenue = 1,
+        MinGuaranteedAmount = 2,
+        SeasonalOverride = 3,
+        HarvestOverride = 4,
+        OneTimeAdjustment = 5
+    }
+
+    public enum ConditionApplicationScope
+    {
+        Always = 0,
+        DistributionType = 1,
+        RevenueThreshold = 2,
+        DateRange = 3,
+        Season = 4
     }
 
     public enum TransferStatus

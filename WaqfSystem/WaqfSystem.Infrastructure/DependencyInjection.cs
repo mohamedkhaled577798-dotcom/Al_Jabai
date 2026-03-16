@@ -19,6 +19,7 @@ namespace WaqfSystem.Infrastructure
             
             services.AddDbContext<WaqfDbContext>(options =>
                 options.UseSqlServer(connectionString));
+            services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<WaqfDbContext>());
 
             // Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -29,7 +30,8 @@ namespace WaqfSystem.Infrastructure
             services.AddHttpClient<ISmsService, SmsService>();
             services.AddHttpClient<IWhatsAppService, WhatsAppService>();
             services.AddScoped<IFileStorageService, FileStorageService>();
-            services.AddScoped<IOcrService, OcrService>();
+            services.AddScoped<WaqfSystem.Core.Interfaces.IOcrService, OcrService>();
+            services.AddScoped<WaqfSystem.Application.Services.IOcrService, OcrService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IReportService, ReportService>();
