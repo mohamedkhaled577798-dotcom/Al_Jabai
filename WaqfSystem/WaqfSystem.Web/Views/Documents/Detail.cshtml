@@ -1,0 +1,232 @@
+@model WaqfSystem.Web.ViewModels.Document.DocumentDetailViewModel
+@{
+    ViewData["Title"] = "تفاصيل الوثيقة";
+    var d = Model.Document;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h3 class="mb-1"><i class="bi bi-file-earmark-text"></i> @d.Title</h3>
+        <div class="text-muted">رقم الوثيقة: @(d.DocumentNumber ?? "-")</div>
+    </div>
+    <div class="d-flex flex-column align-items-end gap-2">
+        <span class="badge fs-6" style="background:@d.StatusColor">@d.StatusDisplayAr</span>
+        @if (d.ExpiryDate.HasValue)
+        {
+            @await Html.PartialAsync("_ExpiryBadge", d)
+        }
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @if (Model.CanVerify && d.Status == WaqfSystem.Core.Entities.DocumentStatus.PendingVerification)
+    {
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#verifyApproveModal">تحقق واعتماد</button>
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#verifyRejectModal">رفض</button>
+    }
+    <a class="btn btn-outline-primary" href="@Url.Action("UploadVersion", "Documents", new { documentId = d.Id })">رفع نسخة جديدة</a>
+    <a class="btn btn-outline-secondary" href="@Url.Action("Download", "Documents", new { versionId = d.CurrentVersionId ?? 0 })">تحميل الملف الحالي</a>
+    @if (Model.CanDelete)
+    {
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#softDeleteModal">حذف</button>
+    }
+</div>
+
+@if (d.ExpiryDate.HasValue)
+{
+    var days = d.DaysUntilExpiry ?? 0;
+    var color = days > 90 ? "#16a34a" : days > 30 ? "#d97706" : days > 0 ? "#ea580c" : "#dc2626";
+    <div class="card mb-3 border-0" style="background:#f8fafc">
+        <div class="card-body text-center">
+            <div class="small text-muted">العد التنازلي للانتهاء</div>
+            <div class="display-6 fw-bold" style="color:@color">
+                @(days >= 0 ? $"{days} يوم" : $"منتهية منذ {Math.Abs(days)} يوم")
+            </div>
+        </div>
+    </div>
+}
+
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab1">تفاصيل الوثيقة</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab2">نسخ الوثيقة</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab3">المسؤولون</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab4">سجل الأنشطة</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab5">التنبيهات</button></li>
+</ul>
+
+<div class="tab-content border border-top-0 p-3">
+    <div class="tab-pane fade show active" id="tab1">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <tr><th>نوع الوثيقة</th><td>@d.DocumentTypeNameAr</td></tr>
+                        <tr><th>النوع التصنيفي</th><td>@d.Category</td></tr>
+                        <tr><th>الجهة المصدرة</th><td>@(d.IssuingAuthority ?? "-")</td></tr>
+                        <tr><th>تاريخ الإصدار</th><td>@(d.IssueDate?.ToString("yyyy/MM/dd") ?? "-")</td></tr>
+                        <tr><th>تاريخ الانتهاء</th><td>@(d.ExpiryDate?.ToString("yyyy/MM/dd") ?? "-")</td></tr>
+                        <tr><th>ملاحظات التحقق</th><td>@(d.VerificationNotes ?? "-")</td></tr>
+                        <tr><th>سبب الرفض</th><td>@(d.RejectionReason ?? "-")</td></tr>
+                        <tr><th>المسؤول الأساسي</th><td>@(d.PrimaryResponsibleName ?? "-")</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                @if (d.CurrentFileName != null && d.CurrentFileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    <iframe src="@Url.Action("Download", "Documents", new { versionId = d.CurrentVersionId ?? 0 })" style="width:100%;height:460px;border:1px solid #ddd;border-radius:8px;"></iframe>
+                }
+                else if (d.CurrentFileName != null && (d.CurrentFileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || d.CurrentFileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || d.CurrentFileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)))
+                {
+                    <img src="@Url.Action("Download", "Documents", new { versionId = d.CurrentVersionId ?? 0 })" class="img-fluid rounded border" alt="preview" />
+                }
+                else
+                {
+                    <div class="text-center p-5 border rounded">
+                        <i class="bi bi-file-earmark-arrow-down fs-1 text-secondary"></i>
+                        <div class="mt-2">لا تتوفر معاينة مباشرة لهذا النوع</div>
+                        <a class="btn btn-outline-primary mt-2" href="@Url.Action("Download", "Documents", new { versionId = d.CurrentVersionId ?? 0 })">تحميل</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="tab2">
+        <div class="timeline">
+            @foreach (var v in d.Versions.OrderByDescending(x => x.VersionNumber))
+            {
+                <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2 @(v.IsCurrent ? "border-success bg-success-subtle" : "bg-light")">
+                    <div>
+                        <span class="badge bg-dark">v@v.VersionNumber</span>
+                        <span class="fw-bold ms-2">@v.FileName</span>
+                        <div class="small text-muted">@v.FileSizeDisplay - @v.UploadedByName - @v.UploadedAt.ToString("yyyy/MM/dd HH:mm")</div>
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Download", "Documents", new { versionId = v.Id })">تحميل</a>
+                </div>
+            }
+        </div>
+        <a class="btn btn-success" href="@Url.Action("UploadVersion", "Documents", new { documentId = d.Id })">رفع نسخة جديدة</a>
+    </div>
+
+    <div class="tab-pane fade" id="tab3">
+        <div class="d-flex justify-content-between mb-2">
+            <h6 class="mb-0">المسؤولون الحاليون</h6>
+            @if (Model.CanAssignResponsible)
+            {
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#assignResponsibleModal">إضافة مسؤول</button>
+            }
+        </div>
+
+        @if (!d.Responsibles.Any())
+        {
+            <div class="text-muted">لا يوجد مسؤولون</div>
+        }
+        else
+        {
+            @foreach (var r in d.Responsibles)
+            {
+                <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
+                    <div>
+                        <div class="fw-bold">@r.FullNameAr</div>
+                        <div class="small text-muted">@r.Role - @r.Phone</div>
+                        <div class="small text-muted">@r.AssignedAt.ToString("yyyy/MM/dd")</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger js-remove-responsible" data-user-id="@r.UserId">إزالة</button>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="tab-pane fade" id="tab4">
+        <div id="auditTrailContainer">جاري التحميل...</div>
+        <button class="btn btn-outline-secondary btn-sm mt-2" id="loadMoreAudit">تحميل المزيد</button>
+    </div>
+
+    <div class="tab-pane fade" id="tab5">
+        @if (!d.ActiveAlerts.Any())
+        {
+            <div class="text-muted">لا توجد تنبيهات</div>
+        }
+        else
+        {
+            @foreach (var a in d.ActiveAlerts)
+            {
+                <div class="border rounded p-2 mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="badge" style="background:@a.UrgencyColor">@a.UrgencyLabel</span>
+                        <span class="small text-muted">@a.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                    </div>
+                    <div class="small mt-2">@(a.DaysRemaining.HasValue ? $"المتبقي: {a.DaysRemaining} يوم" : "-")</div>
+                    @if (!a.IsRead)
+                    {
+                        <button class="btn btn-sm btn-outline-primary mt-2 js-mark-alert-read" data-id="@a.Id">تعليم كمقروء</button>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="verifyApproveModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">اعتماد الوثيقة</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea class="form-control" id="approveNotes" placeholder="ملاحظات"></textarea></div><div class="modal-footer"><button class="btn btn-success" id="btnApproveDoc">اعتماد</button></div></div></div></div>
+<div class="modal fade" id="verifyRejectModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">رفض الوثيقة</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea class="form-control" id="rejectNotes" placeholder="سبب الرفض"></textarea></div><div class="modal-footer"><button class="btn btn-danger" id="btnRejectDoc">رفض</button></div></div></div></div>
+<div class="modal fade" id="softDeleteModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">حذف الوثيقة</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><textarea class="form-control" id="deleteReason" placeholder="سبب الحذف"></textarea></div><div class="modal-footer"><button class="btn btn-danger" id="btnDeleteDoc">تأكيد</button></div></div></div></div>
+<div class="modal fade" id="assignResponsibleModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">إضافة مسؤول</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><select class="form-select" id="responsibleUserId">@foreach (var opt in Model.AvailableResponsibles){<option value="@opt.Value">@opt.Text</option>}</select><textarea class="form-control mt-2" id="responsibleNotes" placeholder="ملاحظات"></textarea></div><div class="modal-footer"><button class="btn btn-primary" id="btnAssignResponsible">حفظ</button></div></div></div></div>
+
+@section Scripts {
+<script>
+(function(){
+    const docId = @d.Id;
+
+    function postJson(url, payload){
+        return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r=>r.json());
+    }
+
+    document.getElementById('btnApproveDoc')?.addEventListener('click', async function(){
+        const notes = document.getElementById('approveNotes').value;
+        const res = await postJson('@Url.Action("Verify", "Documents")', { documentId: docId, isApproved: true, notes: notes });
+        if(res.success){ location.reload(); }
+    });
+
+    document.getElementById('btnRejectDoc')?.addEventListener('click', async function(){
+        const notes = document.getElementById('rejectNotes').value;
+        const res = await postJson('@Url.Action("Verify", "Documents")', { documentId: docId, isApproved: false, notes: notes });
+        if(res.success){ location.reload(); }
+    });
+
+    document.getElementById('btnDeleteDoc')?.addEventListener('click', async function(){
+        const reason = document.getElementById('deleteReason').value;
+        const form = new URLSearchParams({ id: docId, reason: reason });
+        const res = await fetch('@Url.Action("SoftDelete", "Documents")', { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded' }, body: form.toString() }).then(r=>r.json());
+        if(res.success){ window.location = '@Url.Action("ForProperty", "Documents", new { propertyId = d.PropertyId })'; }
+    });
+
+    document.getElementById('btnAssignResponsible')?.addEventListener('click', async function(){
+        const userId = document.getElementById('responsibleUserId').value;
+        const notes = document.getElementById('responsibleNotes').value;
+        const form = new URLSearchParams({ documentId: docId, userId: userId, notes: notes });
+        const res = await fetch('@Url.Action("AssignResponsible", "Documents")', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: form.toString() }).then(r=>r.json());
+        if(res.success){ location.reload(); }
+    });
+
+    document.querySelectorAll('.js-remove-responsible').forEach(btn => {
+        btn.addEventListener('click', async function(){
+            const userId = this.dataset.userId;
+            const form = new URLSearchParams({ documentId: docId, userId: userId });
+            const res = await fetch('@Url.Action("RemoveResponsible", "Documents")', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: form.toString() }).then(r=>r.json());
+            if(res.success){ location.reload(); }
+        });
+    });
+
+    document.querySelectorAll('.js-mark-alert-read').forEach(btn => {
+        btn.addEventListener('click', async function(){
+            const form = new URLSearchParams({ alertId: this.dataset.id });
+            const res = await fetch('@Url.Action("MarkAlertRead", "Documents")', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: form.toString() }).then(r=>r.json());
+            if(res.success){ location.reload(); }
+        });
+    });
+
+    fetch('@Url.Action("AuditTrail", "Documents", new { documentId = d.Id })').then(r=>r.text()).then(html => { document.getElementById('auditTrailContainer').innerHTML = html; });
+})();
+</script>
+}

@@ -1,0 +1,22 @@
+@model WaqfSystem.Application.DTOs.Revenue.SmartSuggestionDto
+<tr class="@(Model.IsLocked ? "table-secondary" : "")" data-item='@System.Text.Json.JsonSerializer.Serialize(Model)'>
+    <td>
+        <input class="form-check-input batch-check" type="checkbox" @(Model.IsLocked ? "disabled" : "") onchange="updateBatchTotal()" />
+    </td>
+    <td>@Model.PropertyNameAr / @Model.FloorLabel / @Model.UnitNumber</td>
+    <td>@Model.TenantNameAr</td>
+    <td>@Model.ExpectedAmount.ToString("N0") د.ع</td>
+    <td>
+        <input type="number" step="0.01" class="form-control form-control-sm batch-amount" value="@Model.ExpectedAmount" @(Model.IsLocked ? "disabled" : "") onchange="updateBatchTotal()" />
+    </td>
+    <td>
+        @if (Model.IsLocked)
+        {
+            <span class="badge text-bg-secondary" title="@Model.LockReason">مقفول</span>
+        }
+        else
+        {
+            <span class="badge text-bg-success">متاح</span>
+        }
+    </td>
+</tr>

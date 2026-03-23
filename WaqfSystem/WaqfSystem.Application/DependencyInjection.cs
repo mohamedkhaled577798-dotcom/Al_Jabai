@@ -33,6 +33,11 @@ namespace WaqfSystem.Application
             services.AddScoped<IGeographicScopeService, GeographicScopeService>();
             services.AddScoped<IPermissionCacheService, PermissionCacheService>();
             services.AddScoped<IPermissionDiscoveryService, PermissionDiscoveryService>();
+            services.AddScoped<IRevenueCollectionService, RevenueCollectionService>();
+            services.AddScoped<ISmartCollectionService, SmartCollectionService>();
+            services.AddScoped<IRentContractService, RentContractService>();
+            services.AddScoped<IPropertyStructureService, PropertyStructureService>();
+            services.AddScoped<IRevenueReportService, RevenueReportService>();
 
             services.AddValidatorsFromAssemblyContaining<CreatePartnershipValidator>();
 

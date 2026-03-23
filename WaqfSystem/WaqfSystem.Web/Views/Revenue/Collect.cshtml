@@ -1,0 +1,25 @@
+@model WaqfSystem.Application.DTOs.Revenue.CollectRevenueDto
+@{
+    ViewData["Title"] = "تسجيل تحصيل";
+}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="PropertyId" type="hidden" />
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">المستوى</label><select asp-for="CollectionLevel" class="form-select"><option value="Building">عقار</option><option value="Floor">طابق</option><option value="Unit">وحدة</option></select></div>
+                <div class="col-md-4"><label class="form-label">الطابق</label><input asp-for="FloorId" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">الوحدة</label><input asp-for="UnitId" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">الفترة</label><input asp-for="PeriodLabel" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">التاريخ</label><input asp-for="CollectionDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">المبلغ</label><input asp-for="Amount" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">طريقة الدفع</label><input asp-for="PaymentMethod" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">الإيصال</label><input asp-for="ReceiptNumber" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">دافع المبلغ</label><input asp-for="PayerNameAr" class="form-control" /></div>
+                <div class="col-12"><label class="form-label">ملاحظة</label><textarea asp-for="Notes" class="form-control"></textarea></div>
+            </div>
+            <div class="mt-3"><button class="btn btn-success">حفظ</button></div>
+        </form>
+    </div>
+</div>

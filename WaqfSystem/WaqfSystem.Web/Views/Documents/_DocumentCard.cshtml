@@ -1,0 +1,34 @@
+@model WaqfSystem.Application.DTOs.Document.PropertyDocumentListDto
+<div class="card h-100 shadow-sm border-0">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="fw-bold mb-1">@Model.Title</h6>
+                <div class="text-muted small">@Model.DocumentNumber</div>
+            </div>
+            <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
+        </div>
+
+        <div class="mt-2">
+            <span class="badge" style="background:@Model.StatusColor">@Model.StatusDisplayAr</span>
+            @await Html.PartialAsync("_ExpiryBadge", Model)
+            @if (Model.VersionCount > 1)
+            {
+                <span class="badge bg-info">v@Model.VersionCount</span>
+            }
+        </div>
+
+        <div class="small text-muted mt-2">
+            <div>الجهة: @(Model.IssuingAuthority ?? "-")</div>
+            <div>المسؤول: @(Model.PrimaryResponsibleName ?? "-")</div>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 d-flex gap-2">
+        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Detail", "Documents", new { id = Model.Id })">عرض</a>
+        <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Download", "Documents", new { versionId = Model.CurrentVersionId ?? 0 })">تحميل</a>
+        @if (Model.Status == WaqfSystem.Core.Entities.DocumentStatus.PendingVerification)
+        {
+            <button type="button" class="btn btn-sm btn-outline-success js-open-verify" data-id="@Model.Id">تحقق</button>
+        }
+    </div>
+</div>

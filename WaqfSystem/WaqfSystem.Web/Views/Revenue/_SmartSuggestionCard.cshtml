@@ -1,0 +1,41 @@
+@using System.Text.Encodings.Web
+@using System.Text.Json
+@model WaqfSystem.Application.DTOs.Revenue.SmartSuggestionDto
+@{
+    var typeClass = Model.SuggestionType switch
+    {
+        WaqfSystem.Core.Enums.SuggestionType.Overdue => "suggestion-overdue",
+        WaqfSystem.Core.Enums.SuggestionType.DueToday => "suggestion-today",
+        WaqfSystem.Core.Enums.SuggestionType.DueSoon => "suggestion-soon",
+        _ => "suggestion-last"
+    };
+
+    var badge = Model.SuggestionType switch
+    {
+        WaqfSystem.Core.Enums.SuggestionType.Overdue => $"متأخر {Model.OverdueDays} يوم",
+        WaqfSystem.Core.Enums.SuggestionType.DueToday => "مستحق اليوم",
+        WaqfSystem.Core.Enums.SuggestionType.DueSoon => "يستحق قريباً",
+        _ => "غير محصل الشهر الماضي"
+    };
+
+    var payload = JsonSerializer.Serialize(Model);
+}
+<div class="card suggestion-card @typeClass @(Model.IsLocked ? "locked" : "")" data-suggestion-json="@Html.Raw(HtmlEncoder.Default.Encode(payload))" onclick="selectSuggestion(this)">
+    @if (Model.IsLocked)
+    {
+        <div class="lock-overlay"><i class="bi bi-lock-fill"></i></div>
+    }
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge rounded-pill text-bg-light">@badge</span>
+            <span class="badge" style="background:@Model.UrgencyColor">أولوية @Model.Priority</span>
+        </div>
+        <div class="fw-bold">@Model.PropertyNameAr / @Model.FloorLabel / @Model.UnitNumber</div>
+        <div class="small text-secondary mt-1">@Model.TenantNameAr</div>
+        <div class="small mt-2">المبلغ المتوقع: <span class="fw-bold">@Model.ExpectedAmount.ToString("N0") د.ع</span></div>
+        @if (Model.IsLocked)
+        {
+            <div class="small text-danger mt-2"><i class="bi bi-exclamation-triangle-fill"></i> @Model.LockReason</div>
+        }
+    </div>
+</div>

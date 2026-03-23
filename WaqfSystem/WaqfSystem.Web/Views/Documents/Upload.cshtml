@@ -1,0 +1,184 @@
+@model WaqfSystem.Web.ViewModels.Document.UploadDocumentViewModel
+@{
+    ViewData["Title"] = "رفع وثيقة جديدة";
+}
+
+<h3 class="mb-3">رفع وثيقة جديدة - @Model.PropertyNameAr</h3>
+
+<form asp-action="Upload" asp-controller="Documents" method="post" enctype="multipart/form-data" id="uploadForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Dto.PropertyId" value="@Model.PropertyId" />
+    <input type="hidden" asp-for="Dto.DocumentTypeId" id="DocumentTypeId" />
+
+    <div class="card mb-3">
+        <div class="card-header">نوع الوثيقة</div>
+        <div class="card-body">
+            <div class="row g-2" id="docTypeCards">
+                @foreach (var type in Model.DocumentTypes)
+                {
+                    <div class="col-md-3">
+                        <button type="button" class="btn w-100 border rounded text-start p-3 doc-type-card" data-id="@type.Value">
+                            <div class="fw-bold">@type.Text</div>
+                            <div class="small text-muted">يحتاج تحقق من الجهة المختصة</div>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">معلومات الوثيقة</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">العنوان</label>
+                    <input asp-for="Dto.Title" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">رقم الوثيقة</label>
+                    <input asp-for="Dto.DocumentNumber" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">الجهة المصدرة</label>
+                    <input asp-for="Dto.IssuingAuthority" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">تاريخ الإصدار</label>
+                    <input asp-for="Dto.IssueDate" type="date" class="form-control" />
+                </div>
+                <div class="col-md-3" id="expiryFieldWrap" style="display:none;">
+                    <label class="form-label">تاريخ الانتهاء</label>
+                    <input asp-for="Dto.ExpiryDate" type="date" class="form-control" id="ExpiryDate" />
+                    <div class="small text-warning mt-1" id="expiryHint"></div>
+                </div>
+                <div class="col-md-6" id="linkedUnitWrap" style="display:none;">
+                    <label class="form-label">ربط بالوحدة</label>
+                    <select asp-for="Dto.LinkedUnitId" asp-items="Model.Units" class="form-select">
+                        <option value="">بدون</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">الوسوم</label>
+                    <input class="form-control" id="tagsInput" placeholder="مثال: صك, طابو" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">الوصف</label>
+                    <textarea asp-for="Dto.Description" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">الملف</div>
+        <div class="card-body">
+            <div id="dropZone" class="border border-2 rounded p-4 text-center" style="border-style:dashed !important; cursor:pointer;">
+                <div class="fw-bold">اسحب الملف هنا أو انقر للاختيار</div>
+                <div class="small text-muted">الامتدادات المدعومة: PDF, JPG, PNG, TIFF</div>
+                <input asp-for="Dto.File" type="file" class="d-none" id="fileInput" />
+            </div>
+            <div class="mt-3" id="filePreview"></div>
+            <div class="progress mt-2 d-none" id="uploadProgressWrap"><div class="progress-bar" id="uploadProgress" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">المسؤول</div>
+        <div class="card-body">
+            <label class="form-label">المسؤول الأساسي</label>
+            <select asp-for="Dto.PrimaryResponsibleId" asp-items="Model.Responsibles" class="form-select">
+                <option value="">اختر المسؤول</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="@Url.Action("ForProperty", "Documents", new { propertyId = Model.PropertyId })">إلغاء</a>
+        <button type="submit" class="btn btn-success">رفع الوثيقة</button>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+(function(){
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const preview = document.getElementById('filePreview');
+    const docTypeInput = document.getElementById('DocumentTypeId');
+    const expiryWrap = document.getElementById('expiryFieldWrap');
+    const linkedUnitWrap = document.getElementById('linkedUnitWrap');
+    const expiryHint = document.getElementById('expiryHint');
+
+    function selectDocType(id, btn){
+        docTypeInput.value = id;
+        document.querySelectorAll('.doc-type-card').forEach(el => el.classList.remove('btn-success', 'text-white'));
+        btn.classList.add('btn-success', 'text-white');
+
+        const typeText = btn.querySelector('.fw-bold').innerText;
+        const hasExpiry = ['رخصة البناء','وثيقة الشراكة','عقد الإيجار','وثيقة التأمين','شهادة التقييم'].some(k => typeText.includes(k));
+        expiryWrap.style.display = hasExpiry ? 'block' : 'none';
+
+        const isLease = typeText.includes('إيجار');
+        linkedUnitWrap.style.display = isLease ? 'block' : 'none';
+    }
+
+    document.querySelectorAll('.doc-type-card').forEach(btn => {
+        btn.addEventListener('click', () => selectDocType(btn.dataset.id, btn));
+        if (@(Model.PreselectedTypeId?.ToString() ?? "0") > 0 && btn.dataset.id === '@(Model.PreselectedTypeId?.ToString() ?? "")') {
+            selectDocType(btn.dataset.id, btn);
+        }
+    });
+
+    function handleFileSelect(file){
+        if(!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        const allowed = ['pdf','jpg','jpeg','png','tiff','tif'];
+        if(!allowed.includes(ext)) {
+            alert('نوع الملف غير مدعوم');
+            fileInput.value = '';
+            return;
+        }
+
+        const sizeMb = file.size / (1024 * 1024);
+        if(sizeMb > 50){
+            alert('حجم الملف أكبر من الحد المسموح');
+            return;
+        }
+
+        let html = `<div class="border rounded p-2"><div class="fw-bold">${file.name}</div><div class="small text-muted">${sizeMb.toFixed(2)} MB</div>`;
+        if(ext === 'pdf') {
+            html += '<div class="small text-muted">ملف PDF جاهز للرفع</div>';
+        } else {
+            const url = URL.createObjectURL(file);
+            html += `<img src="${url}" class="img-thumbnail mt-2" style="max-height:160px;" />`;
+        }
+        html += '</div>';
+        preview.innerHTML = html;
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => handleFileSelect(e.target.files[0]));
+
+    ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('border-success'); }));
+    ['dragleave','drop'].forEach(evt => dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('border-success'); }));
+    dropZone.addEventListener('drop', e => {
+        const file = e.dataTransfer.files[0];
+        if(file){
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            handleFileSelect(file);
+        }
+    });
+
+    document.getElementById('ExpiryDate').addEventListener('change', function(){
+        const val = this.value;
+        if(!val){ expiryHint.innerText = ''; return; }
+        const d = new Date(val);
+        const d90 = new Date(d); d90.setDate(d.getDate() - 90);
+        expiryHint.innerText = `سيُرسَل تنبيه قبل 90 يوم: ${d90.toLocaleDateString('ar-IQ')}`;
+    });
+})();
+</script>
+}

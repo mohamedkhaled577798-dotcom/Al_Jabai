@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +14,7 @@ using WaqfSystem.Application;
 using WaqfSystem.Application.Services;
 using WaqfSystem.Application.Validators;
 using WaqfSystem.Infrastructure;
+using WaqfSystem.Infrastructure.BackgroundJobs;
 using WaqfSystem.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +26,8 @@ builder.Services.AddAdminPanel(builder.Configuration);
 builder.Services.AddValidatorsFromAssemblyContaining<CreateRoleValidator>();
 builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddSignalR();
+builder.Services.AddHangfire(config => config.UseMemoryStorage());
+builder.Services.AddHangfireServer();
 
 // 2. Dual Authentication (Cookie for MVC, JWT for API)
 builder.Services.AddAuthentication(options =>
@@ -111,6 +116,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAdminPanel();
 app.UseSession(); // must be before MapControllerRoute
+app.UseHangfireDashboard("/jobs");
 
 app.MapHub<MissionHub>("/hubs/missions");
 
@@ -122,5 +128,20 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
+
+RecurringJob.AddOrUpdate<SmartSuggestionRefresher>(
+    "smart-suggestions-refresh",
+    x => x.ExecuteAsync(),
+    "0 7 * * *");
+
+RecurringJob.AddOrUpdate<ScheduleOverdueChecker>(
+    "schedule-overdue-checker",
+    x => x.ExecuteAsync(),
+    "30 6 * * *");
+
+RecurringJob.AddOrUpdate<ContractExpiryNotifier>(
+    "contract-expiry-notifier",
+    x => x.ExecuteAsync(),
+    "0 8 * * *");
 
 app.Run();

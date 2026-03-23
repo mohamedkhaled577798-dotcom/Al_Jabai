@@ -1,0 +1,101 @@
+@model WaqfSystem.Web.ViewModels.Document.AlertsViewModel
+@{
+    ViewData["Title"] = "تنبيهات الوثائق";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">تنبيهات الوثائق</h3>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" id="runExpiryCheck">فحص التنبيهات الآن</button>
+        <button class="btn btn-outline-secondary" id="markAllRead">تعليم الكل كمقروء</button>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card p-3 text-center"><div class="small text-muted">منتهية</div><div class="h4 text-danger">@Model.ExpiredCount</div></div></div>
+    <div class="col-md-3"><div class="card p-3 text-center"><div class="small text-muted">تنتهي ≤ 30 يوم</div><div class="h4 text-warning">@Model.Expiring30Count</div></div></div>
+    <div class="col-md-3"><div class="card p-3 text-center"><div class="small text-muted">تنتهي ≤ 90 يوم</div><div class="h4 text-warning-emphasis">@Model.Expiring90Count</div></div></div>
+    <div class="col-md-3"><div class="card p-3 text-center"><div class="small text-muted">غير مقروءة</div><div class="h4 text-primary">@Model.UnreadCount</div></div></div>
+</div>
+
+<form method="get" class="card card-body mb-3">
+    <div class="row g-2">
+        <div class="col-md-2">
+            <select class="form-select" name="AlertLevel">
+                <option value="">كل المستويات</option>
+                <option value="3" selected="@(Model.Filter.AlertLevel == 3)">منتهية</option>
+                <option value="2" selected="@(Model.Filter.AlertLevel == 2)">30 يوم</option>
+                <option value="1" selected="@(Model.Filter.AlertLevel == 1)">90 يوم</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" name="IsRead">
+                <option value="">الكل</option>
+                <option value="false" selected="@(Model.Filter.IsRead == false)">غير مقروء</option>
+                <option value="true" selected="@(Model.Filter.IsRead == true)">مقروء</option>
+            </select>
+        </div>
+        <div class="col-md-2"><input class="form-control" name="PropertyId" placeholder="معرف العقار" value="@Model.Filter.PropertyId" /></div>
+        <div class="col-md-2"><input class="form-control" type="date" name="DateFrom" value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-md-2"><input class="form-control" type="date" name="DateTo" value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">تطبيق</button></div>
+    </div>
+</form>
+
+@{
+    var red = Model.Alerts.Items.Where(x => x.AlertLevel == WaqfSystem.Core.Entities.DocumentAlertLevel.Expired).ToList();
+    var orange = Model.Alerts.Items.Where(x => x.AlertLevel == WaqfSystem.Core.Entities.DocumentAlertLevel.Day30).ToList();
+    var yellow = Model.Alerts.Items.Where(x => x.AlertLevel == WaqfSystem.Core.Entities.DocumentAlertLevel.Day90).ToList();
+}
+
+@foreach (var group in new[] { (Title: "منتهية الصلاحية", Color: "danger", Items: red), (Title: "تنتهي خلال 30 يوم", Color: "warning", Items: orange), (Title: "تنتهي خلال 90 يوم", Color: "warning-emphasis", Items: yellow) })
+{
+    if (group.Items.Any())
+    {
+        <h5 class="mt-4 text-@group.Color">@group.Title</h5>
+        foreach (var a in group.Items)
+        {
+            <div class="card mb-2 border-start border-4 border-@group.Color">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">@a.PropertyNameAr - @a.PropertyWqfNumber</div>
+                        <div>@a.DocumentTypeNameAr / @a.DocumentTitle</div>
+                        <div class="small text-muted">@(a.DaysRemaining.HasValue && a.DaysRemaining < 0 ? $"انتهت منذ {Math.Abs(a.DaysRemaining.Value)} يوم" : $"تنتهي خلال {a.DaysRemaining} يوم")</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Detail", "Documents", new { id = a.DocumentId })">عرض الوثيقة</a>
+                        <a class="btn btn-sm btn-outline-success" href="@Url.Action("UploadVersion", "Documents", new { documentId = a.DocumentId })">رفع تجديد</a>
+                        @if (!a.IsRead)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary js-mark-read" data-id="@a.Id">علامة مقروء</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+}
+
+@section Scripts {
+<script>
+(function(){
+    document.getElementById('runExpiryCheck').addEventListener('click', async function(){
+        const res = await fetch('@Url.Action("RunExpiryCheck", "Documents")', { method: 'POST' }).then(r => r.json());
+        if(res.success){ alert(`تم الفحص. تنبيهات جديدة: ${res.data.newAlertsCount}`); location.reload(); }
+    });
+
+    document.getElementById('markAllRead').addEventListener('click', async function(){
+        const res = await fetch('@Url.Action("MarkAllRead", "Documents")', { method: 'POST' }).then(r => r.json());
+        if(res.success){ location.reload(); }
+    });
+
+    document.querySelectorAll('.js-mark-read').forEach(btn => {
+        btn.addEventListener('click', async function(){
+            const form = new URLSearchParams({ alertId: this.dataset.id });
+            const res = await fetch('@Url.Action("MarkAlertRead", "Documents")', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: form.toString() }).then(r=>r.json());
+            if(res.success){ location.reload(); }
+        });
+    });
+})();
+</script>
+}

@@ -1,0 +1,498 @@
+@using System.Text.Json
+@model WaqfSystem.Web.Models.Revenue.SmartCollectViewModel
+@{
+    ViewData["Title"] = "التحصيل الذكي";
+}
+
+<style>
+.smart-shell { background: linear-gradient(135deg, #f4f8f1 0%, #eef4ff 45%, #fff8e9 100%); border-radius: 20px; padding: 1rem; }
+.suggestion-card { cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; border-right: 4px solid transparent; position: relative; }
+.suggestion-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.08); }
+.suggestion-card.selected { outline: 2px solid #2f7d32; }
+.suggestion-overdue { border-right-color: #b3261e; }
+.suggestion-today { border-right-color: #c58a08; }
+.suggestion-soon { border-right-color: #1c6fa9; }
+.suggestion-last { border-right-color: #6d5e2e; }
+.suggestion-card.locked { opacity: .6; cursor: not-allowed; }
+.lock-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #4b5563; background: rgba(255,255,255,.45); }
+#smartToast { position: fixed; bottom: 20px; left: 20px; z-index: 1050; min-width: 280px; transform: translateY(120%); transition: transform .3s ease; }
+#smartToast.show { transform: translateY(0); }
+.amount-chip { border: 1px solid #d6d6d6; border-radius: 999px; background: #fff; padding: .35rem .75rem; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+.amount-chip.active { background: #e8f4e8; border-color: #2f7d32; transform: scale(1.04); }
+</style>
+
+<div class="smart-shell">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div class="d-flex gap-2 align-items-center">
+            <label class="form-label mb-0">الفترة</label>
+            <input type="month" id="periodSelector" class="form-control" style="width:180px" value="@Model.PeriodLabel" />
+        </div>
+        <div class="small text-secondary">تاريخ اليوم: @DateTime.Today.ToString("yyyy/MM/dd")</div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div id="todayStatsContainer">
+                @await Html.PartialAsync("_TodayStats", Model.Dashboard)
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">⚡ اقتراحات التحصيل — مرتبة حسب الأولوية</h6>
+                    <button class="btn btn-link p-0" type="button" onclick="reloadSuggestions()">تحديث الاقتراحات</button>
+                </div>
+                <div class="card-body">
+                    <div id="suggestionsGrid" class="row g-2">
+                        @foreach (var item in Model.Suggestions)
+                        {
+                            <div class="col-md-6">@await Html.PartialAsync("_SmartSuggestionCard", item)</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0">التحصيل السريع</h6></div>
+                <div class="card-body">
+                    @await Html.PartialAsync("_QuickCollectForm", Model.QuickCollect)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mt-4" id="smartTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-search" type="button">البحث السريع</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-batch" type="button">الدفعة الجماعية</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history" type="button">السجل</button></li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white">
+        <div class="tab-pane fade show active" id="tab-search">
+            <input id="searchInput" class="form-control form-control-lg" placeholder="ابحث باسم المستأجر أو رقم الوحدة أو العقار" />
+            <div id="searchResults" class="mt-3"></div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-batch">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <input type="month" id="batchPeriod" class="form-control" style="width:180px" value="@Model.PeriodLabel" />
+                <select id="batchPaymentMethod" class="form-select" style="width:180px">
+                    <option value="نقدي">نقدي</option>
+                    <option value="تحويل">تحويل</option>
+                    <option value="بطاقة">بطاقة</option>
+                    <option value="شيك">شيك</option>
+                </select>
+                <button class="btn btn-outline-secondary" onclick="toggleAllBatch(true)">تحديد الكل</button>
+                <button class="btn btn-outline-secondary" onclick="toggleAllBatch(false)">إلغاء التحديد</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr><th></th><th>الوحدة</th><th>المستأجر</th><th>المتوقع</th><th>المبلغ</th><th>الحالة</th></tr>
+                    </thead>
+                    <tbody id="batchRows"></tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>الإجمالي الحالي: <span id="batchTotal" class="fw-bold">0 د.ع</span></div>
+                <button id="batchSubmitBtn" class="btn btn-success" onclick="submitBatch()">تسجيل الدفعة الجماعية (0 وحدات)</button>
+            </div>
+            <div id="batchResult" class="mt-3"></div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-history">
+            <div id="historyContainer" class="small text-secondary">جاري تحميل السجل...</div>
+            <a class="btn btn-link mt-2 p-0" href="@Url.Action("Index", "Revenue")">الانتقال إلى السجل الكامل</a>
+        </div>
+    </div>
+</div>
+
+<div id="smartToast" class="alert alert-success shadow">تمت العملية بنجاح</div>
+
+@section Scripts {
+<script>
+let selectedSuggestion = null;
+let varianceTimer = null;
+let collisionTimer = null;
+let searchTimer = null;
+
+function toMoney(value) {
+    const n = Number(value || 0);
+    return n.toLocaleString('ar-IQ', { maximumFractionDigits: 0 }) + ' د.ع';
+}
+
+function showToast(message) {
+    const t = document.getElementById('smartToast');
+    t.textContent = message;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function selectSuggestion(element) {
+    if (element.classList.contains('locked')) return;
+    document.querySelectorAll('.suggestion-card').forEach(c => c.classList.remove('selected'));
+    element.classList.add('selected');
+
+    const data = JSON.parse(element.getAttribute('data-suggestion-json'));
+    selectedSuggestion = data;
+    populateQuickForm(data);
+}
+
+function populateQuickForm(data) {
+    document.getElementById('quickPlaceholder').classList.add('d-none');
+    document.getElementById('quickBody').classList.remove('d-none');
+
+    document.getElementById('q_propertyId').value = data.propertyId;
+    document.getElementById('q_floorId').value = data.floorId || '';
+    document.getElementById('q_unitId').value = data.unitId || '';
+    document.getElementById('q_contractId').value = data.contractId || '';
+    document.getElementById('q_level').value = data.collectionLevel;
+    document.getElementById('q_periodLabel').value = data.periodLabel;
+    document.getElementById('q_suggestionId').value = data.suggestionId || '';
+    document.getElementById('q_expectedAmount').value = data.expectedAmount || 0;
+    document.getElementById('expectedAmountText').textContent = toMoney(data.expectedAmount || 0);
+
+    const scopeBadge = document.getElementById('scopeBadge');
+    scopeBadge.textContent = data.collectionLevel === 3 ? 'تحصيل وحدة' : data.collectionLevel === 2 ? 'تحصيل طابق' : 'تحصيل عقار';
+    scopeBadge.className = 'badge mb-2 ' + (data.collectionLevel === 3 ? 'text-bg-success' : (data.collectionLevel === 2 ? 'text-bg-primary' : 'text-bg-dark'));
+
+    renderChips(data.suggestedAmountChips || []);
+    const defaultChip = (data.suggestedAmountChips || []).find(x => x.isDefault);
+    document.getElementById('q_amount').value = defaultChip ? defaultChip.amount : (data.expectedAmount || 0);
+
+    liveCollision();
+    liveVariance();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderChips(chips) {
+    const target = document.getElementById('amountChips');
+    target.innerHTML = '';
+    chips.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'amount-chip' + (chip.isDefault ? ' active' : '');
+        btn.textContent = chip.label;
+        btn.onclick = () => selectChip(chip.amount, btn);
+        target.appendChild(btn);
+    });
+}
+
+function selectChip(amount, btn) {
+    document.getElementById('q_amount').value = amount;
+    document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    liveVariance();
+}
+
+function liveVariance() {
+    clearTimeout(varianceTimer);
+    varianceTimer = setTimeout(async () => {
+        const contractId = document.getElementById('q_contractId').value;
+        const amount = document.getElementById('q_amount').value || 0;
+        if (!amount) return;
+
+        const url = '@Url.Action("CheckVariance", "Revenue")' + '?contractId=' + encodeURIComponent(contractId) + '&amount=' + encodeURIComponent(amount);
+        const res = await fetch(url);
+        const v = await res.json();
+
+        const text = document.getElementById('varianceText');
+        text.textContent = `الفارق: ${toMoney(v.variance)} (${v.variancePercent}%)`;
+        text.className = 'small mt-1 ' + (Math.abs(v.variancePercent) > 10 ? 'text-danger' : (Math.abs(v.variancePercent) >= 1 ? 'text-warning' : 'text-secondary'));
+
+        const bar = document.getElementById('varianceBar');
+        const width = Math.max(5, 100 - Math.min(95, Math.abs(v.variancePercent)));
+        bar.style.width = width + '%';
+        bar.className = 'progress-bar ' + (Math.abs(v.variancePercent) > 10 ? 'bg-danger' : (Math.abs(v.variancePercent) >= 1 ? 'bg-warning' : 'bg-success'));
+
+        const alert = document.getElementById('varianceAlert');
+        const note = document.getElementById('q_varianceNote');
+        if (Math.abs(v.variancePercent) < 1) {
+            alert.classList.add('d-none');
+            note.classList.add('d-none');
+            return;
+        }
+
+        alert.classList.remove('d-none');
+        alert.className = 'alert py-2 px-3 mt-2 ' + (Math.abs(v.variancePercent) > 20 ? 'alert-danger' : (Math.abs(v.variancePercent) > 10 ? 'alert-danger' : 'alert-warning'));
+        alert.textContent = v.alertMessage;
+        if (v.requiresApproval) {
+            note.classList.remove('d-none');
+            note.required = true;
+        } else {
+            note.classList.add('d-none');
+            note.required = false;
+        }
+    }, 300);
+}
+
+function liveCollision() {
+    clearTimeout(collisionTimer);
+    collisionTimer = setTimeout(async () => {
+        const propertyId = document.getElementById('q_propertyId').value;
+        const floorId = document.getElementById('q_floorId').value;
+        const unitId = document.getElementById('q_unitId').value;
+        const level = document.getElementById('q_level').value;
+        const period = document.getElementById('q_periodLabel').value;
+        if (!propertyId || !level || !period) return;
+
+        const qs = new URLSearchParams({ propertyId, level, floorId, unitId, period });
+        const url = '@Url.Action("CheckCollision", "Revenue")' + '?' + qs.toString();
+        const res = await fetch(url);
+        const j = await res.json();
+
+        const badge = document.getElementById('collisionBadge');
+        const btn = document.getElementById('quickSubmitBtn');
+        if (j.hasCollision) {
+            badge.className = 'small mb-2 text-danger';
+            badge.innerHTML = '<i class="bi bi-lock-fill"></i> مقفول — ' + j.message;
+            btn.disabled = true;
+        } else {
+            badge.className = 'small mb-2 text-success';
+            badge.innerHTML = '<i class="bi bi-check-circle-fill"></i> لا يوجد تعارض';
+            btn.disabled = false;
+        }
+    }, 300);
+}
+
+async function submitQuick() {
+    const form = document.getElementById('quickCollectForm');
+    const formData = new FormData(form);
+    const res = await fetch('@Url.Action("QuickCollect", "Revenue")', {
+        method: 'POST',
+        headers: { 'RequestVerificationToken': formData.get('__RequestVerificationToken') },
+        body: formData
+    });
+    const j = await res.json();
+
+    if (!j.success) {
+        showToast(j.message || 'تعذر التسجيل');
+        return;
+    }
+
+    showToast(j.revenueCode + ' — تم بنجاح');
+    form.reset();
+    document.getElementById('quickBody').classList.add('d-none');
+    document.getElementById('quickPlaceholder').classList.remove('d-none');
+    await reloadSuggestions();
+    await reloadDashboard();
+    await loadHistory();
+}
+
+async function reloadSuggestions() {
+    const period = document.getElementById('periodSelector').value;
+    const url = '@Url.Action("GetSuggestions", "Revenue")' + '?period=' + encodeURIComponent(period);
+    const res = await fetch(url);
+    const list = await res.json();
+
+    const grid = document.getElementById('suggestionsGrid');
+    grid.innerHTML = '';
+
+    list.forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6';
+
+        const typeClass = item.suggestionType === 1 ? 'suggestion-overdue' : (item.suggestionType === 2 ? 'suggestion-today' : (item.suggestionType === 3 ? 'suggestion-soon' : 'suggestion-last'));
+        const badge = item.suggestionType === 1 ? `متأخر ${item.overdueDays} يوم` : (item.suggestionType === 2 ? 'مستحق اليوم' : (item.suggestionType === 3 ? 'يستحق قريباً' : 'غير محصل الشهر الماضي'));
+        col.innerHTML = `<div class="card suggestion-card ${typeClass} ${item.isLocked ? 'locked' : ''}" data-suggestion-json='${JSON.stringify(item).replace(/'/g, '&apos;')}' onclick="selectSuggestion(this)">
+                            ${item.isLocked ? '<div class="lock-overlay"><i class="bi bi-lock-fill"></i></div>' : ''}
+                            <div class="card-body">
+                              <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge rounded-pill text-bg-light">${badge}</span>
+                                <span class="badge" style="background:${item.urgencyColor}">أولوية ${item.priority}</span>
+                              </div>
+                              <div class="fw-bold">${item.propertyNameAr} / ${item.floorLabel || '-'} / ${item.unitNumber || '-'}</div>
+                              <div class="small text-secondary mt-1">${item.tenantNameAr || ''}</div>
+                              <div class="small mt-2">المبلغ المتوقع: <span class="fw-bold">${toMoney(item.expectedAmount || 0)}</span></div>
+                            </div>
+                        </div>`;
+        grid.appendChild(col);
+    });
+
+    initBatch(document.getElementById('batchPeriod').value);
+}
+
+async function reloadDashboard() {
+    const period = document.getElementById('periodSelector').value;
+    const html = await (await fetch('@Url.Action("TodayDashboard", "Revenue")' + '?period=' + encodeURIComponent(period))).text();
+    document.getElementById('todayStatsContainer').innerHTML = html;
+}
+
+function searchUnits(query) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+        if (!query || query.length < 2) {
+            document.getElementById('searchResults').innerHTML = '';
+            return;
+        }
+
+        const url = '@Url.Action("Search", "Revenue")' + '?q=' + encodeURIComponent(query) + '&page=1';
+        const res = await fetch(url);
+        const data = await res.json();
+        const rows = (data.items || []).map(x => {
+            const cls = x.isLocked ? 'list-group-item-secondary' : '';
+            const statusClass = x.collectionStatusThisMonth === 'متأخر' ? 'text-bg-danger' : (x.collectionStatusThisMonth === 'محصل' ? 'text-bg-success' : (x.collectionStatusThisMonth === 'مقفول' ? 'text-bg-secondary' : 'text-bg-warning'));
+            return `<button type="button" class="list-group-item list-group-item-action ${cls}" ${x.isLocked ? 'disabled' : ''} onclick='selectSearchResult(${JSON.stringify(x)})'>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fw-bold">${x.unitNumber} - ${x.propertyNameAr}</div>
+                                <div class="small text-secondary">${x.tenantNameAr || 'بدون عقد'} | ${toMoney(x.expectedAmount || 0)}</div>
+                            </div>
+                            <span class="badge ${statusClass}">${x.collectionStatusThisMonth}</span>
+                        </div>
+                    </button>`;
+        }).join('');
+
+        document.getElementById('searchResults').innerHTML = '<div class="list-group">' + rows + '</div>';
+    }, 300);
+}
+
+function selectSearchResult(item) {
+    selectedSuggestion = {
+        suggestionId: '',
+        suggestionType: 3,
+        priority: 99,
+        propertyId: item.propertyId,
+        propertyNameAr: item.propertyNameAr,
+        floorId: item.floorId,
+        floorLabel: item.floorLabel,
+        unitId: item.unitId,
+        unitNumber: item.unitNumber,
+        unitType: item.unitType,
+        collectionLevel: item.collectionLevel,
+        tenantNameAr: item.tenantNameAr,
+        tenantPhone: item.tenantPhone,
+        contractId: item.contractId,
+        expectedAmount: item.expectedAmount,
+        dueDate: null,
+        overdueDays: item.overdueDays,
+        periodLabel: document.getElementById('periodSelector').value,
+        suggestedAmountChips: [{ label: 'كامل ' + toMoney(item.expectedAmount), amount: item.expectedAmount, isDefault: true, chipType: 1 }],
+        isLocked: item.isLocked,
+        lockReason: item.lockReason,
+        urgencyColor: '#1c6fa9'
+    };
+    populateQuickForm(selectedSuggestion);
+}
+
+async function initBatch(period) {
+    const url = '@Url.Action("PendingBatch", "Revenue")' + '?period=' + encodeURIComponent(period);
+    const list = await (await fetch(url)).json();
+    const body = document.getElementById('batchRows');
+    body.innerHTML = '';
+
+    list.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = item.isLocked ? 'table-secondary' : '';
+        tr.dataset.item = JSON.stringify(item);
+        tr.innerHTML = `<td><input class="form-check-input batch-check" type="checkbox" ${item.isLocked ? 'disabled' : ''} onchange="updateBatchTotal()"></td>
+                        <td>${item.propertyNameAr} / ${item.floorLabel || '-'} / ${item.unitNumber || '-'}</td>
+                        <td>${item.tenantNameAr || ''}</td>
+                        <td>${toMoney(item.expectedAmount || 0)}</td>
+                        <td><input class="form-control form-control-sm batch-amount" type="number" step="0.01" value="${item.expectedAmount || 0}" ${item.isLocked ? 'disabled' : ''} onchange="updateBatchTotal()"></td>
+                        <td>${item.isLocked ? '<span class="badge text-bg-secondary">مقفول</span>' : '<span class="badge text-bg-success">متاح</span>'}</td>`;
+        body.appendChild(tr);
+    });
+
+    updateBatchTotal();
+}
+
+function toggleAllBatch(state) {
+    document.querySelectorAll('#batchRows .batch-check:not(:disabled)').forEach(c => c.checked = state);
+    updateBatchTotal();
+}
+
+function updateBatchTotal() {
+    const rows = [...document.querySelectorAll('#batchRows tr')];
+    let total = 0;
+    let count = 0;
+
+    rows.forEach(r => {
+        const check = r.querySelector('.batch-check');
+        const amount = Number(r.querySelector('.batch-amount')?.value || 0);
+        if (check && check.checked) {
+            count++;
+            total += amount;
+        }
+    });
+
+    document.getElementById('batchTotal').textContent = toMoney(total);
+    document.getElementById('batchSubmitBtn').textContent = `تسجيل الدفعة الجماعية (${count} وحدات)`;
+}
+
+async function submitBatch() {
+    const rows = [...document.querySelectorAll('#batchRows tr')];
+    const items = [];
+
+    rows.forEach(r => {
+        const check = r.querySelector('.batch-check');
+        if (!check || !check.checked) return;
+        const dto = JSON.parse(r.dataset.item);
+        items.push({
+            propertyId: dto.propertyId,
+            collectionLevel: dto.collectionLevel,
+            floorId: dto.floorId,
+            unitId: dto.unitId,
+            contractId: dto.contractId,
+            amount: Number(r.querySelector('.batch-amount').value || 0),
+            expectedAmount: dto.expectedAmount,
+            payerNameAr: dto.tenantNameAr,
+            receiptNumber: ''
+        });
+    });
+
+    if (items.length === 0) {
+        showToast('اختر عناصر للدفعة الجماعية');
+        return;
+    }
+
+    const token = document.querySelector('#quickCollectForm input[name="__RequestVerificationToken"]').value;
+    const payload = {
+        periodLabel: document.getElementById('batchPeriod').value,
+        collectionDate: new Date().toISOString(),
+        paymentMethod: document.getElementById('batchPaymentMethod').value,
+        notes: '',
+        items
+    };
+
+    const res = await fetch('@Url.Action("BatchCollect", "Revenue")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const j = await res.json();
+    document.getElementById('batchResult').innerHTML = `<div class="alert alert-info">رمز الدفعة: ${j.batchCode} | ناجح: ${j.successCount} | فاشل: ${j.failedCount} | الإجمالي: ${toMoney(j.totalAmount || 0)}</div>`;
+    showToast('تم تسجيل الدفعة');
+    await reloadSuggestions();
+    await reloadDashboard();
+}
+
+async function loadHistory() {
+    const page = await fetch('@Url.Action("Index", "Revenue")?pageSize=20');
+    const html = await page.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const table = doc.querySelector('#revenueTableWrap');
+    document.getElementById('historyContainer').innerHTML = table ? table.innerHTML : 'لا توجد بيانات حديثة';
+}
+
+document.getElementById('periodSelector').addEventListener('change', async e => {
+    document.getElementById('q_periodLabel').value = e.target.value;
+    document.getElementById('batchPeriod').value = e.target.value;
+    await reloadSuggestions();
+    await reloadDashboard();
+});
+
+document.getElementById('batchPeriod').addEventListener('change', e => initBatch(e.target.value));
+document.getElementById('searchInput').addEventListener('input', e => searchUnits(e.target.value));
+document.getElementById('q_amount').addEventListener('input', () => liveVariance());
+
+initBatch(document.getElementById('batchPeriod').value);
+loadHistory();
+</script>
+}

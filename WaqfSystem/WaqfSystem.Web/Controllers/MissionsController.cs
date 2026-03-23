@@ -82,7 +82,9 @@ namespace WaqfSystem.Web.Controllers
             var events = await _missionService.GetCalendarEventsAsync(y, m, GetUserId(), GetUserRole());
             if (governorateId.HasValue)
             {
-                events = events.Where(x => x.GovernorateNameAr == ( _geographicService.GetGovernoratesAsync().Result.FirstOrDefault(g=>g.Id==governorateId.Value)?.NameAr ?? string.Empty)).ToList();
+                var govs = await _geographicService.GetGovernoratesAsync();
+                var govName = govs.FirstOrDefault(g => g.Id == governorateId.Value)?.NameAr ?? string.Empty;
+                events = events.Where(x => x.GovernorateNameAr == govName).ToList();
             }
 
             var cur = new DateTime(y, m, 1);

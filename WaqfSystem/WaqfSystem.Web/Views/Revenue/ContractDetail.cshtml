@@ -1,0 +1,52 @@
+@model WaqfSystem.Core.Entities.RentContract
+@{
+    ViewData["Title"] = "تفاصيل العقد";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">العقد: @Model.TenantNameAr</h4>
+    <a class="btn btn-primary" href="@Url.Action("SmartCollect", "Revenue", new { unitId = Model.UnitId })">تسجيل دفعة</a>
+</div>
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#info" type="button">معلومات العقد</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#schedule" type="button">جدول الدفعات</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#actions" type="button">الإجراءات</button></li>
+</ul>
+<div class="tab-content border border-top-0 rounded-bottom p-3 bg-white">
+    <div class="tab-pane fade show active" id="info">
+        <div>العقار: @Model.Property?.PropertyName</div>
+        <div>الوحدة: @Model.Unit?.UnitNumber</div>
+        <div>المبلغ الشهري: @Model.RentAmount.ToString("N0") د.ع</div>
+        <div>من @Model.StartDate.ToString("yyyy/MM/dd") إلى @Model.EndDate.ToString("yyyy/MM/dd")</div>
+    </div>
+    <div class="tab-pane fade" id="schedule">
+        <table class="table table-sm">
+            <thead><tr><th>الفترة</th><th>الاستحقاق</th><th>المبلغ</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.PaymentSchedules.OrderBy(x => x.DueDate))
+            {
+                <tr>
+                    <td>@item.PeriodLabel</td>
+                    <td>@item.DueDate.ToString("yyyy/MM/dd")</td>
+                    <td>@item.ExpectedAmount.ToString("N0") د.ع</td>
+                    <td>@(item.IsPaid ? "مدفوع" : "مستحق")</td>
+                    <td>
+                        @if (!item.IsPaid)
+                        {
+                            <a class="btn btn-sm btn-success" href="@Url.Action("SmartCollect", "Revenue", new { unitId = Model.UnitId, period = item.PeriodLabel })">تسجيل الدفعة</a>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="tab-pane fade" id="actions">
+        <form asp-action="TerminateContract" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ContractId" value="@Model.Id" />
+            <div class="mb-2"><label class="form-label">تاريخ الإنهاء</label><input class="form-control" type="date" name="TerminationDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+            <div class="mb-2"><label class="form-label">سبب الإنهاء</label><textarea class="form-control" name="Reason" rows="2"></textarea></div>
+            <button class="btn btn-danger">إنهاء العقد</button>
+        </form>
+    </div>
+</div>

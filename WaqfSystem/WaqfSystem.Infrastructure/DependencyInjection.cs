@@ -36,6 +36,9 @@ namespace WaqfSystem.Infrastructure
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IPartnershipExpiryJob, BackgroundJobs.PartnershipExpiryJob>();
+            services.AddScoped<BackgroundJobs.SmartSuggestionRefresher>();
+            services.AddScoped<BackgroundJobs.ScheduleOverdueChecker>();
+            services.AddScoped<BackgroundJobs.ContractExpiryNotifier>();
 
             return services;
         }

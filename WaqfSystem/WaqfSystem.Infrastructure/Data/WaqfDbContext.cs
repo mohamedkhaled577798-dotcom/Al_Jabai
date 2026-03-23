@@ -20,6 +20,12 @@ namespace WaqfSystem.Infrastructure.Data
         public DbSet<PropertyFacility> PropertyFacilities { get; set; } = null!;
         public DbSet<PropertyMeter> PropertyMeters { get; set; } = null!;
         public DbSet<PropertyPartnership> PropertyPartnerships { get; set; } = null!;
+        public DbSet<RentContract> RentContracts { get; set; } = null!;
+        public DbSet<RentPaymentSchedule> RentPaymentSchedules { get; set; } = null!;
+        public DbSet<PropertyRevenue> PropertyRevenues { get; set; } = null!;
+        public DbSet<RevenuePeriodLock> RevenuePeriodLocks { get; set; } = null!;
+        public DbSet<CollectionBatch> CollectionBatches { get; set; } = null!;
+        public DbSet<CollectionSmartLog> CollectionSmartLogs { get; set; } = null!;
         public DbSet<PartnershipConditionRule> PartnershipConditionRules { get; set; } = null!;
         public DbSet<PartnershipExpenseEntry> PartnershipExpenseEntries { get; set; } = null!;
         public DbSet<PartnerRevenueDistribution> PartnerRevenueDistributions { get; set; } = null!;
@@ -509,6 +515,44 @@ namespace WaqfSystem.Infrastructure.Data
                 entity.Property(e => e.GisLayerId).HasMaxLength(100);
                 entity.HasOne(e => e.Neighborhood).WithMany(n => n.Streets).HasForeignKey(e => e.NeighborhoodId).OnDelete(DeleteBehavior.Restrict);
             });
+
+            // ========== REVENUE ==========
+            modelBuilder.Entity<RentContract>(entity =>
+            {
+                entity.ToTable("RentContracts");
+                entity.HasKey(e => e.Id);
+                entity.HasQueryFilter(e => !e.IsDeleted);
+                entity.HasIndex(e => e.PropertyId).HasFilter("[IsDeleted] = 0");
+                entity.HasIndex(e => e.UnitId).HasFilter("[IsDeleted] = 0");
+                entity.HasIndex(e => e.Status).HasFilter("[IsDeleted] = 0");
+                entity.Property(e => e.TenantNameAr).HasMaxLength(200).UseCollation("Arabic_CI_AS");
+                entity.Property(e => e.TenantPhone).HasMaxLength(30);
+                entity.Property(e => e.RentAmount).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.PenaltyPerDay).HasColumnType("decimal(15,2)");
+                entity.Property(e => e.Notes).UseCollation("Arabic_CI_AS");
+                entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Floor).WithMany().HasForeignKey(e => e.FloorId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Unit).WithMany().HasForeignKey(e => e.UnitId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.CreatedBy).WithMany().HasForeignKey(e => e.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<RentPaymentSchedule>(entity =>
+            {
+                entity.ToTable("RentPaymentSchedules");
+                entity.HasKey(e => e.Id);
+                entity.HasQueryFilter(e => !e.IsDeleted);
+                entity.HasIndex(e => new { e.ContractId, e.PeriodLabel }).HasFilter("[IsDeleted] = 0");
+                entity.Property(e => e.PeriodLabel).HasMaxLength(50);
+                entity.Property(e => e.ExpectedAmount).HasColumnType("decimal(15,2)");
+                entity.HasOne(e => e.Contract).WithMany(c => c.PaymentSchedules).HasForeignKey(e => e.ContractId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.ApplyConfiguration(new RentContractConfiguration());
+            modelBuilder.ApplyConfiguration(new PropertyRevenueConfiguration());
+            modelBuilder.ApplyConfiguration(new RevenuePeriodLockConfiguration());
+            modelBuilder.ApplyConfiguration(new RentPaymentScheduleConfiguration());
+            modelBuilder.ApplyConfiguration(new CollectionBatchConfiguration());
+            modelBuilder.ApplyConfiguration(new CollectionSmartLogConfiguration());
 
             modelBuilder.ApplyConfiguration(new PartnershipConfiguration());
             modelBuilder.ApplyConfiguration(new PartnershipConditionRuleConfiguration());

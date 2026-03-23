@@ -1,0 +1,116 @@
+@model WaqfSystem.Web.ViewModels.Document.ForPropertyViewModel
+@{
+    ViewData["Title"] = "وثائق العقار";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-1">المستندات والوثائق</h3>
+        <div class="text-muted">@Model.PropertyNameAr / @Model.PropertyWqfNumber</div>
+    </div>
+    <a class="btn btn-success" href="@Url.Action("Upload", "Documents", new { propertyId = Model.PropertyId })">رفع وثيقة جديدة</a>
+</div>
+
+@if (Model.Summary.MissingRequiredTypes.Any())
+{
+    <div class="alert alert-warning">
+        <div class="fw-bold">وثائق إلزامية مفقودة</div>
+        <div class="mt-2 d-flex flex-wrap gap-2">
+            @foreach (var miss in Model.Summary.MissingRequiredTypes)
+            {
+                <a class="badge text-bg-warning" href="@Url.Action("Upload", "Documents", new { propertyId = Model.PropertyId })">@miss - رفع الآن</a>
+            }
+        </div>
+    </div>
+}
+
+@if (Model.Summary.ExpiredCount > 0 || Model.Summary.ExpiringSoonCount > 0)
+{
+    <div class="alert alert-danger d-flex justify-content-between">
+        <span>@Model.Summary.ExpiredCount وثيقة منتهية الصلاحية</span>
+        <span class="text-warning">@Model.Summary.ExpiringSoonCount وثيقة تنتهي خلال 30 يوم</span>
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card p-3 text-center"><div class="small text-muted">إجمالي</div><div class="h4">@Model.Summary.TotalDocuments</div></div></div>
+    <div class="col-md-2"><div class="card p-3 text-center"><div class="small text-muted">معتمدة</div><div class="h4 text-success">@Model.Summary.VerifiedCount</div></div></div>
+    <div class="col-md-2"><div class="card p-3 text-center"><div class="small text-muted">تنتظر تحقق</div><div class="h4 text-primary">@Model.Summary.PendingCount</div></div></div>
+    <div class="col-md-2"><div class="card p-3 text-center"><div class="small text-muted">منتهية</div><div class="h4 text-danger">@Model.Summary.ExpiredCount</div></div></div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <div class="small text-muted">نسبة الامتثال</div>
+            <div class="mx-auto" style="width:88px;height:88px;border-radius:50%;background:conic-gradient(#16a34a @(Model.Summary.CompliancePercent * 3.6m)deg,#e5e7eb 0deg);display:flex;align-items:center;justify-content:center;">
+                <div style="width:68px;height:68px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">@Model.Summary.CompliancePercent.ToString("0")%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#filterPanel" style="cursor:pointer">تصفية متقدمة</div>
+    <div class="collapse" id="filterPanel">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <input type="hidden" name="propertyId" value="@Model.PropertyId" />
+                <div class="col-md-3">
+                    <input class="form-control" name="SearchTerm" value="@Model.Filter.SearchTerm" placeholder="بحث" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="DocumentTypeId">
+                        <option value="">كل الأنواع</option>
+                        @foreach (var t in Model.DocumentTypes)
+                        {
+                            <option value="@t.Value" selected="@(Model.Filter.DocumentTypeId?.ToString() == t.Value)">@t.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2"><input type="date" class="form-control" name="ExpiryDateFrom" value="@Model.Filter.ExpiryDateFrom?.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-md-2"><input type="date" class="form-control" name="ExpiryDateTo" value="@Model.Filter.ExpiryDateTo?.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-md-2"><button class="btn btn-primary w-100">تطبيق</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="accordion" id="docsAccordion">
+    @for (var i = 0; i < Model.DocumentTypeGroups.Count; i++)
+    {
+        var g = Model.DocumentTypeGroups[i];
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#grp_@i">
+                    <span class="fw-bold me-2">@g.DocumentType.NameAr</span>
+                    @if (g.DocumentType.IsRequired)
+                    {
+                        <span class="badge bg-danger ms-2">إلزامي</span>
+                    }
+                    <span class="badge bg-secondary ms-2">@g.Documents.Count</span>
+                </button>
+            </h2>
+            <div id="grp_@i" class="accordion-collapse collapse" data-bs-parent="#docsAccordion">
+                <div class="accordion-body">
+                    <div class="d-flex justify-content-end mb-2">
+                        <a class="btn btn-sm btn-outline-success" href="@Url.Action("Upload", "Documents", new { propertyId = Model.PropertyId, documentTypeId = g.DocumentType.Id })">إضافة</a>
+                    </div>
+
+                    @if (!g.Documents.Any())
+                    {
+                        <div class="text-muted">لا توجد وثائق لهذا النوع</div>
+                    }
+                    else
+                    {
+                        <div class="row g-3">
+                            @foreach (var doc in g.Documents)
+                            {
+                                <div class="col-md-6">
+                                    @await Html.PartialAsync("_DocumentCard", doc)
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

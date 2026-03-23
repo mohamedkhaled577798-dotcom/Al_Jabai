@@ -1,0 +1,37 @@
+@model WaqfSystem.Application.DTOs.Document.CreateDocumentTypeDto
+@{
+    var isEdit = Model is WaqfSystem.Application.DTOs.Document.UpdateDocumentTypeDto;
+    ViewData["Title"] = isEdit ? "تعديل نوع الوثيقة" : "إضافة نوع الوثيقة";
+}
+
+<h3 class="mb-3">@ViewData["Title"]</h3>
+
+<form method="post" asp-action="@(isEdit ? "EditDocumentType" : "CreateDocumentType")" class="card card-body">
+    @Html.AntiForgeryToken()
+    @if (isEdit)
+    {
+        <input type="hidden" name="Id" value="@((Model as WaqfSystem.Application.DTOs.Document.UpdateDocumentTypeDto)?.Id)" />
+    }
+
+    <div class="row g-3">
+        <div class="col-md-3"><label class="form-label">الكود</label><input name="Code" class="form-control" value="@Model.Code" required /></div>
+        <div class="col-md-3"><label class="form-label">الاسم عربي</label><input name="NameAr" class="form-control" value="@Model.NameAr" required /></div>
+        <div class="col-md-3"><label class="form-label">الاسم إنجليزي</label><input name="NameEn" class="form-control" value="@Model.NameEn" required /></div>
+        <div class="col-md-3"><label class="form-label">التصنيف</label><input name="Category" class="form-control" value="@Model.Category" required /></div>
+        <div class="col-md-6"><label class="form-label">الوصف</label><textarea name="Description" class="form-control" rows="3">@Model.Description</textarea></div>
+        <div class="col-md-2"><label class="form-label">تنبيه أول</label><input name="AlertDays1" class="form-control" type="number" value="@Model.AlertDays1" /></div>
+        <div class="col-md-2"><label class="form-label">تنبيه ثاني</label><input name="AlertDays2" class="form-control" type="number" value="@Model.AlertDays2" /></div>
+        <div class="col-md-2"><label class="form-label">الحجم MB</label><input name="MaxFileSizeMB" class="form-control" type="number" value="@Model.MaxFileSizeMB" /></div>
+        <div class="col-md-4"><label class="form-label">الامتدادات</label><input name="AllowedExtensions" class="form-control" value="@Model.AllowedExtensions" /></div>
+        <div class="col-md-6"><label class="form-label">الأدوار (JSON/CSV)</label><input name="VerifierRoles" class="form-control" value="@(string.Join(",", Model.VerifierRoles))" /></div>
+        <div class="col-md-2 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="IsRequired" @(Model.IsRequired ? "checked" : "") /><label class="form-check-label">إلزامي</label></div></div>
+        <div class="col-md-2 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="HasExpiry" @(Model.HasExpiry ? "checked" : "") /><label class="form-check-label">ينتهي</label></div></div>
+        <div class="col-md-2 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="IsActive" @(Model.IsActive ? "checked" : "") /><label class="form-check-label">نشط</label></div></div>
+        <div class="col-md-2"><label class="form-label">الترتيب</label><input name="SortOrder" class="form-control" type="number" value="@Model.SortOrder" /></div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="@Url.Action("DocumentTypes", "Admin")">إلغاء</a>
+        <button class="btn btn-primary" type="submit">حفظ</button>
+    </div>
+</form>

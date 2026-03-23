@@ -1,0 +1,580 @@
+@model WaqfSystem.Application.DTOs.Property.PropertyDetailDto
+@inject WaqfSystem.Application.Services.IDocumentService DocumentService
+@using System.Text.Json
+@{
+    ViewData["Title"] = $"تفاصيل العقار — {Model.WqfNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var documentSummary = await DocumentService.GetPropertySummaryAsync(Model.Id);
+
+    static string StageLabel(WaqfSystem.Core.Enums.ApprovalStage s) => s switch
+    {
+        WaqfSystem.Core.Enums.ApprovalStage.Draft => "مسودة",
+        WaqfSystem.Core.Enums.ApprovalStage.FieldSupervisorReview => "مراجعة المشرف الميداني",
+        WaqfSystem.Core.Enums.ApprovalStage.LegalReview => "المراجعة القانونية",
+        WaqfSystem.Core.Enums.ApprovalStage.EngineeringReview => "المراجعة الهندسية",
+        WaqfSystem.Core.Enums.ApprovalStage.RegionalApproval => "الموافقة الإقليمية",
+        WaqfSystem.Core.Enums.ApprovalStage.Approved => "مُعتمد ✓",
+        WaqfSystem.Core.Enums.ApprovalStage.SentForCorrection => "أُعيد للتصحيح",
+        _ => s.ToString()
+    };
+
+    var dqsColor = Model.DqsScore >= 80 ? "#15803d" : Model.DqsScore >= 60 ? "#d97706" : "#dc2626";
+
+    static string TransferStatusLabel(WaqfSystem.Core.Enums.TransferStatus status) => status switch
+    {
+        WaqfSystem.Core.Enums.TransferStatus.Pending => "بانتظار التحويل",
+        WaqfSystem.Core.Enums.TransferStatus.Transferred => "تم التحويل",
+        WaqfSystem.Core.Enums.TransferStatus.Cancelled => "ملغى",
+        _ => status.ToString()
+    };
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+    :root {
+        --card-radius: 14px;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,.08);
+        --accent: #1D6FA4;
+    }
+    .detail-header {
+        background: linear-gradient(135deg, #0f3d5e 0%, #1D6FA4 60%, #2196b8 100%);
+        border-radius: var(--card-radius);
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 1.8rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .detail-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .wqf-badge { font-size: 1.1rem; font-weight: 700; opacity: .9; letter-spacing: .05em; }
+    .prop-title { font-size: 1.7rem; font-weight: 800; margin: .25rem 0 .5rem; }
+    .stage-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 14px 4px 10px; border-radius: 30px;
+        font-size: .82rem; font-weight: 600; border: 1.5px solid rgba(255,255,255,.4);
+        background: rgba(255,255,255,.15); backdrop-filter: blur(4px);
+    }
+    .dqs-ring {
+        width: 80px; height: 80px; position: relative;
+        flex-shrink: 0;
+    }
+    .dqs-ring svg { transform: rotate(-90deg); }
+    .dqs-label {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 1.1rem; line-height: 1;
+    }
+    .dqs-label small { font-size: .6rem; font-weight: 500; opacity: .8; }
+
+    .info-card {
+        background: #fff; border-radius: var(--card-radius);
+        box-shadow: var(--shadow-sm); border: 1px solid #eef0f3;
+        margin-bottom: 1.4rem; overflow: hidden;
+    }
+    .info-card-header {
+        background: linear-gradient(90deg, #f0f6ff 0%, #f8fafc 100%);
+        padding: .75rem 1.25rem; display: flex; align-items: center; gap: .6rem;
+        border-bottom: 1px solid #e7edf5;
+        font-weight: 700; color: #1e3a5c; font-size: .93rem;
+    }
+    .info-card-header i { color: var(--accent); font-size: 1.05rem; }
+    .info-card-body { padding: 1.2rem 1.25rem; }
+
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .info-item label { font-size: .72rem; font-weight: 600; color: #7a8ea5; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; display: block; }
+    .info-item span { font-size: .9rem; color: #1a2e44; font-weight: 500; }
+    .info-item span.empty { color: #cbd5e0; font-style: italic; }
+
+    .floor-card { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: .75rem; overflow: hidden; }
+    .floor-head { background: #f1f5fb; padding: .55rem 1rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; justify-content: space-between; }
+    .floor-body { padding: .75rem 1rem; }
+
+    .unit-row { display: flex; gap: 1rem; flex-wrap: wrap; padding: .4rem .5rem; border-radius: 8px; margin-bottom: .35rem; background: #f9fafb; font-size: .84rem; }
+    .unit-row strong { min-width: 60px; color: #374151; }
+
+    .doc-item { display: flex; align-items: center; gap: .75rem; padding: .6rem; border-radius: 8px; background: #f8f9fb; margin-bottom: .45rem; }
+    .doc-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .doc-meta { flex: 1; font-size: .83rem; color: #4b5563; }
+    .doc-meta strong { display: block; color: #1e3a5c; font-size: .87rem; }
+
+    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .6rem; }
+    .photo-thumb { border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: #f1f5f9; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; transition: transform .25s; }
+    .photo-thumb img:hover { transform: scale(1.05); }
+
+    .timeline-item { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .timeline-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+    .timeline-content { flex: 1; }
+
+    #propMap { height: 280px; border-radius: 10px; }
+
+    .action-bar { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.5rem; }
+    .action-bar .btn { border-radius: 30px; padding: .45rem 1.1rem; font-size: .84rem; font-weight: 600; }
+</style>
+
+<!-- ─── Header ─── -->
+<div class="detail-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <p class="wqf-badge mb-0 opacity-75"><i class="bi bi-hash"></i> @Model.WqfNumber</p>
+            <h1 class="prop-title">@(Model.PropertyName ?? "عقار وقف")</h1>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="stage-pill">
+                    <i class="bi bi-circle-fill" style="font-size:.45rem;"></i>
+                    @StageLabel(Model.ApprovalStage)
+                </span>
+                @if (!string.IsNullOrEmpty(Model.GovernorateName))
+                {
+                    <span class="stage-pill"><i class="bi bi-geo-alt-fill"></i> @Model.GovernorateName</span>
+                }
+                <span class="stage-pill"><i class="bi bi-building"></i> @Model.PropertyType</span>
+            </div>
+        </div>
+        <!-- DQS ring -->
+        <div class="dqs-ring">
+            <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle cx="40" cy="40" r="33" stroke="rgba(255,255,255,.2)" stroke-width="9" fill="none" />
+                <circle cx="40" cy="40" r="33"
+                        stroke="@dqsColor"
+                        stroke-width="9" fill="none"
+                        stroke-dasharray="207.35"
+                        stroke-dashoffset="@((1 - (double)Model.DqsScore / 100) * 207.35)"
+                        stroke-linecap="round" />
+            </svg>
+            <div class="dqs-label">
+                <span>@Model.DqsScore<small>%</small></span>
+                <small class="mt-1">جودة</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Action Bar ─── -->
+<div class="action-bar">
+    <a href="@Url.Action("Index", "Properties")" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-right me-1"></i> قائمة العقارات
+    </a>
+    <a href="@Url.Action("Edit", "Properties", new { id = Model.Id })" class="btn btn-outline-primary">
+        <i class="bi bi-pencil-square me-1"></i> تعديل البناية
+    </a>
+    <a href="@Url.Action("CreateStep1", "Properties")" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> إضافة عقار جديد
+    </a>
+    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+    {
+        <a href="http://localhost:5000" target="_blank" class="btn btn-outline-success">
+            <i class="bi bi-map me-1"></i> عرض في GIS
+        </a>
+    }
+    <a href="@Url.Action("AuditLog", "Admin")" class="btn btn-outline-info">
+        <i class="bi bi-journal-text me-1"></i> سجل التدقيق
+    </a>
+</div>
+
+@if (documentSummary != null)
+{
+    <div class="mb-3">
+        @await Html.PartialAsync("~/Views/Properties/_DocumentsSummaryTab.cshtml", documentSummary)
+    </div>
+}
+
+<div class="row g-3">
+    <!-- ─── Left Column ─── -->
+    <div class="col-lg-8">
+
+        <!-- Basic Info -->
+        <div class="info-card">
+            <div class="info-card-header"><i class="bi bi-info-circle-fill"></i> البيانات الأساسية</div>
+            <div class="info-card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>نوع العقار</label><span>@Model.PropertyType</span>
+                    </div>
+                    <div class="info-item">
+                        <label>نوع الوقف</label><span>@(Model.WaqfType?.ToString() ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>نوع التملك</label><span>@Model.OwnershipType</span>
+                    </div>
+                    <div class="info-item">
+                        <label>نسبة التملك</label><span>@Model.OwnershipPercentage %</span>
+                    </div>
+                    <div class="info-item">
+                        <label>رقم الصك</label><span class="@(Model.DeedNumber == null ? "empty" : "")">@(Model.DeedNumber ?? "غير مُسجَّل")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>رقم الكادستر</label><span class="@(Model.CadastralNumber == null ? "empty" : "")">@(Model.CadastralNumber ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>رقم الطابو</label><span class="@(Model.TabuNumber == null ? "empty" : "")">@(Model.TabuNumber ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>تاريخ التسجيل</label><span>@(Model.RegistrationDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>المؤسِّس</label><span>@(Model.FounderName ?? "—")</span>
+                    </div>
+                    <div class="info-item">
+                        <label>تاريخ التأسيس</label><span>@(Model.FoundationDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.EndowmentPurpose))
+                {
+                    <hr />
+                    <div class="info-item mt-2">
+                        <label>غرض الوقف</label><span>@Model.EndowmentPurpose</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="info-item mt-2">
+                        <label>ملاحظات</label><span>@Model.Notes</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Building Info -->
+        <div class="info-card">
+            <div class="info-card-header"><i class="bi bi-building-fill"></i> بيانات البناء والمساحة</div>
+            <div class="info-card-body">
+                <div class="info-grid">
+                    <div class="info-item"><label>إجمالي الطوابق</label><span>@(Model.TotalFloors?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>طوابق تحت الأرض</label><span>@(Model.BasementFloors?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>عدد الوحدات</label><span>@(Model.TotalUnits?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>سنة البناء</label><span>@(Model.YearBuilt?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>آخر ترميم</label><span>@(Model.LastRenovationYear?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>نوع الإنشاء</label><span>@(Model.ConstructionType?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>الحالة الإنشائية</label><span>@(Model.StructuralCondition?.ToString() ?? "—")</span></div>
+                    <div class="info-item"><label>نوع الواجهة</label><span>@(Model.FacadeType ?? "—")</span></div>
+                    <div class="info-item"><label>نوع السقف</label><span>@(Model.RoofType ?? "—")</span></div>
+                    <div class="info-item"><label>المساحة الإجمالية</label><span>@(Model.TotalAreaSqm?.ToString("N0") ?? "—") م²</span></div>
+                    <div class="info-item"><label>المساحة المبنية</label><span>@(Model.BuiltUpAreaSqm?.ToString("N0") ?? "—") م²</span></div>
+                    <div class="info-item"><label>مساحة الأرض</label><span>@(Model.LandAreaSqm?.ToString("N0") ?? "—") م²</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floors & Units -->
+        @if (Model.Floors.Any())
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-layers-fill"></i> الطوابق والوحدات (@Model.Floors.Count)</div>
+                <div class="info-card-body">
+                    @foreach (var floor in Model.Floors)
+                    {
+                        <div class="floor-card">
+                            <div class="floor-head" data-bs-toggle="collapse" data-bs-target="#floor-@floor.Id">
+                                <span>
+                                    <i class="bi bi-grid-3x3-gap me-1"></i>
+                                    طابق @floor.FloorNumber — @(floor.FloorLabel ?? floor.FloorUsage.ToString())
+                                </span>
+                                <span class="text-muted fs-6">@floor.Units.Count وحدة <i class="bi bi-chevron-down"></i></span>
+                            </div>
+                            <div id="floor-@floor.Id" class="collapse floor-body">
+                                <div class="info-grid mb-2">
+                                    <div class="info-item"><label>المساحة</label><span>@(floor.TotalAreaSqm?.ToString("N0") ?? "—") م²</span></div>
+                                    <div class="info-item"><label>الاستخدام</label><span>@floor.FloorUsage</span></div>
+                                    <div class="info-item"><label>الحالة</label><span>@(floor.StructuralCondition?.ToString() ?? "—")</span></div>
+                                </div>
+                                @foreach (var unit in floor.Units)
+                                {
+                                    <div class="unit-row">
+                                        <strong>@(unit.UnitNumber ?? $"وحدة {unit.Id}")</strong>
+                                        <span>@unit.UnitType</span>
+                                        <span>@(unit.AreaSqm?.ToString("N0") ?? "—") م²</span>
+                                        <span>@unit.OccupancyStatus</span>
+                                        @if (unit.MarketRentMonthly.HasValue)
+                                        {
+                                            <span>@unit.MarketRentMonthly.Value.ToString("N0") د.ع/شهر</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Documents -->
+        @if (Model.Documents.Any())
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-file-earmark-text-fill"></i> الوثائق الرسمية (@Model.Documents.Count)</div>
+                <div class="info-card-body">
+                    @foreach (var doc in Model.Documents)
+                    {
+                        <div class="doc-item">
+                            <div class="doc-icon">
+                                @if (doc.FileUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                { <i class="bi bi-file-earmark-pdf-fill text-danger"></i> }
+                                else
+                                { <i class="bi bi-file-earmark-image-fill text-primary"></i> }
+                            </div>
+                            <div class="doc-meta">
+                                <strong>@(doc.DocumentType ?? doc.DocumentCategory.ToString())</strong>
+                                <span>
+                                    @if (!string.IsNullOrEmpty(doc.DocumentNumber)) { <text>رقم: @doc.DocumentNumber — </text> }
+                                    @if (doc.DocumentDate.HasValue) { <text>@doc.DocumentDate.Value.ToString("yyyy/MM/dd")</text> }
+                                    @if (doc.IsVerified) { <span class="badge bg-success ms-1">مُوثَّق</span> }
+                                </span>
+                            </div>
+                            <a href="@doc.FileUrl" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="bi bi-eye me-1"></i> عرض
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Photos -->
+        @if (Model.Photos.Any())
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-images"></i> الصور الميدانية (@Model.Photos.Count)</div>
+                <div class="info-card-body">
+                    <div class="photo-grid">
+                        @foreach (var photo in Model.Photos)
+                        {
+                            <div class="photo-thumb">
+                                <img src="@photo.FileUrl"
+                                     alt="@(photo.Caption ?? photo.PhotoType.ToString())"
+                                     title="@(photo.Caption ?? photo.PhotoType.ToString())"
+                                     loading="lazy" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Workflow History -->
+        @if (Model.WorkflowHistory.Any())
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-clock-history"></i> سجل حالة الموافقة</div>
+                <div class="info-card-body">
+                    @foreach (var wf in Model.WorkflowHistory.OrderByDescending(x => x.ActionAt))
+                    {
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="text-sm">@StageLabel(wf.FromStage) → @StageLabel(wf.ToStage)</strong>
+                                    <small class="text-muted">@wf.ActionAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(wf.ActionByName))
+                                {<small class="text-muted">بواسطة: @wf.ActionByName</small>}
+                                @if (!string.IsNullOrEmpty(wf.Notes))
+                                {<p class="mb-0 mt-1 text-muted small">@wf.Notes</p>}
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Time Periods / Revenue & Investment -->
+        @{
+            var periodRows = Model.Partnerships
+                .SelectMany(p => p.RevenueDistributions.Select(d => new { Partnership = p, Distribution = d }))
+                .OrderByDescending(x => x.Distribution.PeriodStartDate)
+                .ToList();
+        }
+        @if (periodRows.Any() || Model.Partnerships.Any())
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-calendar2-week-fill"></i> الفترات الزمنية والإيرادات والاستثمارات</div>
+                <div class="info-card-body">
+                    @if (periodRows.Any())
+                    {
+                        @foreach (var row in periodRows)
+                        {
+                            <div class="border rounded-3 p-3 mb-2">
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <strong>@(string.IsNullOrWhiteSpace(row.Distribution.PeriodLabel) ? $"{row.Distribution.PeriodStartDate:yyyy/MM/dd} - {row.Distribution.PeriodEndDate:yyyy/MM/dd}" : row.Distribution.PeriodLabel)</strong>
+                                        <div class="small text-muted mt-1">الشريك: @row.Partnership.PartnerName | نوع التوزيع: @row.Distribution.DistributionType</div>
+                                    </div>
+                                    <span class="badge bg-light text-dark border">@TransferStatusLabel(row.Distribution.TransferStatus)</span>
+                                </div>
+                                <div class="info-grid mt-3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+                                    <div class="info-item"><label>إجمالي الإيراد</label><span>@row.Distribution.TotalRevenue.ToString("N0") د.ع</span></div>
+                                    <div class="info-item"><label>حصة الوقف</label><span>@row.Distribution.WaqfAmount.ToString("N0") د.ع</span></div>
+                                    <div class="info-item"><label>الاستثمار/حصة الشريك</label><span>@row.Distribution.PartnerAmount.ToString("N0") د.ع</span></div>
+                                    <div class="info-item"><label>نسبة الوقف</label><span>@row.Distribution.WaqfPercentSnapshot.ToString("N2")%</span></div>
+                                    <div class="info-item"><label>تاريخ التحويل</label><span>@(row.Distribution.TransferDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(row.Distribution.Notes))
+                                {
+                                    <div class="small text-muted mt-2">@row.Distribution.Notes</div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var partnership in Model.Partnerships.OrderByDescending(p => p.PartnershipStartDate ?? p.AgreementDate))
+                        {
+                            <div class="border rounded-3 p-3 mb-2">
+                                <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center">
+                                    <strong>@partnership.PartnerName</strong>
+                                    <span class="badge @(partnership.IsActive ? "bg-success" : "bg-secondary")">@(partnership.IsActive ? "نشطة" : "منتهية")</span>
+                                </div>
+                                <div class="info-grid mt-3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+                                    <div class="info-item"><label>بداية الشراكة</label><span>@(partnership.PartnershipStartDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                                    <div class="info-item"><label>نهاية الشراكة</label><span>@(partnership.PartnershipEndDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                                    <div class="info-item"><label>حصة الوقف</label><span>@partnership.WaqfSharePercent.ToString("N2")%</span></div>
+                                    <div class="info-item"><label>حصة الشريك</label><span>@partnership.PartnerSharePercent.ToString("N2")%</span></div>
+                                    <div class="info-item"><label>تاريخ التوزيع القادم</label><span>@(partnership.NextDistribDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ─── Right Column ─── -->
+    <div class="col-lg-4">
+
+        <!-- Address -->
+        @if (Model.Address != null)
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-geo-alt-fill"></i> العنوان</div>
+                <div class="info-card-body">
+                    <div class="info-grid" style="grid-template-columns:1fr 1fr;">
+                        <div class="info-item"><label>المحافظة</label><span>@(Model.Address.GovernorateName ?? Model.GovernorateName ?? "—")</span></div>
+                        <div class="info-item"><label>القضاء</label><span>@(Model.Address.DistrictName ?? "—")</span></div>
+                        <div class="info-item"><label>الناحية</label><span>@(Model.Address.NeighborhoodName ?? "—")</span></div>
+                        <div class="info-item"><label>الشارع</label><span>@(Model.Address.StreetName ?? "—")</span></div>
+                        <div class="info-item"><label>رقم البناء</label><span>@(Model.Address.BuildingNumber ?? "—")</span></div>
+                        <div class="info-item"><label>رقم القطعة</label><span>@(Model.Address.PlotNumber ?? "—")</span></div>
+                        <div class="info-item"><label>رقم الحي</label><span>@(Model.Address.BlockNumber ?? "—")</span></div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Address.NearestLandmark))
+                    {
+                        <div class="info-item mt-2">
+                            <label>أقرب معلم</label><span>@Model.Address.NearestLandmark</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Map -->
+        @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+        {
+            <div class="info-card">
+                <div class="info-card-header"><i class="bi bi-map-fill"></i> الموقع الجغرافي</div>
+                <div class="info-card-body p-2">
+                    <div id="propMap"></div>
+                    <div class="info-grid mt-2" style="grid-template-columns:1fr 1fr;">
+                        <div class="info-item"><label>خط العرض</label><span>@Model.Latitude</span></div>
+                        <div class="info-item"><label>خط الطول</label><span>@Model.Longitude</span></div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Financial Info -->
+        <div class="info-card">
+            <div class="info-card-header"><i class="bi bi-cash-stack"></i> البيانات المالية</div>
+            <div class="info-card-body">
+                <div class="info-grid" style="grid-template-columns:1fr;">
+                    <div class="info-item"><label>القيمة التقديرية</label><span>@(Model.EstimatedValue.HasValue ? $"{Model.EstimatedValue.Value:N0} د.ع" : "—")</span></div>
+                    <div class="info-item"><label>آخر تقييم</label><span>@(Model.LastValuationDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                    <div class="info-item"><label>الإيراد السنوي</label><span>@(Model.AnnualRevenue.HasValue ? $"{Model.AnnualRevenue.Value:N0} د.ع" : "—")</span></div>
+                    <div class="info-item"><label>المصاريف السنوية</label><span>@(Model.AnnualExpenses.HasValue ? $"{Model.AnnualExpenses.Value:N0} د.ع" : "—")</span></div>
+                    <div class="info-item"><label>قيمة التأمين</label><span>@(Model.InsuranceValue.HasValue ? $"{Model.InsuranceValue.Value:N0} د.ع" : "—")</span></div>
+                    <div class="info-item"><label>انتهاء التأمين</label><span>@(Model.InsuranceExpiryDate?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GIS Sync -->
+        <div class="info-card">
+            <div class="info-card-header"><i class="bi bi-hdd-network-fill"></i> حالة المزامنة GIS</div>
+            <div class="info-card-body">
+                <div class="info-grid" style="grid-template-columns:1fr;">
+                    <div class="info-item">
+                        <label>حالة المزامنة</label>
+                        <span>
+                            @if (Model.GisSyncStatus == WaqfSystem.Core.Enums.GisSyncStatus.Synced)
+                            { <span class="badge bg-success">مُزامَن ✓</span> }
+                            else if (Model.GisSyncStatus == WaqfSystem.Core.Enums.GisSyncStatus.Pending)
+                            { <span class="badge bg-warning text-dark">قيد الانتظار</span> }
+                            else
+                            { <span class="badge bg-secondary">غير مُزامَن</span> }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.GisFeatureId))
+                    {
+                        <div class="info-item"><label>معرف الميزة GIS</label><span class="text-break small">@Model.GisFeatureId</span></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="info-card">
+            <div class="info-card-header"><i class="bi bi-person-circle"></i> معلومات الإدخال</div>
+            <div class="info-card-body">
+                <div class="info-grid" style="grid-template-columns:1fr;">
+                    <div class="info-item"><label>أنشأه</label><span>@(Model.CreatedByName ?? "—")</span></div>
+                    <div class="info-item"><label>تاريخ الإنشاء</label><span>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span></div>
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <div class="info-item"><label>آخر تعديل</label><span>@Model.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm")</span></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+{
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function () {
+            var lat = @Model.Latitude, lng = @Model.Longitude;
+            var map = L.map('propMap').setView([lat, lng], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+            L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup('<strong>@Html.Raw(Model.PropertyName ?? Model.WqfNumber)</strong><br/>@Model.WqfNumber')
+                .openPopup();
+
+            var polygonGeoJson = @Html.Raw(JsonSerializer.Serialize(Model.GisPolygon));
+            if (polygonGeoJson) {
+                try {
+                    var polygonObj = JSON.parse(polygonGeoJson);
+                    var polygonLayer = L.geoJSON(polygonObj, {
+                        style: { color: '#ef4444', weight: 3, fillColor: '#ef4444', fillOpacity: 0.15 }
+                    }).addTo(map);
+
+                    if (polygonLayer.getBounds && polygonLayer.getBounds().isValid()) {
+                        map.fitBounds(polygonLayer.getBounds(), { padding: [20, 20] });
+                    }
+                } catch (e) {
+                    console.warn('Invalid GIS polygon JSON', e);
+                }
+            }
+        })();
+    </script>
+}

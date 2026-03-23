@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WaqfSystem.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using WaqfSystem.Infrastructure.Data;
 namespace WaqfSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(WaqfDbContext))]
-    partial class WaqfDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315220538_AddDocumentManagementSystem")]
+    partial class AddDocumentManagementSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -205,129 +208,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.ToTable("AuditLogs", (string)null);
                 });
 
-            modelBuilder.Entity("WaqfSystem.Core.Entities.CollectionBatch", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BatchCode")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int>("CollectedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CollectionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("ItemCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentMethod")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PeriodLabel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CollectedById");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.ToTable("CollectionBatches");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.CollectionSmartLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FloorId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SuggestionType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int?>("UnitId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("WasActedOn")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FloorId");
-
-                    b.HasIndex("PropertyId");
-
-                    b.HasIndex("UnitId");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("CollectionSmartLogs");
-                });
-
             modelBuilder.Entity("WaqfSystem.Core.Entities.Country", b =>
                 {
                     b.Property<int>("Id")
@@ -379,7 +259,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "IQ",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1198),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9550),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "العراق",
@@ -892,7 +772,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 1,
                             Code = "BGW",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1348),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9777),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "بغداد",
@@ -904,7 +784,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 2,
                             Code = "BSA",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1352),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9793),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "البصرة",
@@ -916,7 +796,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 3,
                             Code = "NIN",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1353),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9796),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "نينوى",
@@ -928,7 +808,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 4,
                             Code = "EBL",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1354),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9797),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "أربيل",
@@ -940,7 +820,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 5,
                             Code = "SLM",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1355),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9799),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "السليمانية",
@@ -952,7 +832,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 6,
                             Code = "DHK",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1355),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9800),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "دهوك",
@@ -964,7 +844,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 7,
                             Code = "KRK",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1400),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9801),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "كركوك",
@@ -976,7 +856,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 8,
                             Code = "DIY",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1401),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9803),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ديالى",
@@ -988,7 +868,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 9,
                             Code = "ANB",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1402),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9804),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "الأنبار",
@@ -1000,7 +880,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 10,
                             Code = "BAB",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1403),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9805),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "بابل",
@@ -1012,7 +892,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 11,
                             Code = "KAR",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1404),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9806),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "كربلاء",
@@ -1024,7 +904,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 12,
                             Code = "NAJ",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1405),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9808),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "النجف",
@@ -1036,7 +916,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 13,
                             Code = "WAS",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1406),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9809),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "واسط",
@@ -1048,7 +928,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 14,
                             Code = "SLD",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1407),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9810),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "صلاح الدين",
@@ -1060,7 +940,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 15,
                             Code = "DHQ",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1408),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9812),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ذي قار",
@@ -1072,7 +952,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 16,
                             Code = "MYS",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1409),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9813),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "ميسان",
@@ -1084,7 +964,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 17,
                             Code = "MTN",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1410),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9814),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "المثنى",
@@ -1096,7 +976,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                             Id = 18,
                             Code = "QAD",
                             CountryId = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1411),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9853),
                             IsActive = true,
                             IsDeleted = false,
                             NameAr = "القادسية",
@@ -1938,9 +1818,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Property<int?>("LinkedDistributionId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("NetRevenue")
-                        .HasColumnType("decimal(15,2)");
-
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
@@ -1966,9 +1843,6 @@ namespace WaqfSystem.Infrastructure.Migrations
 
                     b.Property<int>("PropertyId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TotalExpenses")
-                        .HasColumnType("decimal(15,2)");
 
                     b.Property<decimal>("TotalRevenue")
                         .HasColumnType("decimal(15,2)");
@@ -2018,153 +1892,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                         .HasDatabaseName("IX_RevenueDistrib_Partnership");
 
                     b.ToTable("PartnerRevenueDistributions", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PartnershipConditionRule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DistributionType")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("FixedAmount")
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal?>("MaxRevenueThreshold")
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<decimal?>("MinRevenueThreshold")
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<int>("PartnershipId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PercentValue")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<int>("PriorityOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RuleName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("RuleType")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("SeasonLabel")
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("PartnershipId", "IsActive", "PriorityOrder")
-                        .HasDatabaseName("IX_ConditionRule_Partnership_Active");
-
-                    b.ToTable("PartnershipConditionRules", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PartnershipExpenseEntry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ExpenseType")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<int>("PartnershipId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("PeriodEndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PeriodLabel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<DateTime>("PeriodStartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReferenceNo")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("PropertyId");
-
-                    b.HasIndex("PartnershipId", "PeriodStartDate", "PeriodEndDate")
-                        .HasDatabaseName("IX_Expense_Partnership_Period");
-
-                    b.ToTable("PartnershipExpenseEntries", (string)null);
                 });
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.Permission", b =>
@@ -2921,28 +2648,12 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Property<int>("CreatedById")
                         .HasColumnType("int");
 
-                    b.Property<string>("CustomCalculationFormula")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("CustomPartnershipName")
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)")
-                        .UseCollation("Arabic_CI_AS");
-
                     b.Property<DateTime?>("DeactivatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DeactivationReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("ExpenseBearingMethod")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
                         .UseCollation("Arabic_CI_AS");
 
                     b.Property<string>("FarmerName")
@@ -3136,9 +2847,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_DistribMethod", "[RevenueDistribMethod] IN ('Monthly','Quarterly','Annual','PerCollection')");
 
-                            t.HasCheckConstraint("CK_ExpenseBearingMethod", "[ExpenseBearingMethod] IN ('BeforeDistribution','SharedByPercent','WaqfOnly','PartnerOnly')");
-
-                            t.HasCheckConstraint("CK_PartnershipType", "[PartnershipType] IN ('RevenuePercent','FloorOwnership','UnitOwnership','UsufructRight','LandPercent','TimedPartnership','HarvestShare','Custom')");
+                            t.HasCheckConstraint("CK_PartnershipType", "[PartnershipType] IN ('RevenuePercent','FloorOwnership','UnitOwnership','UsufructRight','LandPercent','TimedPartnership','HarvestShare')");
                         });
                 });
 
@@ -3222,123 +2931,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.HasIndex("UploadedById");
 
                     b.ToTable("PropertyPhotos", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyRevenue", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("BatchId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CollectedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CollectionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<byte>("CollectionLevel")
-                        .HasColumnType("tinyint");
-
-                    b.Property<DateTime?>("ConfirmedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ContractId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("ExpectedAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("FloorId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PayerNameAr")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentMethod")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("PeriodEndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PeriodLabel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("PeriodStartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReceiptNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RevenueCode")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<bool>("SuggestedBySystem")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("UnitId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VarianceApprovalNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("VarianceApprovedBy")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
-
-                    b.HasIndex("CollectedById");
-
-                    b.HasIndex("ContractId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FloorId");
-
-                    b.HasIndex("PropertyId");
-
-                    b.HasIndex("UnitId");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.HasIndex("VarianceApprovedBy");
-
-                    b.ToTable("PropertyRevenues");
                 });
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyRoom", b =>
@@ -3563,249 +3155,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.ToTable("PropertyWorkflowHistory", (string)null);
                 });
 
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RentContract", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("ActualTerminationDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("AllowsPartialPayments")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ContractFileUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContractNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ContractType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("FloorId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("GracePeriodDays")
-                        .HasColumnType("tinyint");
-
-                    b.Property<decimal?>("InsuranceAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("NextDueDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<decimal?>("PenaltyPerDay")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<byte>("PeriodType")
-                        .HasColumnType("tinyint");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("RentAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<byte>("Status")
-                        .HasColumnType("tinyint");
-
-                    b.Property<string>("TenantNameAr")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .UseCollation("Arabic_CI_AS");
-
-                    b.Property<string>("TenantNameEn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TenantNationalId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TenantPhone")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int?>("UnitId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FloorId");
-
-                    b.HasIndex("PropertyId")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("Status")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("UnitId")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.ToTable("RentContracts", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RentPaymentSchedule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal?>("AmountPaid")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("ContractId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("ExpectedAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(15,2)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPaid")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastPaymentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PeriodLabel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.HasIndex("ContractId", "PeriodLabel")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.ToTable("RentPaymentSchedules", (string)null);
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RevenuePeriodLock", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FloorId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("LockedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LockedByRevenueCode")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<byte>("LockedLevel")
-                        .HasColumnType("tinyint");
-
-                    b.Property<string>("PeriodLabel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReasonAr")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int?>("UnitId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.HasIndex("PropertyId", "FloorId", "UnitId", "PeriodLabel")
-                        .IsUnique()
-                        .HasFilter("[FloorId] IS NOT NULL AND [UnitId] IS NOT NULL");
-
-                    b.ToTable("RevenuePeriodLocks");
-                });
-
             modelBuilder.Entity("WaqfSystem.Core.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -3899,7 +3248,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 1,
                             Code = "SYS_ADMIN",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1455),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9910),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3913,7 +3262,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 2,
                             Code = "AUTH_DIRECTOR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1459),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9937),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3927,7 +3276,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 3,
                             Code = "REGIONAL_MGR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1460),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9939),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3941,7 +3290,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 4,
                             Code = "LEGAL_REVIEWER",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1461),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9940),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3955,7 +3304,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 5,
                             Code = "ENGINEER",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1462),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9942),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3969,7 +3318,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 6,
                             Code = "FIELD_SUPERVISOR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1463),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9943),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3983,7 +3332,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 7,
                             Code = "FIELD_INSPECTOR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1464),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9944),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -3997,7 +3346,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 8,
                             Code = "COLLECTOR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1465),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9946),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -4011,7 +3360,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 9,
                             Code = "CONTRACTS_MGR",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1465),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9947),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -4025,7 +3374,7 @@ namespace WaqfSystem.Infrastructure.Migrations
                         {
                             Id = 10,
                             Code = "ANALYST",
-                            CreatedAt = new DateTime(2026, 3, 23, 19, 45, 27, 710, DateTimeKind.Utc).AddTicks(1466),
+                            CreatedAt = new DateTime(2026, 3, 15, 22, 5, 36, 590, DateTimeKind.Utc).AddTicks(9949),
                             GeographicScopeLevel = (byte)0,
                             HasGlobalScope = false,
                             IsActive = true,
@@ -4443,78 +3792,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.CollectionBatch", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CollectedBy")
-                        .WithMany()
-                        .HasForeignKey("CollectedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CollectedBy");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.CollectionSmartLog", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyFloor", "Floor")
-                        .WithMany()
-                        .HasForeignKey("FloorId");
-
-                    b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyUnit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId");
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Floor");
-
-                    b.Navigation("Property");
-
-                    b.Navigation("Unit");
-
-                    b.Navigation("UpdatedBy");
 
                     b.Navigation("User");
                 });
@@ -4964,50 +4241,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("Property");
                 });
 
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PartnershipConditionRule", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyPartnership", "Partnership")
-                        .WithMany("ConditionRules")
-                        .HasForeignKey("PartnershipId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Partnership");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PartnershipExpenseEntry", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyPartnership", "Partnership")
-                        .WithMany("ExpenseEntries")
-                        .HasForeignKey("PartnershipId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Partnership");
-
-                    b.Navigation("Property");
-                });
-
             modelBuilder.Entity("WaqfSystem.Core.Entities.Property", b =>
                 {
                     b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
@@ -5252,72 +4485,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("UploadedBy");
                 });
 
-            modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyRevenue", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.CollectionBatch", "Batch")
-                        .WithMany("Revenues")
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CollectedBy")
-                        .WithMany()
-                        .HasForeignKey("CollectedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.RentContract", "Contract")
-                        .WithMany("Revenues")
-                        .HasForeignKey("ContractId");
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyFloor", "Floor")
-                        .WithMany()
-                        .HasForeignKey("FloorId");
-
-                    b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyUnit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId");
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "VarianceApprover")
-                        .WithMany()
-                        .HasForeignKey("VarianceApprovedBy")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Batch");
-
-                    b.Navigation("CollectedBy");
-
-                    b.Navigation("Contract");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Floor");
-
-                    b.Navigation("Property");
-
-                    b.Navigation("Unit");
-
-                    b.Navigation("UpdatedBy");
-
-                    b.Navigation("VarianceApprover");
-                });
-
             modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyRoom", b =>
                 {
                     b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
@@ -5395,95 +4562,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                         .HasForeignKey("UpdatedById");
 
                     b.Navigation("ActionBy");
-
-                    b.Navigation("Property");
-
-                    b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RentContract", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyFloor", "Floor")
-                        .WithMany()
-                        .HasForeignKey("FloorId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.PropertyUnit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Floor");
-
-                    b.Navigation("Property");
-
-                    b.Navigation("Unit");
-
-                    b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RentPaymentSchedule", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.RentContract", "Contract")
-                        .WithMany("PaymentSchedules")
-                        .HasForeignKey("ContractId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
-
-                    b.Navigation("Contract");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RevenuePeriodLock", b =>
-                {
-                    b.HasOne("WaqfSystem.Core.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WaqfSystem.Core.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
-
-                    b.Navigation("CreatedBy");
 
                     b.Navigation("Property");
 
@@ -5634,11 +4712,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WaqfSystem.Core.Entities.CollectionBatch", b =>
-                {
-                    b.Navigation("Revenues");
-                });
-
             modelBuilder.Entity("WaqfSystem.Core.Entities.Country", b =>
                 {
                     b.Navigation("Governorates");
@@ -5726,11 +4799,7 @@ namespace WaqfSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.PropertyPartnership", b =>
                 {
-                    b.Navigation("ConditionRules");
-
                     b.Navigation("ContactLogs");
-
-                    b.Navigation("ExpenseEntries");
 
                     b.Navigation("NotificationSchedules");
 
@@ -5744,13 +4813,6 @@ namespace WaqfSystem.Infrastructure.Migrations
                     b.Navigation("Photos");
 
                     b.Navigation("Rooms");
-                });
-
-            modelBuilder.Entity("WaqfSystem.Core.Entities.RentContract", b =>
-                {
-                    b.Navigation("PaymentSchedules");
-
-                    b.Navigation("Revenues");
                 });
 
             modelBuilder.Entity("WaqfSystem.Core.Entities.Role", b =>

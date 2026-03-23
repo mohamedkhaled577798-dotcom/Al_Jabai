@@ -1,0 +1,124 @@
+@model WaqfSystem.Web.ViewModels.Document.DocumentIndexViewModel
+@{
+    ViewData["Title"] = "إدارة الوثائق";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">إدارة الوثائق</h3>
+    <a class="btn btn-outline-primary" href="@Url.Action("Alerts", "Documents")">تنبيهات الوثائق</a>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link active" href="#">كل الوثائق</a></li>
+    <li class="nav-item"><a class="nav-link" href="@Url.Action("Index", "Documents", new { status = WaqfSystem.Core.Entities.DocumentStatus.PendingVerification })">تنتظر تحقق</a></li>
+    <li class="nav-item"><a class="nav-link" href="@Url.Action("Alerts", "Documents")">تنبيهات</a></li>
+    <li class="nav-item"><a class="nav-link" href="#filters" data-bs-toggle="collapse">بحث متقدم</a></li>
+</ul>
+
+<form method="get" class="mb-3">
+    <div class="input-group input-group-lg">
+        <input class="form-control" name="SearchTerm" value="@Model.Filter.SearchTerm" placeholder="ابحث في عنوان الوثيقة، رقمها، أو محتواها (OCR)..." />
+        <button class="btn btn-primary" type="submit">بحث</button>
+        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters">فلترة</button>
+    </div>
+
+    <div id="filters" class="collapse mt-3 card card-body">
+        <div class="row g-2">
+            <div class="col-md-2"><input class="form-control" name="PropertyId" value="@Model.Filter.PropertyId" placeholder="معرف العقار" /></div>
+            <div class="col-md-2">
+                <select class="form-select" name="DocumentTypeId">
+                    <option value="">نوع الوثيقة</option>
+                    @foreach (var t in Model.DocumentTypes)
+                    {
+                        <option value="@t.Value" selected="@(Model.Filter.DocumentTypeId?.ToString() == t.Value)">@t.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="Category">
+                    <option value="">التصنيف</option>
+                    @foreach (var c in Model.Categories)
+                    {
+                        <option value="@c.Value" selected="@(Model.Filter.Category == c.Value)">@c.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="Status">
+                    <option value="">الحالة</option>
+                    @foreach (var s in Enum.GetValues(typeof(WaqfSystem.Core.Entities.DocumentStatus)).Cast<WaqfSystem.Core.Entities.DocumentStatus>())
+                    {
+                        <option value="@s" selected="@(Model.Filter.Status == s)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2"><input class="form-control" type="date" name="ExpiryDateFrom" value="@Model.Filter.ExpiryDateFrom?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><input class="form-control" type="date" name="ExpiryDateTo" value="@Model.Filter.ExpiryDateTo?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><select class="form-select" name="IsExpired"><option value="">منتهية؟</option><option value="true" selected="@(Model.Filter.IsExpired == true)">نعم</option><option value="false" selected="@(Model.Filter.IsExpired == false)">لا</option></select></div>
+            <div class="col-md-2"><select class="form-select" name="IsExpiringSoon"><option value="">تنتهي قريباً؟</option><option value="true" selected="@(Model.Filter.IsExpiringSoon == true)">نعم</option><option value="false" selected="@(Model.Filter.IsExpiringSoon == false)">لا</option></select></div>
+            <div class="col-md-2"><button class="btn btn-success w-100">تطبيق</button></div>
+        </div>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>العقار</th>
+                <th>الوثيقة</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>تاريخ الانتهاء</th>
+                <th>المسؤول</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model.Documents.Items)
+            {
+                <tr>
+                    <td>@d.PropertyNameAr<br /><span class="small text-muted">@d.PropertyWqfNumber</span></td>
+                    <td>@d.Title<br /><span class="small text-muted">@d.DocumentNumber</span></td>
+                    <td>@d.DocumentTypeNameAr</td>
+                    <td><span class="badge" style="background:@d.StatusColor">@d.StatusDisplayAr</span></td>
+                    <td>
+                        @if (d.ExpiryDate.HasValue)
+                        {
+                            <span class="@(d.IsExpired ? "text-danger" : d.IsExpiringSoon ? "text-warning" : "text-success")">@d.ExpiryDate.Value.ToString("yyyy/MM/dd")</span>
+                            <div class="small text-muted">@(d.DaysUntilExpiry.HasValue ? $"{d.DaysUntilExpiry} يوم" : "-")</div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                    <td>@(d.PrimaryResponsibleName ?? "-")</td>
+                    <td class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Detail", "Documents", new { id = d.Id })">عرض</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Download", "Documents", new { versionId = d.CurrentVersionId ?? 0 })">تحميل</a>
+                        @if (d.Status == WaqfSystem.Core.Entities.DocumentStatus.PendingVerification)
+                        {
+                            <a class="btn btn-sm btn-outline-success" href="@Url.Action("Detail", "Documents", new { id = d.Id })">تحقق</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center">
+    <div class="small text-muted">إجمالي: @Model.Documents.TotalCount</div>
+    <div class="d-flex gap-2">
+        @if (Model.Documents.HasPreviousPage)
+        {
+            <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index", "Documents", new { page = Model.Documents.Page - 1, pageSize = Model.Documents.PageSize, searchTerm = Model.Filter.SearchTerm })">السابق</a>
+        }
+        <span class="btn btn-sm btn-light">صفحة @Model.Documents.Page من @Model.Documents.TotalPages</span>
+        @if (Model.Documents.HasNextPage)
+        {
+            <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index", "Documents", new { page = Model.Documents.Page + 1, pageSize = Model.Documents.PageSize, searchTerm = Model.Filter.SearchTerm })">التالي</a>
+        }
+    </div>
+</div>

@@ -1,0 +1,67 @@
+@model WaqfSystem.Application.DTOs.Revenue.QuickCollectDto
+<form id="quickCollectForm" method="post" asp-action="QuickCollect" asp-controller="Revenue">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="PropertyId" id="q_propertyId" value="@Model.PropertyId" />
+    <input type="hidden" name="FloorId" id="q_floorId" value="@Model.FloorId" />
+    <input type="hidden" name="UnitId" id="q_unitId" value="@Model.UnitId" />
+    <input type="hidden" name="ContractId" id="q_contractId" value="@Model.ContractId" />
+    <input type="hidden" name="CollectionLevel" id="q_level" value="@Model.CollectionLevel" />
+    <input type="hidden" name="PeriodLabel" id="q_periodLabel" value="@Model.PeriodLabel" />
+    <input type="hidden" name="SuggestionId" id="q_suggestionId" value="@Model.SuggestionId" />
+
+    <div id="quickPlaceholder" class="alert alert-light border">اختر عنصراً من القائمة أو ابحث عن وحدة</div>
+
+    <div id="quickBody" class="d-none">
+        <div id="scopeBadge" class="badge text-bg-success mb-2">تحصيل وحدة</div>
+        <div id="collisionBadge" class="small mb-2 text-success"><i class="bi bi-check-circle-fill"></i> لا يوجد تعارض</div>
+
+        <div class="mb-2">
+            <label class="form-label">المبلغ المتوقع</label>
+            <div class="fs-5 fw-bold" id="expectedAmountText">0 د.ع</div>
+            <input type="hidden" name="ExpectedAmount" id="q_expectedAmount" value="0" />
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">اقتراحات المبلغ</label>
+            <div id="amountChips" class="d-flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">المبلغ</label>
+            <input class="form-control form-control-lg" type="number" step="0.01" min="0.01" name="Amount" id="q_amount" value="@Model.Amount" />
+        </div>
+
+        <div class="mb-2">
+            <div class="progress" role="progressbar" aria-label="الفارق" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                <div id="varianceBar" class="progress-bar bg-success" style="width:100%;transition:width .3s ease"></div>
+            </div>
+            <div id="varianceText" class="small mt-1 text-secondary">الفارق: 0 د.ع (0%)</div>
+            <div id="varianceAlert" class="alert alert-warning py-2 px-3 mt-2 d-none"></div>
+            <textarea name="VarianceApprovalNote" id="q_varianceNote" class="form-control d-none" rows="2" placeholder="أدخل ملاحظة الموافقة"></textarea>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">طريقة الدفع</label>
+            <select name="PaymentMethod" id="q_paymentMethod" class="form-select">
+                <option value="">اختر</option>
+                <option>نقدي</option>
+                <option>تحويل</option>
+                <option>بطاقة</option>
+                <option>شيك</option>
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">رقم الإيصال</label>
+            <input class="form-control" type="text" name="ReceiptNumber" id="q_receipt" />
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label">ملاحظة</label>
+            <input class="form-control" type="text" name="Notes" id="q_notes" />
+        </div>
+
+        <input type="hidden" name="CollectionDate" id="q_collectionDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        <button id="quickSubmitBtn" type="button" class="btn btn-success btn-lg w-100" onclick="submitQuick()">تسجيل ✓</button>
+    </div>
+</form>

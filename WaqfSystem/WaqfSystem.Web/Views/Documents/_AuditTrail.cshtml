@@ -1,0 +1,50 @@
+@model List<WaqfSystem.Application.DTOs.Document.DocumentAuditTrailDto>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-light border">لا يوجد سجل</div>
+}
+else
+{
+    <div class="timeline">
+        @foreach (var item in Model)
+        {
+            <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                <div class="text-primary fs-5">
+                    @switch (item.ActionType)
+                    {
+                        case WaqfSystem.Core.Entities.DocumentActionType.Uploaded:
+                            @:⬆️
+                            break;
+                        case WaqfSystem.Core.Entities.DocumentActionType.Verified:
+                            @:✓
+                            break;
+                        case WaqfSystem.Core.Entities.DocumentActionType.Rejected:
+                            @:✗
+                            break;
+                        case WaqfSystem.Core.Entities.DocumentActionType.Downloaded:
+                            @:📥
+                            break;
+                        case WaqfSystem.Core.Entities.DocumentActionType.Viewed:
+                            @:👁️
+                            break;
+                        case WaqfSystem.Core.Entities.DocumentActionType.NewVersionUploaded:
+                            @:🔄
+                            break;
+                        default:
+                            @:•
+                            break;
+                    }
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@item.ActionTypeDisplayAr</div>
+                    <div class="small text-muted">@(item.ActionByName ?? "النظام") - @item.ActionAt.ToString("yyyy/MM/dd HH:mm")</div>
+                    @if (!string.IsNullOrWhiteSpace(item.Details))
+                    {
+                        <div class="small mt-1">@item.Details</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

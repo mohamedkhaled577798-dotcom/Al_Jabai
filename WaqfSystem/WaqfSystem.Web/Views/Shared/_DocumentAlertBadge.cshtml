@@ -1,0 +1,55 @@
+@using System.Security.Claims
+@inject WaqfSystem.Application.Services.IDocumentAlertService DocAlertService
+@{
+    var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var unread = userId > 0 ? await DocAlertService.GetUnreadAlertsForUserAsync(userId) : new List<WaqfSystem.Application.DTOs.Document.DocumentAlertDto>();
+    var count = unread.Count;
+}
+
+<div class="dropdown me-2" id="docAlertBadgeRoot">
+    <a class="btn btn-light position-relative" data-bs-toggle="dropdown" href="#">
+        <i class="bi bi-file-earmark-exclamation"></i>
+        @if (count > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="docAlertCount">@count</span>
+        }
+    </a>
+    <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;">
+        <div class="p-2 border-bottom fw-bold">تنبيهات الوثائق</div>
+        <div id="docAlertList">
+            @if (!unread.Any())
+            {
+                <div class="p-3 text-muted">لا توجد تنبيهات</div>
+            }
+            else
+            {
+                @foreach (var item in unread.OrderByDescending(x => x.CreatedAt).Take(5))
+                {
+                    <a class="dropdown-item py-2" href="@Url.Action("Detail", "Documents", new { id = item.DocumentId })">
+                        <div class="small fw-bold">@item.DocumentTitle</div>
+                        <div class="small text-muted">@item.PropertyNameAr - @item.UrgencyLabel</div>
+                    </a>
+                }
+            }
+        </div>
+        <div class="border-top p-2 text-center">
+            <a href="@Url.Action("Alerts", "Documents")" class="small text-decoration-none">عرض كل التنبيهات</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    setInterval(async function(){
+        try{
+            const r = await fetch('@Url.Action("AlertBadgeCount", "Documents")');
+            const d = await r.json();
+            const badge = document.getElementById('docAlertCount');
+            if(badge){
+                badge.textContent = d.count;
+                badge.style.display = d.count > 0 ? 'inline-block' : 'none';
+            }
+        }catch(e){}
+    }, 300000);
+})();
+</script>

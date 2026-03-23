@@ -1,0 +1,34 @@
+@model WaqfSystem.Application.DTOs.Revenue.PropertyStructureDto
+@{
+    ViewData["Title"] = "إدارة الهيكل";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">إدارة هيكل العقار: @Model.PropertyNameAr</h4>
+    <a class="btn btn-outline-primary" href="@Url.Action("SmartCollect", "Revenue")">التحصيل الذكي</a>
+</div>
+@foreach (var floor in Model.Floors)
+{
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>@floor.FloorLabel</div>
+            <div>@if (floor.IsLocked) { <span class="badge text-bg-secondary">مقفول</span> }</div>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                @foreach (var unit in floor.Units)
+                {
+                    <div class="col-md-3">
+                        <div class="border rounded p-2 @(unit.IsLocked ? "bg-light" : "")">
+                            <div class="fw-semibold">@unit.UnitNumber</div>
+                            <div class="small text-secondary">@unit.UnitType</div>
+                            @if (unit.IsLocked)
+                            {
+                                <div class="small text-danger">@unit.LockReason</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

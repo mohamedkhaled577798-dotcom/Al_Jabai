@@ -1,0 +1,43 @@
+@model WaqfSystem.Application.DTOs.Common.PagedResult<WaqfSystem.Core.Entities.PropertyRevenue>
+@{
+    ViewData["Title"] = "سجل التحصيل";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h4 class="mb-0">سجل التحصيل</h4>
+    <a class="btn btn-primary btn-lg" href="@Url.Action("SmartCollect", "Revenue")">فتح التحصيل الذكي</a>
+</div>
+
+<div id="revenueTableWrap" class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>رمز التحصيل</th>
+                    <th>رمز الدفعة</th>
+                    <th>العقار</th>
+                    <th>الوحدة</th>
+                    <th>الفترة</th>
+                    <th>المبلغ</th>
+                    <th>التحصيل</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Items)
+                {
+                    var pct = row.ExpectedAmount.HasValue && row.ExpectedAmount.Value > 0 ? Math.Abs((row.Amount - row.ExpectedAmount.Value) / row.ExpectedAmount.Value) * 100 : 0;
+                    var amountClass = pct > 10 ? "text-danger" : (pct >= 1 ? "text-warning" : "text-success");
+                    <tr class="@(row.BatchId.HasValue ? "table-info" : "")">
+                        <td class="fw-semibold">@row.RevenueCode</td>
+                        <td>@(row.BatchId?.ToString() ?? "-")</td>
+                        <td>@row.Property?.PropertyName</td>
+                        <td>@row.Unit?.UnitNumber</td>
+                        <td>@row.PeriodLabel</td>
+                        <td class="@amountClass fw-bold">@row.Amount.ToString("N0") د.ع</td>
+                        <td>@row.CollectionDate.ToString("yyyy/MM/dd")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

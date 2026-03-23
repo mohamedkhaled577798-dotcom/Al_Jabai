@@ -1,0 +1,24 @@
+@model WaqfSystem.Application.DTOs.Document.PropertyDocumentListDto
+@{
+    var cls = "bg-secondary";
+    var text = "بدون تاريخ انتهاء";
+    if (Model.ExpiryDate.HasValue)
+    {
+        if (Model.IsExpired)
+        {
+            cls = "bg-danger";
+            text = "منتهية";
+        }
+        else if (Model.DaysUntilExpiry.HasValue && Model.DaysUntilExpiry.Value <= 30)
+        {
+            cls = "bg-warning text-dark";
+            text = $"تنتهي خلال {Model.DaysUntilExpiry} يوم";
+        }
+        else
+        {
+            cls = "bg-success";
+            text = $"صالحة حتى {Model.ExpiryDate.Value:yyyy/MM/dd}";
+        }
+    }
+}
+<span class="badge @cls">@text</span>

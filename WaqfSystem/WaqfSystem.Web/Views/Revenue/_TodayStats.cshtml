@@ -1,0 +1,32 @@
+@model WaqfSystem.Application.DTOs.Revenue.TodayDashboardDto
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">محصَّل اليوم</div>
+                <div class="fs-4 fw-bold">@Model.CollectedToday.ToString("N0") د.ع</div>
+                <div class="small text-secondary">@Model.CollectedTodayCount عملية</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 @(Model.OverdueCount > 0 ? "border-danger" : "")">
+            <div class="card-body">
+                <div class="text-muted small">متأخر الشهر</div>
+                <div class="fs-4 fw-bold @(Model.OverdueCount > 0 ? "text-danger" : "")">@Model.OverdueCount</div>
+                <div class="small @(Model.OverdueCount > 0 ? "text-danger" : "text-secondary")">@Model.OverdueAmount.ToString("N0") د.ع</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">نسبة التحصيل</div>
+                <div class="fs-4 fw-bold">@Model.MonthCollectionRate.ToString("N1")%</div>
+                <div class="progress mt-2" role="progressbar" aria-label="نسبة التحصيل" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Model.MonthCollectionRate">
+                    <div class="progress-bar bg-success" style="width:@Math.Min(100, Model.MonthCollectionRate)%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

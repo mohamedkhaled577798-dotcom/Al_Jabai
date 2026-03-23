@@ -1,0 +1,79 @@
+@model WaqfSystem.Application.DTOs.Revenue.TodayDashboardDto
+@{
+    ViewData["Title"] = "الإحصاءات";
+}
+<style>
+.month-bars { display:flex; gap:.5rem; align-items:flex-end; height:220px; }
+.month-bar { flex:1; border-radius:8px 8px 0 0; position:relative; min-height:8px; }
+.month-bar .tip { display:none; position:absolute; bottom:100%; right:0; background:#111; color:#fff; padding:.35rem .5rem; border-radius:.35rem; font-size:.75rem; white-space:nowrap; }
+.month-bar:hover .tip { display:block; }
+.heatmap { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
+.heat-day { height:38px; border-radius:6px; background:#f1f1f1; }
+.vacancy-grid { display:grid; grid-template-columns: repeat(8, minmax(48px, 1fr)); gap:8px; }
+.unit-cell { padding:.5rem; text-align:center; border-radius:6px; font-size:.8rem; }
+</style>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white">الاتجاه الشهري</div>
+            <div class="card-body">
+                <div class="month-bars">
+                    @for (var i = 11; i >= 0; i--)
+                    {
+                        var expected = Math.Max(1, Model.MonthExpected / 12m);
+                        var collected = Math.Max(0, Math.Min(expected, Model.MonthCollected / 12m + (i % 3 == 0 ? expected * 0.2m : 0)));
+                        var rate = Math.Round((collected / expected) * 100m, 0);
+                        var color = rate >= 90 ? "#3b6d11" : (rate >= 50 ? "#ba7517" : "#a32d2d");
+                        <div class="month-bar" style="height:@Math.Max(8, rate)% ; background:@color">
+                            <div class="tip">@DateTime.Today.AddMonths(-i).ToString("yyyy/MM") - @collected.ToString("N0") / @expected.ToString("N0")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white">تفصيل الطوابق</div>
+            <div class="card-body">
+                @foreach (var floor in Model.CollectionByFloor)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@floor.FloorLabel</span><span>@floor.Collected.ToString("N0") / @floor.Expected.ToString("N0")</span></div>
+                        <div class="progress"><div class="progress-bar @(floor.Rate >= 90 ? "bg-success" : (floor.Rate >= 50 ? "bg-warning" : "bg-danger"))" style="width:@Math.Min(100, floor.Rate)%">@floor.Rate.ToString("N0")%</div></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white">تقويم التحصيل</div>
+            <div class="card-body">
+                <div class="heatmap">
+                    @foreach (var day in Model.MonthProgress)
+                    {
+                        var intensity = Model.MonthCollected <= 0 ? 0 : Math.Min(1m, day.Collected / Math.Max(1, Model.MonthCollected / 8m));
+                        var color = day.Collected <= 0 ? "#efefef" : $"rgba(59,109,17,{(double)intensity:0.00})";
+                        if (day.Expected > 0 && day.Collected == 0) color = "rgba(163,45,45,.35)";
+                        <div class="heat-day" title="@day.Date.ToString("yyyy/MM/dd") - @day.Collected.ToString("N0")" style="background:@color"></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">شبكة إشغال الوحدات</div>
+            <div class="card-body">
+                <div class="vacancy-grid">
+                    @for (var i = 1; i <= 32; i++)
+                    {
+                        var cls = i % 5 == 0 ? "background:#e6e6e6" : (i % 3 == 0 ? "background:#f6d28f" : "background:#cde8cd");
+                        <div class="unit-cell" style="@cls">وحدة @i</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

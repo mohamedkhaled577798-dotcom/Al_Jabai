@@ -1,0 +1,31 @@
+@model WaqfSystem.Application.DTOs.Common.PagedResult<WaqfSystem.Core.Entities.RentContract>
+@{
+    ViewData["Title"] = "العقود";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">عقود الإيجار</h4>
+    <a class="btn btn-success" href="@Url.Action("CreateContract", "Revenue")">إضافة عقد</a>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+        <table class="table table-striped align-middle">
+            <thead><tr><th>المستأجر</th><th>العقار</th><th>الوحدة</th><th>الإيجار</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.Items)
+            {
+                <tr>
+                    <td>@c.TenantNameAr<br/><small class="text-muted">@c.TenantPhone</small></td>
+                    <td>@c.Property?.PropertyName</td>
+                    <td>@c.Unit?.UnitNumber</td>
+                    <td>@c.RentAmount.ToString("N0") د.ع</td>
+                    <td><span class="badge @(c.Status == WaqfSystem.Core.Enums.ContractStatus.Active ? "text-bg-success" : "text-bg-secondary")">@c.Status</span></td>
+                    <td class="text-nowrap">
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("ContractDetail", "Revenue", new { id = c.Id })">تفاصيل</a>
+                        <a class="btn btn-sm btn-primary" href="@Url.Action("SmartCollect", "Revenue", new { unitId = c.UnitId })">تحصيل الإيجار</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
